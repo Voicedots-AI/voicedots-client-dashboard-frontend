@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
+import { format } from "date-fns";
 import {
   Search,
   Loader2,
@@ -8,7 +9,7 @@ import {
 import { UI } from "@/ui/colors";
 import { ConversationCard } from "@/components/ConversationCard";
 import { ConversationsKpi } from "@/components/ConversationsKpi";
-import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import conversationsApi from "@/api/conversations";
 import { kpiAPI } from "@/api/kpi";
 import type { ConversationsListSummary, KpiSummary } from "@/types/conversation.types";
@@ -138,13 +139,19 @@ export function ConversationsPage() {
             ))}
           </div>
 
-          <DateRangeFilter
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            onClear={() => { setStartDate(""); setEndDate(""); }}
-            height="h-10"
+          <DatePickerWithRange
+            value={
+              startDate && endDate
+                ? { from: new Date(startDate), to: new Date(endDate) }
+                : undefined
+            }
+            onChange={(range) => {
+              setStartDate(range?.from ? format(range.from, "yyyy-MM-dd") : "");
+              setEndDate(range?.to ? format(range.to, "yyyy-MM-dd") : "");
+            }}
+            label="Date Range"
+            className="w-full md:w-auto"
+            showClear={startDate || endDate}
           />
 
           {/* SEARCH — takes remaining space */}

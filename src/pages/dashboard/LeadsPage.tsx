@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { format } from "date-fns";
 import {
   Phone,
   Search,
@@ -9,7 +10,7 @@ import {
 import leadsApi from "@/api/leads";
 import { LeadDetailsDrawer } from "@/components/LeadDetailsDrawer";
 import { LeadsKpi } from "@/components/leadsKpi";
-import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import type { Lead } from "@/types/lead.types";
 import { useAuth } from "@/context/AuthContext";
 import { UI } from "@/ui/colors";
@@ -121,12 +122,20 @@ export function LeadsPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 px-2">
-            <DateRangeFilter
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
+            <DatePickerWithRange
+              value={
+                startDate && endDate
+                  ? { from: new Date(startDate), to: new Date(endDate) }
+                  : undefined
+              }
+              onChange={(range) => {
+                setStartDate(range?.from ? format(range.from, "yyyy-MM-dd") : "");
+                setEndDate(range?.to ? format(range.to, "yyyy-MM-dd") : "");
+              }}
               onClear={() => { setStartDate(""); setEndDate(""); }}
+              showClear={startDate || endDate}
+              label="Date Range"
+              className="w-full md:w-auto"
             />
 
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`h-11 px-4 rounded-xl border text-sm outline-none font-bold shadow-sm min-w-[130px] transition-all hover:border-slate-300 ${statusFilter === "Qualified" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800" : statusFilter === "Unqualified" ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800" : statusFilter === "Follow Up" ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800" : "bg-white text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"}`}>

@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
 import {
   MessageSquare,
-  Calendar,
   Clock,
 } from "lucide-react";
+import { format } from "date-fns";
+import { type DateRange } from "react-day-picker";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { kpiAPI } from "@/api/kpi";
 import { UI } from "@/ui/colors";
+import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import type { KpiTimeseriesPoint } from "@/types/conversation.types";
 import { ConversationsPerDayChart } from "@/components/charts/ConversationsPerDayChart";
 import { ConversationsVolumeChart } from "@/components/charts/ConversationsVolumeChart";
@@ -329,20 +331,18 @@ export function HomePage() {
             ))}
           </div>
           <div className="hidden sm:block h-6 w-px bg-slate-200 mx-2"></div>
-          <div className="flex items-center justify-center gap-2 px-2 py-1 sm:py-0">
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl shadow-sm overflow-hidden dark:bg-slate-950 dark:border-slate-800">
-              <div className="flex items-center px-2 h-full text-slate-400">
-                <Calendar size={14} />
-              </div>
-              <div className="flex flex-col px-2 border-r border-slate-200 group dark:border-slate-800">
-                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest leading-none mb-0.5 group-hover:text-blue-500 transition-colors">From</span>
-                <input type="date" value={from} onChange={(e) => { setPreset("custom"); setRange({ from: e.target.value, to }); }} className="bg-transparent text-[11px] font-bold text-slate-600 outline-none w-24 cursor-pointer hover:text-slate-900 dark:text-slate-100 dark:[color-scheme:dark]" />
-              </div>
-              <div className="flex flex-col px-2 group">
-                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest leading-none mb-0.5 group-hover:text-blue-500 transition-colors">To</span>
-                <input type="date" value={to} onChange={(e) => { setPreset("custom"); setRange({ from, to: e.target.value }); }} className="bg-transparent text-[11px] font-bold text-slate-600 outline-none w-24 cursor-pointer hover:text-slate-900 dark:text-slate-100 dark:[color-scheme:dark]" />
-              </div>
-            </div>
+          <div className="flex items-center px-2 py-1">
+            <DatePickerWithRange
+              value={from && to ? { from: new Date(from), to: new Date(to) } : undefined}
+              onChange={(range: DateRange | undefined) => {
+                setPreset("custom");
+                setRange({
+                  from: range?.from ? format(range.from, "yyyy-MM-dd") : "",
+                  to: range?.to ? format(range.to, "yyyy-MM-dd") : "",
+                });
+              }}
+              label="Date Range"
+            />
           </div>
         </div>
       </div>

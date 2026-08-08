@@ -32,7 +32,7 @@ function KpiCard({
         dark:bg-slate-900
       `}
     >
-      <div className={`p-3.5 rounded-2xl ${style.iconBg} ${style.iconColor} shadow-lg shadow-indigo-100 shrink-0`}>
+      <div className={`p-3.5 rounded-2xl ${style.iconBg} ${style.iconColor} shadow-lg shadow-indigo-100 shrink-0 dark:shadow-none`}>
         {icon}
       </div>
 
