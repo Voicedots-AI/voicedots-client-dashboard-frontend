@@ -151,7 +151,7 @@ export function ConversationsPage() {
             }}
             label="Date Range"
             className="w-full md:w-auto"
-            showClear={startDate || endDate}
+            showClear={Boolean(startDate || endDate)}
           />
 
           {/* SEARCH — takes remaining space */}

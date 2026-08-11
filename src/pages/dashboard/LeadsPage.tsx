@@ -133,7 +133,7 @@ export function LeadsPage() {
                 setEndDate(range?.to ? format(range.to, "yyyy-MM-dd") : "");
               }}
               onClear={() => { setStartDate(""); setEndDate(""); }}
-              showClear={startDate || endDate}
+              showClear={Boolean(startDate || endDate)}
               label="Date Range"
               className="w-full md:w-auto"
             />
