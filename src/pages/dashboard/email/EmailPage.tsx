@@ -101,6 +101,19 @@ function SenderConfigSection() {
 
   const [dnsRecords, setDnsRecords] = useState<DnsRecord[]>([]);
 
+  const parseDnsRecords = (records: unknown): DnsRecord[] => {
+    if (Array.isArray(records)) return records;
+    if (typeof records === "string") {
+      try {
+        const parsed = JSON.parse(records);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
   const hydrate = (s: EmailSettings) => {
     setSettings(s);
     setFromName(s.from_name ?? "");
@@ -108,7 +121,7 @@ function SenderConfigSection() {
     setReplyTo(s.reply_to ?? "");
     setSignature(s.signature ?? "");
     setAutoReply(!!s.auto_reply_enabled);
-    setDnsRecords(s.dns_records ?? []);
+    setDnsRecords(parseDnsRecords(s.dns_records));
   };
 
   const load = useCallback(async () => {
@@ -157,7 +170,7 @@ function SenderConfigSection() {
     try {
       await communicationAPI.verifyDomain();
       const dns = await communicationAPI.getDnsRecords();
-      setDnsRecords(dns.dns_records ?? []);
+      setDnsRecords(parseDnsRecords(dns.dns_records));
       setSettings((p) => (p ? { ...p, domain_status: dns.domain_status } : p));
       setSuccess("Domain check complete.");
     } catch (e) {
