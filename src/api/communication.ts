@@ -114,6 +114,7 @@ export interface WhatsAppManualPayload {
   template_id?: string;
   message: string;
   header_text?: string;
+  access_token?: string;
 }
 
 export interface WhatsAppBulkPayload {
