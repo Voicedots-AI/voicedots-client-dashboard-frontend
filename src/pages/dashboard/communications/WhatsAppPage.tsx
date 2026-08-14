@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Loader2, CheckCircle2, AlertCircle, Users, Download, Upload,
-  MessageSquare, Smartphone, CheckCheck, FileText, Key, Info
+  MessageSquare, Smartphone, CheckCheck, FileText
 } from "lucide-react";
 import communicationAPI, {
   type WhatsAppConfig, type WhatsAppTemplateItem
@@ -73,27 +73,6 @@ export default function WhatsAppPage() {
         </div>
       </div>
 
-      {/* META 24-HOUR & TEST RECIPIENT EXPLANATION BANNER */}
-      <div className="flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/30 p-4 text-xs text-amber-900 dark:text-amber-200 font-medium leading-relaxed">
-        <Info size={18} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div>
-          <p className="font-extrabold text-amber-950 dark:text-amber-100">
-            Why Meta WhatsApp Messages Require Setup for Delivery to Your Personal Phone:
-          </p>
-          <ul className="list-disc pl-4 mt-1 space-y-1 text-[11px]">
-            <li>
-              <strong>Meta Test Recipient Rule</strong>: In Meta Developer Console, Meta Cloud API only delivers messages to phone numbers added under <code className="bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded font-mono font-bold">To: Test Phone Numbers</code> until your business verification is completed.
-            </li>
-            <li>
-              <strong>Meta 24-Hour Customer Window</strong>: Outside a 24-hour window (where you message the business number first), Meta requires using a <strong>Meta Pre-Approved Template</strong> (e.g. <i>Admission Status Update</i>).
-            </li>
-            <li>
-              <strong>Meta Access Token</strong>: Paste your Meta System User Token under <strong>Meta WBA Account</strong> tab or input field below for live API delivery.
-            </li>
-          </ul>
-        </div>
-      </div>
-
       {/* SEGMENTED TAB BAR */}
       <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-inner w-full overflow-x-auto scrollbar-none">
         {wspTabs.map((t) => {
@@ -147,7 +126,6 @@ function WhatsAppDirectSendSection() {
   const [toPhone, setToPhone] = useState("");
   const [toName, setToName] = useState("");
   const [message, setMessage] = useState("");
-  const [accessToken, setAccessToken] = useState(() => localStorage.getItem("meta_wsp_token") || "");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -176,10 +154,6 @@ function WhatsAppDirectSendSection() {
       return;
     }
 
-    if (accessToken) {
-      localStorage.setItem("meta_wsp_token", accessToken);
-    }
-
     setSending(true);
     setError("");
     setSuccess("");
@@ -189,7 +163,6 @@ function WhatsAppDirectSendSection() {
         to_name: toName,
         template_id: selectedTemplate || undefined,
         message,
-        access_token: accessToken || undefined,
       });
       setSuccess(
         `WhatsApp message dispatched via Meta Cloud API (+91 91766 00994)! ID: ${res.whatsapp_msg_id || 'wmid'}`
@@ -258,15 +231,10 @@ function WhatsAppDirectSendSection() {
                 <input
                   type="text"
                   className={input}
-                  placeholder="Enter YOUR Mobile Number (e.g. +91 98765 43210)"
+                  placeholder="+91 98765 43210"
                   value={toPhone}
                   onChange={(e) => setToPhone(e.target.value)}
                 />
-                {toPhone.includes("9876543210") && (
-                  <p className="text-[11px] font-bold text-amber-600 mt-1">
-                    ⚠️ Note: Replace 9876543210 with your actual personal mobile number to receive it on your WhatsApp app!
-                  </p>
-                )}
               </div>
               <div>
                 <label className={label}>Student Name (Optional)</label>
@@ -292,21 +260,6 @@ function WhatsAppDirectSendSection() {
                 placeholder="Dear Student, your admission application status at Dhanalakshmi Srinivasan CET is..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-              />
-            </div>
-
-            {/* OPTIONAL META ACCESS TOKEN INPUT */}
-            <div>
-              <div className="flex items-center gap-1.5">
-                <Key size={13} className="text-emerald-600" />
-                <label className={label}>Meta System User Token (Optional for Live Graph API)</label>
-              </div>
-              <input
-                type="password"
-                className={input}
-                placeholder="EAAG... (Paste token generated from developers.facebook.com)"
-                value={accessToken}
-                onChange={(e) => setAccessToken(e.target.value)}
               />
             </div>
 
@@ -703,7 +656,7 @@ function WhatsAppAccountConfigSection() {
               <CheckCircle2 size={16} className="text-emerald-600" />
               <span>Webhooks & Permanent Meta Cloud Token Subscribed</span>
             </div>
-            <span className="font-mono text-[11px]">Daily Limit: {config?.daily_limit || 250} msgs</span>
+            <span className="font-mono text-[11px]">Daily Limit: 250 msgs</span>
           </div>
         </div>
       </section>
