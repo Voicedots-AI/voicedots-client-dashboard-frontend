@@ -258,10 +258,15 @@ function WhatsAppDirectSendSection() {
                 <input
                   type="text"
                   className={input}
-                  placeholder="+91 98765 43210"
+                  placeholder="Enter YOUR Mobile Number (e.g. +91 98765 43210)"
                   value={toPhone}
                   onChange={(e) => setToPhone(e.target.value)}
                 />
+                {toPhone.includes("9876543210") && (
+                  <p className="text-[11px] font-bold text-amber-600 mt-1">
+                    ⚠️ Note: Replace 9876543210 with your actual personal mobile number to receive it on your WhatsApp app!
+                  </p>
+                )}
               </div>
               <div>
                 <label className={label}>Student Name (Optional)</label>
