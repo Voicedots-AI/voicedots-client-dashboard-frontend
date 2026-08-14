@@ -20,15 +20,15 @@ const errorDetail = (e: unknown): string => {
 };
 
 const card =
-  "bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700";
+  "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs transition-all";
 const cardHead =
-  "px-6 py-4 border-b-2 border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30";
+  "px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30";
 const headText =
-  "text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest";
+  "text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest";
 const label =
   "text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-400";
 const input =
-  "mt-1.5 w-full rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800/60 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-indigo-600 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 font-medium transition-all";
+  "mt-1.5 w-full rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-indigo-600 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 font-medium transition-all";
 
 function statusPill(status: string | null) {
   const s = (status || "").toLowerCase();
@@ -44,7 +44,7 @@ function statusPill(status: string | null) {
     ? "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700 font-bold"
     : "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-semibold";
   return (
-    <span className={`px-3 py-1 rounded-full text-[11px] border-2 shadow-xs ${cls}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] border font-bold ${cls}`}>
       {status ? status.toUpperCase() : "NOT CONFIGURABLE"}
     </span>
   );
@@ -56,89 +56,66 @@ export default function EmailPage() {
   const [tab, setTab] = useState<Tab>("manual");
 
   const optionTabs = [
-    { key: "manual" as Tab, optionNum: "1", title: "Manual Reply", desc: "Single Email Dispatch", icon: Send },
-    { key: "bulk" as Tab, optionNum: "2", title: "Bulk / Mass Mail", desc: "CSV/Excel Broadcast", icon: Users },
-    { key: "auto" as Tab, optionNum: "3", title: "Auto-Reply", desc: "Trigger Rules", icon: Zap },
-    { key: "scheduled" as Tab, optionNum: "4", title: "Calendar Schedule", desc: "Scheduled Queue", icon: CalendarIcon },
-    { key: "templates" as Tab, optionNum: "5", title: "Templates", desc: "Preset Library", icon: FileText },
-    { key: "config" as Tab, optionNum: "6", title: "Domain & DNS", desc: "Sender Verification", icon: ShieldCheck },
+    { key: "manual" as Tab, title: "Manual Reply", icon: Send },
+    { key: "bulk" as Tab, title: "Bulk / Mass Mail", icon: Users, badge: "CSV" },
+    { key: "auto" as Tab, title: "Auto-Reply", icon: Zap },
+    { key: "scheduled" as Tab, title: "Calendar Schedule", icon: CalendarIcon },
+    { key: "templates" as Tab, title: "Templates", icon: FileText },
+    { key: "config" as Tab, title: "Domain & DNS", icon: ShieldCheck },
   ];
 
   return (
-    <div className="space-y-8">
-      {/* PAGE TITLE & HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-slate-200 dark:border-slate-800 pb-5">
+    <div className="space-y-6">
+      {/* COMPACT HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-              Email Communications Hub
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-              Interactive Mode
-            </span>
-          </div>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-            Choose an option below to manage manual replies, mass bulk campaigns, auto-reply rules, calendar scheduling, or domain verification.
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            Email Communications Hub
+          </h1>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+            Manual replies, mass bulk emails, automated follow-ups, calendar schedules, and domain verification.
           </p>
         </div>
       </div>
 
-      {/* PROMINENT INTERACTIVE OPTIONS BAR */}
-      <div className="space-y-2">
-        <p className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          Available Options (Click an option to switch mode):
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {optionTabs.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className={`p-3.5 rounded-2xl border-2 text-left transition-all duration-200 relative group cursor-pointer flex flex-col justify-between min-h-[96px] ${
+      {/* SLEEK, COMPACT SEGMENTED BAR */}
+      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-inner w-full overflow-x-auto scrollbar-none">
+        {optionTabs.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`flex-1 min-w-[130px] px-3.5 py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer relative group ${
+                active
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/80 dark:border-slate-700/80 scale-[1.01]"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-white/60 dark:hover:bg-slate-800/40"
+              }`}
+            >
+              <div
+                className={`p-1 rounded-lg transition-transform duration-200 group-hover:scale-110 ${
                   active
-                    ? "border-indigo-600 bg-indigo-50/90 dark:bg-indigo-950/50 dark:border-indigo-400 shadow-md ring-2 ring-indigo-500/20 scale-[1.02]"
-                    : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:scale-[1.01]"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50"
                 }`}
               >
-                <div className="flex items-center justify-between w-full">
-                  <span
-                    className={`h-6 w-6 rounded-lg text-[11px] font-black flex items-center justify-center border ${
-                      active
-                        ? "bg-indigo-600 text-white border-indigo-600"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 group-hover:border-indigo-400"
-                    }`}
-                  >
-                    #{t.optionNum}
-                  </span>
-                  <Icon
-                    size={16}
-                    className={active ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 group-hover:text-indigo-500"}
-                  />
-                </div>
-
-                <div className="mt-2">
-                  <p className={`text-xs font-black leading-snug ${active ? "text-indigo-950 dark:text-indigo-100" : "text-slate-800 dark:text-slate-200"}`}>
-                    {t.title}
-                  </p>
-                  <p className={`text-[10px] font-semibold mt-0.5 truncate ${active ? "text-indigo-700 dark:text-indigo-300" : "text-slate-400"}`}>
-                    {t.desc}
-                  </p>
-                </div>
-
-                {active && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-indigo-600 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+                <Icon size={14} />
+              </div>
+              <span className="truncate">{t.title}</span>
+              {t.badge && (
+                <span className="px-1.5 py-0.2 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 text-[9px] font-black">
+                  {t.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* ACTIVE OPTION CONTENT AREA */}
-      <div className="transition-all duration-300">
+      {/* ACTIVE TAB CONTENT */}
+      <div className="transition-all duration-200">
         {tab === "manual" && <ManualReplySection />}
         {tab === "bulk" && <BulkMailSection />}
         {tab === "auto" && <AutoReplySection />}
@@ -212,23 +189,21 @@ function ManualReplySection() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         {error && (
-          <div className="flex items-start gap-2.5 rounded-2xl border-2 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-3.5 text-sm text-red-800 dark:text-red-300 font-semibold">
-            <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600" /> {error}
+          <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-300 font-semibold">
+            <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" /> {error}
           </div>
         )}
         {success && (
-          <div className="flex items-start gap-2.5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-5 py-3.5 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
-            <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
+          <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
           </div>
         )}
 
         <section className={card}>
           <div className={cardHead}>
             <div className="flex items-center gap-2">
-              <span className="h-6 px-2 rounded-md bg-indigo-600 text-white text-[11px] font-black">
-                OPTION #1
-              </span>
-              <h2 className={headText}>Manual Email / Reply Dispatcher</h2>
+              <Send size={15} className="text-indigo-600 dark:text-indigo-400" />
+              <h2 className={headText}>Manual Email Dispatcher</h2>
             </div>
             <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
               <Sparkles size={13} /> Direct Send
@@ -236,7 +211,7 @@ function ManualReplySection() {
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
-            {/* QUICK PRESET TEMPLATE PILLS */}
+            {/* QUICK PRESET PILLS */}
             {templates.length > 0 && (
               <div className="space-y-1.5">
                 <label className={label}>Quick Apply Saved Template:</label>
@@ -246,7 +221,7 @@ function ManualReplySection() {
                       key={t.id}
                       type="button"
                       onClick={() => applyTemplate(t.id)}
-                      className={`px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${
+                      className={`px-3 py-1 rounded-xl border text-xs font-bold transition-all ${
                         selectedTemplate === t.id
                           ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
                           : "border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-slate-700 dark:text-slate-300"
@@ -297,24 +272,24 @@ function ManualReplySection() {
               <div className="flex items-center justify-between">
                 <label className={label}>Email Message Body *</label>
                 <span className="text-[10px] font-bold text-slate-400">
-                  {body.length} characters
+                  {body.length} chars
                 </span>
               </div>
               <textarea
-                className={`${input} min-h-[150px] font-sans leading-relaxed`}
+                className={`${input} min-h-[140px] font-sans leading-relaxed`}
                 placeholder="Dear Student, thank you for contacting Dhanalakshmi Srinivasan CET..."
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t-2 border-slate-100 dark:border-slate-800 pt-4">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-extrabold text-slate-700 dark:text-slate-300">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={includeSignature}
                   onChange={(e) => setIncludeSignature(e.target.checked)}
-                  className="h-4 w-4 rounded border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
                 Include Official Organization Signature
               </label>
@@ -322,9 +297,9 @@ function ManualReplySection() {
               <button
                 type="submit"
                 disabled={sending}
-                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer"
+                className="px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
-                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                 Dispatch Email Now
               </button>
             </div>
@@ -337,16 +312,16 @@ function ManualReplySection() {
         <section className={card}>
           <div className={cardHead}>
             <div className="flex items-center gap-2">
-              <Eye size={16} className="text-indigo-600 dark:text-indigo-400" />
+              <Eye size={15} className="text-indigo-600 dark:text-indigo-400" />
               <h2 className={headText}>Live Interactive Preview</h2>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Real-Time
             </span>
           </div>
 
           <div className="p-5 space-y-4">
-            <div className="space-y-2 border-b-2 border-slate-100 dark:border-slate-800 pb-3.5 text-xs">
+            <div className="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-3 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-slate-400">TO:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
@@ -361,7 +336,7 @@ function ManualReplySection() {
               </div>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl border-2 border-slate-200 dark:border-slate-800 p-4 min-h-[180px] text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
+            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 p-4 min-h-[160px] text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
               {body || "Your typed email content will format and render live in this interactive card container..."}
             </div>
           </div>
@@ -466,39 +441,34 @@ function BulkMailSection() {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-3.5 text-sm text-red-800 dark:text-red-300 font-semibold">
-          <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600" /> {error}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-300 font-semibold">
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" /> {error}
         </div>
       )}
       {success && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-5 py-3.5 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
+          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
         </div>
       )}
 
-      {/* SAMPLE CSV DOWNLOAD PROMINENT INTERACTIVE CARD */}
-      <section className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="h-6 px-2.5 rounded-md bg-white/20 text-white text-xs font-black">
-                OPTION #2
-              </span>
-              <h2 className="text-xl font-black tracking-tight">
-                Mass Bulk Email Broadcast with Student Data Upload
-              </h2>
-            </div>
-            <p className="text-xs text-indigo-100 font-medium max-w-2xl">
-              Upload your student email dataset in CSV/Excel format. Download our ready-to-use sample template to format your data correctly.
+      {/* SAMPLE CSV DOWNLOAD COMPACT BANNER */}
+      <section className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl px-6 py-4 text-white shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <h2 className="text-base font-black tracking-tight flex items-center gap-2">
+              <FileSpreadsheet size={18} /> Mass Bulk Email Broadcast
+            </h2>
+            <p className="text-xs text-indigo-100 font-medium">
+              Upload your student email dataset in CSV/Excel format or download our ready sample template.
             </p>
           </div>
 
           <button
             type="button"
             onClick={downloadSampleCsv}
-            className="px-5 py-3 bg-white text-indigo-700 hover:bg-indigo-50 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:scale-105 active:scale-95 shrink-0 cursor-pointer"
+            className="px-4 py-2 bg-white text-indigo-700 hover:bg-indigo-50 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
           >
-            <Download size={16} /> Download Sample CSV Template
+            <Download size={14} /> Download Sample CSV
           </button>
         </div>
       </section>
@@ -509,8 +479,8 @@ function BulkMailSection() {
           <section className={card}>
             <div className={cardHead}>
               <div className="flex items-center gap-2">
-                <Users size={16} className="text-indigo-600 dark:text-indigo-400" />
-                <h2 className={headText}>Broadcast Campaign Details</h2>
+                <Users size={15} className="text-indigo-600 dark:text-indigo-400" />
+                <h2 className={headText}>Broadcast Details</h2>
               </div>
             </div>
 
@@ -541,62 +511,57 @@ function BulkMailSection() {
               <div>
                 <label className={label}>Message Body *</label>
                 <textarea
-                  className={`${input} min-h-[130px]`}
+                  className={`${input} min-h-[120px]`}
                   placeholder="Dear Students, we are pleased to invite you to..."
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                 />
               </div>
 
-              {/* INTERACTIVE DRAG & DROP ZONE */}
+              {/* FILE DROPZONE */}
               <div>
                 <label className={label}>Upload Student CSV / Excel File *</label>
-                <div className="mt-2 border-3 border-dashed border-indigo-300 dark:border-indigo-800 hover:border-indigo-500 rounded-2xl p-6 text-center bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all relative group cursor-pointer">
+                <div className="mt-1.5 border-2 border-dashed border-indigo-300 dark:border-indigo-800 hover:border-indigo-500 rounded-xl p-5 text-center bg-indigo-50/30 dark:bg-indigo-950/20 transition relative group cursor-pointer">
                   <input
                     type="file"
                     accept=".csv, .xlsx, .xls"
                     onChange={handleFileUpload}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
                   />
-                  <Upload className="mx-auto text-indigo-600 dark:text-indigo-400 mb-2 group-hover:scale-110 transition-transform" size={28} />
+                  <Upload className="mx-auto text-indigo-600 dark:text-indigo-400 mb-1.5" size={24} />
                   <p className="text-xs font-black text-slate-800 dark:text-slate-200">
-                    Click to browse or drag & drop student CSV file here
+                    Click or drag & drop student CSV file here
                   </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                    Format: <code className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">email, name, phone, course</code>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                    Format: <code className="font-mono font-bold text-indigo-600 dark:text-indigo-400">email, name, phone, course</code>
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t-2 border-slate-100 dark:border-slate-800 pt-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                    Students Loaded:
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-black">
-                    {recipients.length} Recipient(s)
-                  </span>
-                </div>
+              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                  Recipients: <span className="text-indigo-600 font-extrabold">{recipients.length}</span>
+                </span>
 
                 <button
                   type="submit"
                   disabled={sending || recipients.length === 0}
-                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer"
+                  className="px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
-                  {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  Launch Mass Email Broadcast
+                  {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                  Launch Mass Broadcast ({recipients.length})
                 </button>
               </div>
             </form>
           </section>
         </div>
 
-        {/* INTERACTIVE RECIPIENT LIST PREVIEW */}
+        {/* RECIPIENTS LIST PREVIEW */}
         <div>
           <section className={card}>
             <div className={cardHead}>
               <div className="flex items-center gap-2">
-                <Users size={16} className="text-indigo-600 dark:text-indigo-400" />
+                <Users size={15} className="text-indigo-600 dark:text-indigo-400" />
                 <h2 className={headText}>Recipients List ({recipients.length})</h2>
               </div>
             </div>
@@ -607,7 +572,7 @@ function BulkMailSection() {
                   <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search student name or email..."
+                    placeholder="Search name or email..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800 outline-none"
@@ -615,38 +580,32 @@ function BulkMailSection() {
                 </div>
               )}
 
-              <div className="max-h-[420px] overflow-y-auto space-y-2 pr-1">
+              <div className="max-h-[380px] overflow-y-auto space-y-2 pr-1">
                 {recipients.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400 text-xs font-medium space-y-2">
-                    <FileSpreadsheet className="mx-auto text-slate-300 dark:text-slate-700" size={32} />
+                  <div className="text-center py-12 text-slate-400 text-xs font-medium space-y-2">
+                    <FileSpreadsheet className="mx-auto text-slate-300 dark:text-slate-700" size={30} />
                     <p>No student records loaded.</p>
-                    <p className="text-[11px]">Upload a CSV file to preview student rows here.</p>
                   </div>
                 ) : (
                   filteredRecipients.map((r, idx) => (
                     <div
                       key={idx}
-                      className="p-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between text-xs hover:border-indigo-200 transition"
+                      className="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between text-xs hover:border-indigo-200 transition"
                     >
                       <div className="min-w-0 pr-2">
                         <p className="font-extrabold text-slate-900 dark:text-slate-100 truncate">
                           {r.name || "Student"}
                         </p>
                         <p className="text-slate-500 font-mono text-[11px] truncate">{r.email}</p>
-                        {r.course && (
-                          <span className="inline-block mt-0.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                            {r.course}
-                          </span>
-                        )}
                       </div>
 
                       <button
                         type="button"
                         onClick={() => removeRecipient(idx)}
-                        className="text-slate-400 hover:text-red-600 p-1 transition shrink-0"
+                        className="text-slate-400 hover:text-red-600 p-1 transition shrink-0 cursor-pointer"
                         title="Remove row"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   ))
@@ -693,37 +652,35 @@ function AutoReplySection() {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-3.5 text-sm text-red-800 dark:text-red-300 font-semibold">
-          <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600" /> {error}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-300 font-semibold">
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" /> {error}
         </div>
       )}
       {success && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-5 py-3.5 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
+          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
         </div>
       )}
 
       <section className={card}>
         <div className={cardHead}>
           <div className="flex items-center gap-2">
-            <span className="h-6 px-2 rounded-md bg-indigo-600 text-white text-[11px] font-black">
-              OPTION #3
-            </span>
-            <h2 className={headText}>Automated Reply Triggers</h2>
+            <Zap size={15} className="text-indigo-600 dark:text-indigo-400" />
+            <h2 className={headText}>Automated Reply Rules</h2>
           </div>
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between rounded-2xl border-2 border-indigo-100 dark:border-slate-800 p-6 bg-gradient-to-r from-indigo-50/40 to-slate-50/40 dark:from-slate-900 dark:to-slate-800/40">
-            <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                <Sparkles size={22} />
+          <div className="flex items-center justify-between rounded-2xl border border-indigo-100 dark:border-slate-800 p-5 bg-gradient-to-r from-indigo-50/40 to-slate-50/40 dark:from-slate-900 dark:to-slate-800/40">
+            <div className="flex items-start gap-3.5">
+              <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles size={18} />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">
                   Instant Automated Follow-Up on Lead Capture
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xl font-medium">
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xl font-medium">
                   When enabled, any visitor or student leaving their email during a voice agent call or conversation will automatically receive an instant follow-up response.
                 </p>
               </div>
@@ -735,13 +692,13 @@ function AutoReplySection() {
               aria-checked={autoReply}
               disabled={saving}
               onClick={toggleAutoReply}
-              className={`relative h-8 w-14 rounded-full transition-all duration-300 cursor-pointer ${
-                autoReply ? "bg-indigo-600 ring-4 ring-indigo-500/20" : "bg-slate-300 dark:bg-slate-700"
+              className={`relative h-7 w-12 rounded-full transition-all cursor-pointer ${
+                autoReply ? "bg-indigo-600 ring-2 ring-indigo-500/20" : "bg-slate-300 dark:bg-slate-700"
               }`}
             >
               <span
-                className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-all duration-300 ${
-                  autoReply ? "left-[28px]" : "left-1"
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-xs transition-all ${
+                  autoReply ? "left-[24px]" : "left-1"
                 }`}
               />
             </button>
@@ -818,13 +775,13 @@ function ScheduledSection() {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-3.5 text-sm text-red-800 dark:text-red-300 font-semibold">
-          <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600" /> {error}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-300 font-semibold">
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" /> {error}
         </div>
       )}
       {success && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-5 py-3.5 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
+          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
         </div>
       )}
 
@@ -834,21 +791,19 @@ function ScheduledSection() {
           <section className={card}>
             <div className={cardHead}>
               <div className="flex items-center gap-2">
-                <span className="h-6 px-2 rounded-md bg-indigo-600 text-white text-[11px] font-black">
-                  OPTION #4
-                </span>
+                <Clock size={15} className="text-indigo-600 dark:text-indigo-400" />
                 <h2 className={headText}>Scheduled Send & Calendar Integration</h2>
               </div>
             </div>
 
             <form onSubmit={handleScheduleSubmit} className="p-6 space-y-5">
-              <div className="flex items-center gap-3 border-b-2 border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <button
                   type="button"
                   onClick={() => setScheduleMode("manual")}
-                  className={`px-4 py-2 rounded-xl text-xs font-black transition ${
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
                     scheduleMode === "manual"
-                      ? "bg-indigo-600 text-white shadow-md"
+                      ? "bg-indigo-600 text-white shadow-xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                   }`}
                 >
@@ -857,9 +812,9 @@ function ScheduledSection() {
                 <button
                   type="button"
                   onClick={() => setScheduleMode("bulk")}
-                  className={`px-4 py-2 rounded-xl text-xs font-black transition ${
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
                     scheduleMode === "bulk"
-                      ? "bg-indigo-600 text-white shadow-md"
+                      ? "bg-indigo-600 text-white shadow-xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                   }`}
                 >
@@ -912,16 +867,16 @@ function ScheduledSection() {
                 />
               </div>
 
-              <div className="flex items-center justify-between border-t-2 border-slate-100 dark:border-slate-800 pt-4">
-                <span className="text-xs font-extrabold text-slate-500 font-mono">
-                  Selected Target: {new Date(scheduledAt).toLocaleString()}
+              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
+                <span className="text-xs font-bold text-slate-500 font-mono">
+                  Target: {new Date(scheduledAt).toLocaleString()}
                 </span>
                 <button
                   type="submit"
                   disabled={scheduling}
-                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black rounded-xl transition flex items-center gap-2 shadow-lg active:scale-95 cursor-pointer"
+                  className="px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shadow-xs cursor-pointer"
                 >
-                  {scheduling ? <Loader2 size={16} className="animate-spin" /> : <Clock size={16} />}
+                  {scheduling ? <Loader2 size={15} className="animate-spin" /> : <Clock size={15} />}
                   Schedule Dispatch
                 </button>
               </div>
@@ -929,7 +884,7 @@ function ScheduledSection() {
           </section>
         </div>
 
-        {/* EMBEDDED INTERACTIVE CALENDAR */}
+        {/* EMBEDDED CALENDAR */}
         <div>
           <CalendarPicker
             selectedDateTime={scheduledAt}
@@ -942,42 +897,42 @@ function ScheduledSection() {
       <section className={card}>
         <div className={cardHead}>
           <div className="flex items-center gap-2">
-            <CalendarIcon size={16} className="text-indigo-600 dark:text-indigo-400" />
-            <h2 className={headText}>Scheduled Dispatches Queue ({dispatches.length})</h2>
+            <CalendarIcon size={15} className="text-indigo-600 dark:text-indigo-400" />
+            <h2 className={headText}>Scheduled Queue ({dispatches.length})</h2>
           </div>
         </div>
         <div className="p-6">
           {dispatches.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-xs font-medium">
+            <div className="text-center py-8 text-slate-400 text-xs font-medium">
               No scheduled dispatches in queue.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b-2 border-slate-100 dark:border-slate-800">
-                    <th className="py-2.5 pr-4">Type / Name</th>
-                    <th className="py-2.5 pr-4">Subject</th>
-                    <th className="py-2.5 pr-4">Scheduled Date & Time</th>
-                    <th className="py-2.5 pr-4">Status</th>
-                    <th className="py-2.5 text-right">Action</th>
+                  <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                    <th className="py-2 pr-4 font-extrabold">Type / Name</th>
+                    <th className="py-2 pr-4 font-extrabold">Subject</th>
+                    <th className="py-2 pr-4 font-extrabold">Scheduled Date & Time</th>
+                    <th className="py-2 pr-4 font-extrabold">Status</th>
+                    <th className="py-2 text-right font-extrabold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-700 dark:text-slate-300">
                   {dispatches.map((item) => (
                     <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800">
-                      <td className="py-3 pr-4 font-bold text-xs">
+                      <td className="py-2.5 pr-4 font-bold text-xs">
                         {item.type === "bulk" ? item.campaign_name || "Bulk Campaign" : item.recipient || "Single Email"}
                       </td>
-                      <td className="py-3 pr-4 text-xs font-medium">{item.subject}</td>
-                      <td className="py-3 pr-4 text-xs font-mono">
+                      <td className="py-2.5 pr-4 text-xs font-medium">{item.subject}</td>
+                      <td className="py-2.5 pr-4 text-xs font-mono">
                         {new Date(item.scheduled_at).toLocaleString()}
                       </td>
-                      <td className="py-3 pr-4">{statusPill(item.status)}</td>
-                      <td className="py-3 text-right">
+                      <td className="py-2.5 pr-4">{statusPill(item.status)}</td>
+                      <td className="py-2.5 text-right">
                         <button
                           onClick={() => handleCancel(item.id)}
-                          className="text-xs text-red-600 hover:text-red-700 font-bold"
+                          className="text-xs text-red-600 hover:text-red-700 font-bold cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -1050,17 +1005,15 @@ function TemplatesSection() {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-5 py-3.5 text-sm text-amber-800 dark:text-amber-300 font-semibold">
-          <AlertCircle size={18} className="mt-0.5 shrink-0 text-amber-600" /> {error}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300 font-semibold">
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" /> {error}
         </div>
       )}
 
       <section className={card}>
         <div className={cardHead}>
           <div className="flex items-center gap-2">
-            <span className="h-6 px-2 rounded-md bg-indigo-600 text-white text-[11px] font-black">
-              OPTION #5
-            </span>
+            <FileText size={15} className="text-indigo-600 dark:text-indigo-400" />
             <h2 className={headText}>Create Custom Template</h2>
           </div>
         </div>
@@ -1098,7 +1051,7 @@ function TemplatesSection() {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer"
             >
               {saving && <Loader2 size={14} className="animate-spin" />} Save Template
             </button>
@@ -1109,7 +1062,7 @@ function TemplatesSection() {
       <section className={card}>
         <div className={cardHead}>
           <div className="flex items-center gap-2">
-            <FileText size={16} className="text-indigo-600 dark:text-indigo-400" />
+            <FileText size={15} className="text-indigo-600 dark:text-indigo-400" />
             <h2 className={headText}>Saved Templates Library ({templates.length})</h2>
           </div>
         </div>
@@ -1120,7 +1073,7 @@ function TemplatesSection() {
             </div>
           ) : templates.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="mx-auto text-slate-300 dark:text-slate-700" size={36} />
+              <FileText className="mx-auto text-slate-300 dark:text-slate-700" size={32} />
               <p className="mt-3 text-sm font-bold text-slate-800 dark:text-slate-200">
                 No custom templates created yet.
               </p>
@@ -1130,7 +1083,7 @@ function TemplatesSection() {
               {templates.map((t) => (
                 <div
                   key={t.id}
-                  className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-start justify-between gap-3"
+                  className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-start justify-between gap-3"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-black text-slate-900 dark:text-slate-100 truncate">
@@ -1144,7 +1097,7 @@ function TemplatesSection() {
                     onClick={() => remove(t.id)}
                     className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition cursor-pointer shrink-0"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
               ))}
@@ -1271,13 +1224,13 @@ function SenderConfigSection() {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-3.5 text-sm text-red-800 dark:text-red-300 font-semibold">
-          <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600" /> {error}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-300 font-semibold">
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" /> {error}
         </div>
       )}
       {success && (
-        <div className="flex items-start gap-2.5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-5 py-3.5 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 font-semibold">
+          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /> {success}
         </div>
       )}
 
@@ -1285,9 +1238,7 @@ function SenderConfigSection() {
       <section className={card}>
         <div className={cardHead}>
           <div className="flex items-center gap-2">
-            <span className="h-6 px-2 rounded-md bg-indigo-600 text-white text-[11px] font-black">
-              OPTION #6
-            </span>
+            <ShieldCheck size={15} className="text-indigo-600 dark:text-indigo-400" />
             <h2 className={headText}>Sender Identity Configuration</h2>
           </div>
         </div>
@@ -1337,9 +1288,9 @@ function SenderConfigSection() {
             <button
               type="submit"
               disabled={saving}
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+              className="px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-black rounded-xl transition-all shadow-xs cursor-pointer"
             >
-              {saving && <Loader2 size={16} className="animate-spin" />} Save Configuration
+              {saving && <Loader2 size={15} className="animate-spin" />} Save Configuration
             </button>
           </div>
         </form>
@@ -1349,7 +1300,7 @@ function SenderConfigSection() {
       <section className={card}>
         <div className={`${cardHead} justify-between`}>
           <div className="flex items-center gap-2">
-            <Globe size={16} className="text-indigo-600 dark:text-indigo-400" />
+            <Globe size={15} className="text-indigo-600 dark:text-indigo-400" />
             <h2 className={headText}>Sending Domain & Interactive DNS Verification</h2>
           </div>
           <div className="flex items-center gap-3">
@@ -1357,9 +1308,10 @@ function SenderConfigSection() {
             <button
               onClick={verify}
               disabled={verifying}
-              className="px-4 py-2 text-xs font-black rounded-xl border-2 border-indigo-200 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-bold rounded-xl border border-indigo-200 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
             >
-              {verifying ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Verify
+              {verifying ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}{" "}
+              Verify
             </button>
           </div>
         </div>
@@ -1375,28 +1327,28 @@ function SenderConfigSection() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b-2 border-slate-100 dark:border-slate-800">
-                    <th className="py-2.5 pr-4 font-extrabold">Type</th>
-                    <th className="py-2.5 pr-4 font-extrabold">Host / Name</th>
-                    <th className="py-2.5 pr-4 font-extrabold">Value / Record Content</th>
-                    <th className="py-2.5 pr-4 font-extrabold">Status</th>
-                    <th className="py-2.5 text-right font-extrabold">Action</th>
+                  <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                    <th className="py-2 pr-4 font-extrabold">Type</th>
+                    <th className="py-2 pr-4 font-extrabold">Host / Name</th>
+                    <th className="py-2 pr-4 font-extrabold">Value / Record Content</th>
+                    <th className="py-2 pr-4 font-extrabold">Status</th>
+                    <th className="py-2 text-right font-extrabold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-700 dark:text-slate-300">
                   {dnsRecords.map((r, i) => (
                     <tr key={i} className="border-t border-slate-100 dark:border-slate-800 align-top">
-                      <td className="py-3 pr-4 font-mono text-xs font-bold">
+                      <td className="py-2.5 pr-4 font-mono text-xs font-bold">
                         {String(r.type ?? r.record ?? "—")}
                       </td>
-                      <td className="py-3 pr-4 font-mono text-xs font-bold break-all">
+                      <td className="py-2.5 pr-4 font-mono text-xs font-bold break-all">
                         {String(r.name ?? "—")}
                       </td>
-                      <td className="py-3 pr-4 font-mono text-xs break-all max-w-xs">
+                      <td className="py-2.5 pr-4 font-mono text-xs break-all max-w-xs">
                         {String(r.value ?? "—")}
                       </td>
-                      <td className="py-3 pr-4">{statusPill((r.status as string) ?? null)}</td>
-                      <td className="py-3 text-right">
+                      <td className="py-2.5 pr-4">{statusPill((r.status as string) ?? null)}</td>
+                      <td className="py-2.5 text-right">
                         <button
                           type="button"
                           onClick={() => copyText(String(r.value ?? ""), i)}
