@@ -40,3 +40,4 @@ lint_output.txt
 .env
 .env.local
 .env*.local
+.vercel
