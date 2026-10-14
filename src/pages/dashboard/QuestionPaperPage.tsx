@@ -52,7 +52,7 @@ function QuestionWorkspace({institution}:{institution:string}){
   const navigate=useNavigate();
   const requestedView=new URLSearchParams(location.search).get('view');
   const generationPage=location.pathname.endsWith('/paper-generation');
-  const routeTab=['review','drafts'].includes(requestedView||'')?'bank':requestedView==='home'?'academic':requestedView||(generationPage?'blueprint':location.pathname.endsWith('/question-bank')?'bank':'academic');
+  const routeTab=['review','drafts'].includes(requestedView||'')?'bank':requestedView==='home'?'academic':requestedView||(generationPage?'blueprint':'academic');
   const [tab,setTabState]=useState(routeTab);
   useEffect(()=>{setTabState(routeTab);},[routeTab]);
   const generationWorkspace=generationPage||(!location.pathname.endsWith('/question-bank')&&['blueprint','papers','templates'].includes(tab));
