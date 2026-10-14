@@ -1,3 +1,4 @@
+import {UserFacingError} from '@/lib/userFacingError';
 import {createUuid} from '@/lib/uuid';
 import axios from 'axios';
 import { apiClient } from './apiClient';
@@ -34,6 +35,7 @@ export const collegeApi = {
   },
 };
 export function collegeError(error: unknown): string {
+  if (error instanceof UserFacingError) return error.message;
   if (axios.isAxiosError(error)) {
     const detail = error.response?.data?.detail;
     if (typeof detail === 'string') return detail;

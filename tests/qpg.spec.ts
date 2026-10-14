@@ -388,7 +388,9 @@ test('final paper review approves, locks, exports and shows immutable history',a
  await expect(page.getByRole('button',{name:'Save Draft',exact:true})).toHaveCount(0);
  await page.getByRole('button',{name:'Finalize and Lock',exact:true}).click();
  await expect(page.getByRole('button',{name:'Replace Question',exact:true})).toHaveCount(0);
+ const exportRequest=page.waitForRequest(request=>new URL(request.url()).pathname.endsWith('/papers/p1/export'));
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export PDF',exact:true}).click();
+ const exportQuery=new URL((await exportRequest).url()).searchParams;expect(exportQuery.get('template_id')).toBe('university');expect(exportQuery.get('format')).toBe('PDF');
  await expect((await download).suggestedFilename()).toContain('question-paper-v1-r3.pdf');
  await page.getByText('Revision History',{exact:true}).click();
  await expect(page.getByText('Reviewed the complete paper.',{exact:true})).toBeVisible();
@@ -687,7 +689,7 @@ async function officialExportSetup(page:Page,allowAnswers=true,failure=false){
 }
 
 test('locked student and answer documents PDF DOCX preview and export history',async({page})=>{
- const {records,requests}=await officialExportSetup(page);const dialog=page.getByRole('dialog',{name:'Download Final Paper'});await dialog.getByLabel('Export template').selectOption('tpl1');await dialog.getByRole('button',{name:'Preview Document'}).click();await expect(dialog.getByRole('article',{name:'Document Preview'})).toBeVisible();await expect(dialog.getByText('Answer / solution:',{exact:false})).toHaveCount(0);
+ const {records,requests}=await officialExportSetup(page);const dialog=page.getByRole('dialog',{name:'Download Final Paper'});await expect(dialog.getByLabel('Export template')).toHaveValue('university');await dialog.getByLabel('Export template').selectOption('tpl1');await dialog.getByRole('button',{name:'Preview Document'}).click();await expect(dialog.getByRole('article',{name:'Document Preview'})).toBeVisible();await expect(dialog.getByText('Answer / solution:',{exact:false})).toHaveCount(0);
  for(const [kind,format] of [['STUDENT','PDF'],['STUDENT','DOCX'],['ANSWER','PDF'],['ANSWER','DOCX']]){
   await dialog.getByRole('radio',{name:`${kind==='ANSWER'?'Answer Key':'Student Paper'} ${format}`,exact:true}).check();
   if(kind==='ANSWER'){await dialog.getByRole('button',{name:'Preview Document'}).click();await expect(dialog.getByText('Answer / solution: Stored faculty solution.',{exact:true})).toBeVisible();}

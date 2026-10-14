@@ -9,7 +9,7 @@ import type {RenderModel} from './QpgRenderPreview';
 import type {PaperTemplate} from './QpgTemplatesPanel';
 type ExportRecord={id:string;revision:number;format:string;document_type:string;template_name:string;template_version:number;created_at:string;sha256:string;byte_size:number;warnings:string[]};
 export default function QpgExportPanel({paper,canWrite}:{paper:{id:string;title:string;version:number;revision:number;status:string};canWrite:boolean}){
- const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[templates,setTemplates]=useState<PaperTemplate[]>([]),[history,setHistory]=useState<ExportRecord[]>([]),[answers,setAnswers]=useState(false),[template,setTemplate]=useState('default'),[format,setFormat]=useState('PDF'),[kind,setKind]=useState('STUDENT'),[preview,setPreview]=useState<RenderModel|null>(null);
+ const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[templates,setTemplates]=useState<PaperTemplate[]>([]),[history,setHistory]=useState<ExportRecord[]>([]),[answers,setAnswers]=useState(false),[template,setTemplate]=useState('university'),[format,setFormat]=useState('PDF'),[kind,setKind]=useState('STUDENT'),[preview,setPreview]=useState<RenderModel|null>(null);
  const path=`papers/${paper.id}`;
  const allowedAnswers=answers&&canWrite;
  const selectedKind=allowedAnswers?kind:'STUDENT';
