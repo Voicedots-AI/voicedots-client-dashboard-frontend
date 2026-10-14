@@ -26,7 +26,7 @@
 #result-candidate-table[data-layout=results] th,#result-candidate-table[data-layout=results] td{padding:10px 12px;vertical-align:middle;line-height:18px;overflow:hidden}
 #result-candidate-table[data-layout=results] th{font-size:12px;letter-spacing:0;text-transform:none}
 #result-candidate-table[data-layout=results] th:nth-child(1){width:240px}#result-candidate-table[data-layout=results] th:nth-child(2){width:120px}#result-candidate-table[data-layout=results] th:nth-child(3){width:390px}#result-candidate-table[data-layout=results] th:nth-child(4){width:100px}#result-candidate-table[data-layout=results] th:nth-child(5){width:130px}#result-candidate-table[data-layout=results] th:nth-child(6){width:100px}#result-candidate-table[data-layout=results] th:nth-child(7){width:260px}
-#result-candidate-table[data-layout=results] td span.rounded-full{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 7px;font-size:12px;vertical-align:middle}
+#result-candidate-table[data-layout=results] td span.rounded-full:not(.candidate-avatar){display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 7px;font-size:12px;vertical-align:middle}
 #result-candidate-table[data-layout=results] tbody tr:nth-child(even){background:#fafaff}
 .compact-table-candidate{display:flex;align-items:center;gap:8px;min-width:0}
 .compact-table-candidate strong,.compact-table-candidate p{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

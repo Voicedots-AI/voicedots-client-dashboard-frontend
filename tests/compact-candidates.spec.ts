@@ -85,6 +85,19 @@ test('original stacked cards preserve evidence, avatars align and the table stay
     await page.getByRole('button', { name: 'Table', exact: true }).click();
     const table = page.locator('#result-candidate-table');
     await expect(table.getByRole('columnheader')).toHaveCount(7);
+    const initials = table.locator('span.candidate-avatar').first();
+    await expect(initials).toBeVisible();
+    const alignment = await initials.evaluate(element => {
+      const style = getComputedStyle(element);
+      const range = document.createRange(); range.selectNodeContents(element);
+      const text = range.getBoundingClientRect(), avatar = element.getBoundingClientRect();
+      return { display: style.display, padding: style.padding, dx: Math.abs(text.x + text.width / 2 - avatar.x - avatar.width / 2), dy: Math.abs(text.y + text.height / 2 - avatar.y - avatar.height / 2) };
+    });
+    expect(['flex', 'inline-flex']).toContain(alignment.display);
+    expect(alignment.padding).toBe('0px');
+    expect(alignment.dx).toBeLessThan(1);
+    expect(alignment.dy).toBeLessThan(3);
+
     await expect(table.locator('tbody tr').first().getByRole('button',{name:'ATS Fit & Resume Evidence',exact:true})).toBeVisible();
     await expect(table.locator('tbody tr').first().getByRole('button',{name:'ATS Fit',exact:true})).toBeVisible();
     await expect(table.getByRole('columnheader', { name: 'Integrity', exact: true })).toHaveCount(0);
