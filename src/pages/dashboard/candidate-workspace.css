@@ -16,16 +16,16 @@
 .compact-ats{display:grid;gap:6px;min-width:0;font-size:12px;line-height:18px}
 .compact-ats-heading,.compact-ats-keywords,.compact-ats-skills{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
 .compact-ats-status{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b}
-.compact-evidence,.compact-more{color:#7c3aed;font-weight:600;border-radius:4px}
-.compact-evidence:hover,.compact-more:hover{text-decoration:underline;background:#f5f3ff}
-.compact-evidence:focus-visible,.compact-more:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
+.compact-more{color:#7c3aed;font-weight:600;border-radius:4px}
+.compact-more:hover{text-decoration:underline;background:#f5f3ff}
+.compact-more:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
 .compact-skill{display:block;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 6px;border-radius:4px}
 .compact-ats-skills.matching .compact-skill{background:#ecfdf5;color:#047857}.compact-ats-skills.missing .compact-skill{background:#fff1f2;color:#be123c}
 .compact-more{white-space:nowrap}
-#result-candidate-table[data-layout=results] table{table-layout:fixed;min-width:1190px;font-size:13px}
+#result-candidate-table[data-layout=results] table{table-layout:fixed;min-width:1340px;font-size:13px}
 #result-candidate-table[data-layout=results] th,#result-candidate-table[data-layout=results] td{padding:10px 12px;vertical-align:middle;line-height:18px;overflow:hidden}
 #result-candidate-table[data-layout=results] th{font-size:12px;letter-spacing:0;text-transform:none}
-#result-candidate-table[data-layout=results] th:nth-child(1){width:250px}#result-candidate-table[data-layout=results] th:nth-child(2){width:135px}#result-candidate-table[data-layout=results] th:nth-child(3){width:320px}#result-candidate-table[data-layout=results] th:nth-child(4){width:110px}#result-candidate-table[data-layout=results] th:nth-child(5){width:140px}#result-candidate-table[data-layout=results] th:nth-child(6){width:115px}#result-candidate-table[data-layout=results] th:nth-child(7){width:145px}
+#result-candidate-table[data-layout=results] th:nth-child(1){width:240px}#result-candidate-table[data-layout=results] th:nth-child(2){width:120px}#result-candidate-table[data-layout=results] th:nth-child(3){width:390px}#result-candidate-table[data-layout=results] th:nth-child(4){width:100px}#result-candidate-table[data-layout=results] th:nth-child(5){width:130px}#result-candidate-table[data-layout=results] th:nth-child(6){width:100px}#result-candidate-table[data-layout=results] th:nth-child(7){width:260px}
 #result-candidate-table[data-layout=results] td span.rounded-full{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 7px;font-size:12px;vertical-align:middle}
 #result-candidate-table[data-layout=results] tbody tr:nth-child(even){background:#fafaff}
 .compact-table-candidate{display:flex;align-items:center;gap:8px;min-width:0}
@@ -33,15 +33,17 @@
 .compact-table-candidate strong{font-size:13px;font-weight:600}.compact-table-candidate p{font-size:12px;color:#64748b}
 .compact-table-status,.compact-table-scores{display:grid;justify-items:start;gap:4px}
 .compact-table-scores{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#64748b}.compact-table-scores strong{color:#334155}
-.compact-table-actions{display:grid;justify-items:start;gap:2px}
-#result-candidate-table[data-layout=results] .compact-table-actions button{border:0;padding:0;font-size:12px;line-height:16px;font-weight:500;color:#7c3aed;background:transparent}
+.compact-table-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:4px}
+#result-candidate-table[data-layout=results] .compact-table-actions button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border:1px solid #e2e8f0;border-radius:7px;padding:2px 6px;font-size:12px;line-height:18px;font-weight:500;color:#6d28d9;background:#fff;transition:background .15s,border-color .15s}#result-candidate-table[data-layout=results] .compact-table-actions button:hover{background:#f5f3ff;border-color:#c4b5fd}#result-candidate-table[data-layout=results] .compact-table-actions button:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
 #result-candidate-table[data-layout=results] .table-ats{gap:4px}
 #result-candidate-table[data-layout=results] .compact-ats-heading{flex-wrap:nowrap;gap:5px}
-#result-candidate-table[data-layout=results] .compact-ats-status{max-width:105px}
+#result-candidate-table[data-layout=results] .compact-ats-status{max-width:85px}
 #result-candidate-table[data-layout=results] .compact-ats-keywords{flex-wrap:nowrap;overflow:hidden;gap:4px}
 #result-candidate-table[data-layout=results] .compact-ats-skills{flex-wrap:nowrap;gap:3px;flex-shrink:1;overflow:hidden}
 #result-candidate-table[data-layout=results] .compact-skill{max-width:100px;min-width:0;flex-shrink:1}
 #result-candidate-table[data-layout=results] .compact-more{flex-shrink:0;font-size:12px}
+.resume-evidence-trigger{flex-shrink:0}.resume-evidence-label{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;line-height:18px;padding:2px 8px}
+#result-candidate-table[data-layout=results] .resume-evidence-label{font-size:11px}
 @media(max-width:700px){#result-candidate-cards.candidate-card-grid{gap:12px}#result-candidate-cards header{padding:16px;display:grid;grid-template-columns:16px 44px minmax(0,1fr);gap:10px}#result-candidate-cards header>button{grid-column:2/-1;justify-self:start}#result-candidate-cards .result-evidence-rows>div{grid-template-columns:minmax(0,1fr);gap:6px;padding:12px 16px}.compact-skill{max-width:145px}}
 
 .assessment-report-reference .assessment-reference-summary,.assessment-reference-layout{gap:16px}

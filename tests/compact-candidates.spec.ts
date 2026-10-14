@@ -54,15 +54,19 @@ test('original stacked cards preserve evidence, avatars align and the table stay
   await expect(first.locator('.matching .compact-skill')).toHaveCount(2);
   await expect(first.locator('.missing .compact-skill')).toHaveCount(2);
   await expect(first.getByRole('button', { name: 'View details', exact: true })).toHaveCount(0);
-  await expect(first.getByText('AI Proctor', { exact: true })).toBeVisible();
+  await expect(first.getByText('AI Proctor', { exact: true })).toHaveCount(0);
   await expect(first.getByText('Interview rounds', { exact: true })).toBeVisible();
-  await expect(first.getByText('Student result', { exact: true })).toBeVisible();
+  await expect(first.getByText('Student result', { exact: true })).toHaveCount(0);
   const avatar = first.locator('.candidate-avatar');
   await expect(avatar).toHaveText('AS');
   const alignment = await avatar.evaluate(element => {const css=getComputedStyle(element);return {align:css.alignItems,justify:css.justifyContent,line:css.lineHeight,height:element.getBoundingClientRect().height,width:element.getBoundingClientRect().width};});
   expect(alignment.align).toBe('center'); expect(alignment.justify).toBe('center'); expect(alignment.height).toBe(alignment.width);
   await expect(cards.nth(1).getByText('Resume Not Available', { exact: true })).toBeVisible();
-  await first.getByRole('button', { name: 'ATS Fit & Resume Evidence', exact: true }).click();
+  await first.getByRole('button', { name: 'ATS Fit & Resume Evidence', exact: true }).hover();
+  const popup = page.getByRole('dialog', {name: 'Resume match for Ananya Sharma'});
+  await expect(popup).toBeVisible();
+  await expect(popup.getByText('Resume strengths', {exact:true})).toBeVisible();
+  await popup.getByRole('button', {name:'View full ATS analysis',exact:true}).click();
   await expect(page.getByRole('dialog', { name: 'ATS fit details for Ananya Sharma' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Original resume', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Close ATS fit', exact: true }).click();
@@ -81,6 +85,8 @@ test('original stacked cards preserve evidence, avatars align and the table stay
     await page.getByRole('button', { name: 'Table', exact: true }).click();
     const table = page.locator('#result-candidate-table');
     await expect(table.getByRole('columnheader')).toHaveCount(7);
+    await expect(table.locator('tbody tr').first().getByRole('button',{name:'ATS Fit & Resume Evidence',exact:true})).toBeVisible();
+    await expect(table.locator('tbody tr').first().getByRole('button',{name:'ATS Fit',exact:true})).toBeVisible();
     await expect(table.getByRole('columnheader', { name: 'Integrity', exact: true })).toHaveCount(0);
     await expect(table.locator('tbody tr').first().locator('.matching .compact-skill')).toHaveCount(2);
     await expect(table.locator('tbody tr').first().locator('.missing .compact-skill')).toHaveCount(1);
@@ -182,4 +188,39 @@ test('officer decision remains editable and saves without publishing the result'
   await page.getByRole('button', { name: 'Save decision & note', exact: true }).click();
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0]).toEqual({ path: '/v3/college/drives/preview-drive/candidates/preview-student/decision', body: { decision: 'shortlist', note: 'Review approved' } });
+});
+
+test('styled ATS evidence labels support hover, keyboard, touch and full analysis from both views', async ({page}) => {
+  await setup(page);
+  const cards=page.locator('#result-candidate-cards>article');
+  const first=cards.first(), label=first.getByRole('button',{name:'ATS Fit & Resume Evidence',exact:true});
+  const popup=page.getByRole('dialog',{name:'Resume match for Ananya Sharma',exact:true});
+  await label.hover(); await expect(popup).toBeVisible();
+  await expect(popup.getByText('Resume strengths',{exact:true})).toBeVisible();
+  await expect(popup.getByText('Resume gaps',{exact:true})).toBeVisible();
+  const labelStyle=await label.evaluate(element=>({border:getComputedStyle(element).borderTopWidth,background:getComputedStyle(element).backgroundColor}));
+  expect(labelStyle.border).toBe('1px');expect(labelStyle.background).not.toBe('rgba(0, 0, 0, 0)');
+  await popup.hover();await expect(popup).toBeVisible();
+  await page.keyboard.press('Escape');await expect(popup).toHaveCount(0);await expect(label).toBeFocused();
+  await page.getByRole('button',{name:'Table',exact:true}).click();
+  const row=page.locator('#result-candidate-table tbody tr').first();
+  await row.getByRole('button',{name:'ATS Fit & Resume Evidence',exact:true}).hover();await expect(popup).toBeVisible();
+  await popup.getByRole('button',{name:'View full ATS analysis',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'ATS fit details for Ananya Sharma',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Close ATS fit',exact:true}).click();
+  for (const name of ['Full Report','ATS Fit','Manage Attempts','Set decision']) {
+    const button=row.getByRole('button',{name,exact:true});await expect(button).toBeVisible();
+    expect(await button.evaluate(element=>getComputedStyle(element).borderTopWidth)).toBe('1px');
+  }
+  // The trigger also works for candidates without a resume or completed interview.
+  const pending=page.locator('#result-candidate-table tbody tr').nth(1);
+  await pending.getByRole('button',{name:'ATS Fit & Resume Evidence',exact:true}).focus();
+  await expect(page.getByRole('dialog',{name:'Resume match for Pending Candidate',exact:true}).getByRole('status')).toHaveText('Resume Not Available');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({width:390,height:844});
+  await row.getByRole('button',{name:'ATS Fit & Resume Evidence',exact:true}).click();
+  await expect(popup).toBeVisible();
+  const box=await popup.boundingBox();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(390);
+  await popup.getByRole('button',{name:'Close resume match',exact:true}).click();await expect(popup).toHaveCount(0);
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
 });
