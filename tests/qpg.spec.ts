@@ -850,17 +850,20 @@ test('bound hierarchy generation preserves node and revision identity',async({pa
  await expect(page.getByLabel('Marks per question',{exact:true})).toHaveValue('6');await page.getByRole('button',{name:/^Generate \d+ questions?$/}).click();await expect(page.getByText('Paper binding changed. Refresh the exact node.',{exact:true})).toBeVisible();
 });
 
-async function paperJourney(page:Page,stale=false){
+async function paperJourney(page:Page,stale=false,failedBuild=false){
  await assemblySetup(page);
  const paper=await page.evaluate(async()=>{const r=await fetch('/v3/college/question-papers/papers/p1');return r.json();});
  const candidates=[1,2].map(n=>({id:'r'+n,decision:'PENDING',duplicate:n===2,question_id:null as string|null,review_status:null as string|null,warnings:[],provenance:[],question:{question_text:n===2?'Existing exact duplicate':'Unique first question',question_type:'MCQ',marks:1,co_id:'co1',unit_id:'u1',topic_id:'t1',bloom_level:'K1',difficulty:'EASY',answer:'TCP',options:['TCP','UDP'],rationale:'Syllabus example'}}));
  const build={id:'build1',status:'COMPLETED',revision:1,stale,paper_revision:paper.revision,positions:candidates.map((c,index)=>({item_id:'i'+(index+1),label:String(index+1),section:'Part A',request:{...c.question},job:{id:'j'+(index+1),status:'COMPLETED',revision:1,failure_reason:'',results:[c]}}))};
+ if(failedBuild){build.status='FAILED';build.positions[1].job.status='FAILED';build.positions[1].job.failure_reason='AI request timed out.';build.positions[1].job.results=[];}
+ let retried=false;
  let regenerations=0,saves=0;let failRegeneration=false;
  await page.route(/\/v3\/college\/question-papers\//,async route=>{
   const path=new URL(route.request().url()).pathname,method=route.request().method();let json:unknown;
   if(path.endsWith('/generation-config'))json={enabled:true};
   else if(path.endsWith('/papers'))json={items:[paper]};
   else if(path.endsWith('/ai-build'))json={build};
+  else if(path.endsWith('/retry')){expect(route.request().postDataJSON().expected_revision).toBe(build.revision);retried=true;build.status='COMPLETED';build.positions[1].job.status='COMPLETED';build.positions[1].job.failure_reason='';build.positions[1].job.results=[candidates[1]];build.revision++;json=build;}
   else if(path.endsWith('/rebase')){build.stale=false;build.revision++;json=build;}
   else if(path.endsWith('/regenerate')){
    if(failRegeneration)return route.fulfill({status:409,json:{detail:'Refresh the completed build before replacing a candidate.'}});
@@ -888,7 +891,7 @@ async function paperJourney(page:Page,stale=false){
   return route.fulfill({json});
  });
  await page.getByRole('button',{name:'Question Bank',exact:true}).click();await page.getByRole('button',{name:'Prepare Paper',exact:true}).click();await page.getByRole('button',{name:'Create paper view',exact:true}).click();
- return {paper,build,candidates,regenerations:()=>regenerations,saves:()=>saves,failRegeneration:()=>{failRegeneration=true;}};
+ return {paper,build,candidates,retried:()=>retried,regenerations:()=>regenerations,saves:()=>saves,failRegeneration:()=>{failRegeneration=true;}};
 }
 
 test('AI paper journey recovers duplicate, restores draft after question review, assembles and locks',async({page})=>{
@@ -966,3 +969,13 @@ test('paper pattern editor works without secure-context randomUUID',async({page}
  await page.getByRole('button',{name:'New Pattern',exact:true}).click();
  await page.getByRole('button',{name:'Add section',exact:true}).click();await expect(page.getByLabel('Section name')).toHaveCount(2);
 });
+
+ test('failed AI paper build offers visible regeneration and preserves completed candidates',async({page})=>{
+ const fixture=await paperJourney(page,false,true);const first=JSON.stringify(fixture.build.positions[0]);
+ const panel=page.getByRole('region',{name:'Build paper with AI'});
+ await expect(panel.getByRole('button',{name:'Regenerate failed questions (1)',exact:true})).toBeVisible();
+ await expect(panel.getByText('Select Regenerate failed questions to retry unfinished positions. Completed candidates and saved questions are preserved.',{exact:true})).toBeVisible();
+ await panel.getByRole('button',{name:'Regenerate failed questions (1)',exact:true}).click();
+ await expect.poll(()=>fixture.retried()).toBe(true);expect(JSON.stringify(fixture.build.positions[0])).toBe(first);
+ await expect(panel.getByRole('button',{name:'Regenerate failed questions (1)',exact:true})).toHaveCount(0);
+ });
