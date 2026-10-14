@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import ManageCandidateAttempts from "./ManageCandidateAttempts";
 import EvidenceText from './EvidenceText';
 import { AttemptBadge, attemptValue } from "./CandidateAttemptBadge";
 import { useEffect, useRef, useState } from "react";
@@ -270,7 +271,7 @@ function InterviewStatusBadge({ value }: { value?: string | null }) {
 function settingLabel(value: string) { return displayName(value.replace(/_/g, " ")); }
 function questionSourceLabel(value: string) { return value === "ai_generated" ? "AI Generated" : value === "manual" ? "Manual Questions" : "Personalized AI"; }
 function interviewerRole(drive: Drive | null | undefined, track: string) { return drive?.agent_selection?.find(item => item.track === track)?.profile?.role || roleLabels[track] || "Interviewer role not configured"; }
-function StudentAvatar({ student, size = "h-10 w-10" }: { student: Candidate; size?: string }) { const [photo, setPhoto] = useState(""); const initials=String(student.full_name||"?").trim().split(/\s+/).slice(0,2).map(part=>part[0]||"").join("").toUpperCase(); useEffect(()=>{let active=true;collegeApi.get<{photo?:string}>(`attendance/photos/students/${student.student_id}?optional=true`).then(result=>{if(active)setPhoto(result.photo||"")}).catch(()=>{if(active)setPhoto("")});return()=>{active=false}},[student.student_id]);return photo?<img src={photo} alt={`${student.full_name} profile`} className={`${size} shrink-0 rounded-full object-cover`}/>:<span aria-label={`${student.full_name} initials`} className={`${size} inline-flex shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-800`}>{initials}</span>; }
+function StudentAvatar({ student, size = "h-10 w-10" }: { student: Candidate; size?: string }) { const [photo, setPhoto] = useState(""); const initials=String(student.full_name||"?").trim().split(/\s+/).slice(0,2).map(part=>part[0]||"").join("").toUpperCase(); useEffect(()=>{let active=true;collegeApi.get<{photo?:string}>(`attendance/photos/students/${student.student_id}?optional=true`).then(result=>{if(active)setPhoto(result.photo||"")}).catch(()=>{if(active)setPhoto("")});return()=>{active=false}},[student.student_id]);return photo?<img src={photo} alt={`${student.full_name} profile`} className={`${size} candidate-avatar shrink-0 rounded-full object-cover`}/>:<span aria-label={`${student.full_name} initials`} className={`${size} candidate-avatar inline-flex shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-800`}>{initials}</span>; }
 
 function candidateInterviewStatus(candidate: Candidate): string {
   if (candidate.live_session_status === 'candidate_ended') return candidate.live_session_termination_source === 'proctor' ? 'proctor_terminated' : 'ended_early';
@@ -610,11 +611,15 @@ function atsStatusLabel(status:string) {
   return ({evaluated:'Evaluated',processing:'Processing',resume_not_available:'Resume Not Available',evaluation_failed:'Evaluation Failed',needs_reevaluation:'Needs Re-evaluation'} as Record<string,string>)[status] || 'Needs Re-evaluation';
 }
 
-function ATSMatchInfo({candidate,compact=false}:{candidate:Candidate;compact?:boolean}) {
+function ATSMatchInfo({candidate,compact=false,onOpen}:{candidate:Candidate;compact?:boolean;onOpen:()=>void}) {
   const rows=candidate.skills||[];
   const matched=rows.filter(row=>['FULL_MATCH','RELATED_EVIDENCE'].includes(String(row.match_status)));
   const missing=rows.filter(row=>row.priority==='mandatory'&&['NO_EVIDENCE','WEAK_OR_INFERRED'].includes(String(row.match_status)));
-  return <div className="space-y-2 text-xs" aria-label={`ATS resume fit for ${candidate.full_name}`}><div className="flex flex-wrap items-center gap-2"><span className="font-semibold text-violet-700">ATS fit {candidate.ats_fit_score==null?'—':`${candidate.ats_fit_score}/100`}</span><span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">{atsStatusLabel(candidate.ats_status||'')}</span></div>{candidate.ats_fit_score!=null&&<><p className="text-slate-500">{candidate.compatibility_summary}</p><div className="flex flex-wrap gap-1">{matched.slice(0,compact?2:5).map(row=><span key={String(row.skill)} title={String(row.evidence_text||'')} className="rounded bg-emerald-50 px-2 py-1 text-emerald-800">{String(row.skill)}</span>)}{missing.slice(0,compact?2:5).map(row=><span key={String(row.skill)} className="rounded bg-rose-50 px-2 py-1 text-rose-800">Missing required: {String(row.skill)}</span>)}</div>{!compact&&matched[0]?.evidence_text&&<p className="max-w-2xl text-slate-500">{String(matched[0].evidence_text)}</p>}</>}</div>;
+  const skillGroup=(items:Data[],limit:number,kind:'matching'|'missing')=><span className={`compact-ats-skills ${kind}`} aria-label={kind==='matching'?'Matching skills':'Missing required skills'}>{items.slice(0,limit).map((row,index)=><span className="compact-skill" key={`${String(row.skill)}-${index}`} title={`${kind==='missing'?'Missing required: ':'Matching: '}${String(row.skill)}`}>{kind==='missing'?'Missing: ':''}{String(row.skill)}</span>)}{items.length>limit&&<button type="button" className="compact-more" onClick={onOpen} aria-label={`View ${items.length-limit} more ${kind} skills`}>+{items.length-limit} more</button>}</span>;
+  return <div className={`compact-ats ${compact?'table-ats':''}`} aria-label={`ATS resume fit for ${candidate.full_name}`}>
+    <div className="compact-ats-heading">{candidate.ats_status==='resume_not_available'?<span className="text-slate-500">Resume Not Available</span>:<><strong className="tabular-nums text-violet-700">ATS {candidate.ats_fit_score==null?'—':`${candidate.ats_fit_score}/100`}</strong><span className="compact-ats-status" title={atsStatusLabel(candidate.ats_status||'')}>{atsStatusLabel(candidate.ats_status||'')}</span></>}<button type="button" className="compact-evidence" onClick={onOpen}>{compact?'Evidence':'ATS Fit & Resume Evidence'}</button></div>
+    {candidate.ats_status!=='resume_not_available'&&(matched.length>0||missing.length>0)&&<div className="compact-ats-keywords">{skillGroup(matched,2,'matching')}{skillGroup(missing,compact?1:2,'missing')}</div>}
+  </div>;
 }
 
 function ATSFitDetails({driveId,candidate,onClose}:{driveId:string;candidate:Candidate;onClose:()=>void}) {
@@ -1689,8 +1694,7 @@ export default function DriveManagement({
     [offset, setOffset] = useState(0),
     [search, setSearch] = useState("");
   const [candidateNavDirection, setCandidateNavDirection] = useState<-1 | 1 | null>(null);
-  const [checked, setChecked] = useState<string[]>([]),
-    [attempts, setAttempts] = useState(2);
+  const [checked, setChecked] = useState<string[]>([]);
   const [schedule, setSchedule] = useState("");
   const [fullEditor, setFullEditor] = useState(false);
   const [editorStep, setEditorStep] = useState(0);
@@ -1864,10 +1868,6 @@ export default function DriveManagement({
     return () => {controller.abort();window.clearInterval(timer);};
   },[tab,driveId,offset,search,departmentFilter,programFilter,statusFilter,listSort,resultSort,resultView,resultQuickView,resultRules,resultMatchMode,excludeReviewRequired]);
   useEffect(() => {resumeMatchRequests.clear();},[version,driveId]);
-  function openCandidateDetails(candidate: Candidate) {
-    setSelected(candidate); setDetail(candidate);
-    setAttempts(Math.max(Number(candidate.max_attempts || drive?.max_attempts || 1), Number(candidate.attempt_number || 1)));
-  }
   async function exportSelected() {
     setExporting(true);setError('');
     try {
@@ -1944,9 +1944,6 @@ export default function DriveManagement({
       return;
     }
     setSelected(candidate);
-    if (kind === "attempts") {
-      setAttempts(Math.max(2, Number(candidate.attempt_number || 1) + 1));
-    }
     setDetail(null);
     setBusy(true);
     setError("");
@@ -2011,6 +2008,7 @@ export default function DriveManagement({
   }
   const visibleResultIds = tab === "results" ? candidates.map(candidate => candidate.student_id) : [];
   const allVisibleResultsSelected = visibleResultIds.length > 0 && visibleResultIds.every(id => checked.includes(id));
+  const [attemptCandidate, setAttemptCandidate] = useState<Candidate | null>(null);
   if (reportStudentId)
     return (
       <CandidateReport
@@ -2423,17 +2421,17 @@ export default function DriveManagement({
               <header className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4">
                 <input type="checkbox" className="h-4 w-4 accent-violet-600" aria-label={`Select ${candidate.full_name}`} checked={checked.includes(candidate.student_id)} onChange={event=>setChecked(current=>event.target.checked ? [...new Set([...current,candidate.student_id])] : current.filter(id=>id!==candidate.student_id))}/>
                 <StudentAvatar student={candidate} size="h-11 w-11"/>
-                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-medium text-slate-900">{candidate.full_name}</h4>{candidate.rank != null && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-700">#{candidate.rank} in drive</span>}<InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></div><p className="mt-1 text-xs text-slate-500">{candidate.roll_number} · {[candidate.program,candidate.department_code].filter(Boolean).join(' · ')} · CGPA {candidate.cgpa==null?'Not available':candidate.cgpa}</p></div>
+                <div className="candidate-profile-identity min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-medium text-slate-900">{candidate.full_name}</h4>{candidate.rank != null && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-700">#{candidate.rank} in drive</span>}<InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></div><p className="mt-1 text-xs text-slate-500">{candidate.roll_number} · {[candidate.program,candidate.department_code].filter(Boolean).join(' · ')} · CGPA {candidate.cgpa==null?'Not available':candidate.cgpa}</p></div>
                 <button className={`${btn} inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-violet-200 text-violet-700`} disabled={busy || !(candidate.report_ready || candidate.has_report_history)} onClick={()=>void inspect(candidate,'reports')}>{candidate.report_ready || candidate.has_report_history?'Full report':'Report pending'} <ExternalLink size={14}/></button>
               </header>
               <div className="result-assessment-band flex flex-wrap items-center gap-3 border-b border-violet-100 bg-violet-50/60 px-5 py-3">
                 <span className="text-xs font-medium text-slate-600">AI recommendation</span><StatusBadge value={candidate.report_ready ? candidate.recommendation || 'Not assessed' : 'Not assessed'}/>
                 {candidate.report_ready && <CandidateStrengthGap driveId={driveId} candidate={candidate} onOpenReport={()=>void inspect(candidate,'reports')}/>}
-                <button className={btn} onClick={()=>setAtsCandidate(candidate)}>ATS fit</button><button className={`${btn} ml-auto`} onClick={()=>openCandidateDetails(candidate)}>View details</button>
+                <button className={btn} onClick={()=>setAtsCandidate(candidate)}>ATS fit</button><button className={`${btn} ml-auto`} onClick={()=>setAttemptCandidate(candidate)}>Manage Attempts</button>
               </div>
               <dl className="result-evidence-rows">
-                <div><dt>Profile, ATS fit & attempts</dt><dd className="flex flex-wrap items-center gap-3"><span className="text-xs text-slate-600">{candidate.email || "Email unavailable"}</span><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/><ResumeMatchSummary key={`resume-${version}`} driveId={driveId} candidate={candidate}/></dd></div>
-                <div><dt>ATS resume fit</dt><dd><ATSMatchInfo candidate={candidate}/></dd></div>
+                <div><dt>Profile, ATS fit & attempts</dt><dd className="flex flex-wrap items-center gap-3"><span className="text-xs text-slate-600">{candidate.email || "Email unavailable"}</span><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/></dd></div>
+                <div><dt>ATS resume fit</dt><dd><ATSMatchInfo candidate={candidate} onOpen={()=>setAtsCandidate(candidate)}/></dd></div>
                 <div><dt>Interview assessment</dt><dd className="flex flex-wrap items-center gap-2">{candidate.overall_score==null&&candidate.ranking_score==null&&candidate.job_fit_score==null?<span className="text-xs text-slate-500">Assessment scores not available yet.</span>:[['Interview',candidate.overall_score],['Readiness / PRI',candidate.ranking_score],['Job fit',candidate.job_fit_score]].map(([label,value])=><span key={String(label)} className={`result-score-chip ${typeof value !== 'number' ? 'score-unavailable' : value >= 75 ? 'score-strong' : value >= 50 ? 'score-developing' : 'score-review'}`}><span>{label}</span><strong>{typeof value === 'number' ? `${value}/100` : 'Not assessed'}</strong></span>)}{candidate.readiness && candidate.report_ready && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-600">{displayName(candidate.readiness)}</span>}</dd></div>
                 {(candidate.report_ready || candidate.agent_summary?.length) ? <div><dt>Interview rounds</dt><dd className="flex flex-wrap items-center gap-2">{candidate.agent_summary?.length ? candidate.agent_summary.map((round,index)=><span key={index} className="result-round-chip"><span>{String(round.label || displayName(String(round.agent_type || `Round ${index+1}`)))}</span><strong>{round.score==null?'Not assessed':`${round.score}/100`}</strong></span>) : <span className="text-xs text-slate-500">Round scores not available</span>}</dd></div> : null}
                 <div><dt>AI Proctor</dt><dd className="flex flex-wrap items-center gap-3"><span className={`result-score-chip ${candidate.proctoring_score == null ? 'score-unavailable' : candidate.proctoring_score >= 75 ? 'score-strong' : candidate.proctoring_score >= 50 ? 'score-developing' : 'score-review'}`}><span>Integrity</span><strong>{candidate.proctoring_score==null?'Not assessed':`${candidate.proctoring_score}/100`}</strong></span>{(candidate.proctoring_score!=null || candidate.integrity_review_status && candidate.integrity_review_status!=='not_available') && <span className={`text-xs ${candidate.integrity_review_status === 'review_required' ? 'text-amber-700' : 'text-slate-500'}`}>{candidate.integrity_review_status === 'not_available' && candidate.proctoring_score != null ? 'Recorded integrity score' : candidate.integrity_review_label || displayName(candidate.integrity_review_status || 'not assessed')}</span>}{candidate.assessment_coverage != null && <span className="ml-auto text-xs text-slate-500">Evidence coverage {candidate.assessment_coverage}%</span>}</dd></div>
@@ -2452,7 +2450,7 @@ export default function DriveManagement({
                 <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
                   <tr>
                     {(tab === "results"
-                      ? ["Candidate", "Status & attempts", "ATS resume fit", "Interview score", "Role fit", "Integrity", "AI recommendation", "Decision & release", "Actions"]
+                      ? ["Candidate", "Status", "ATS Fit", "Interview", "AI Recommendation", "Decision", "Actions"]
                       : tab === "ats"
                         ? [
                             "Candidate",
@@ -2487,36 +2485,19 @@ export default function DriveManagement({
                       key={c.student_id || c.roll_number}
                     >
                       <td className="p-3">
-                        <div className="flex min-w-64 items-center gap-3">
-                        {tab === "results" && (
-                          <input
-                            className="m-0 h-4 w-4 shrink-0 accent-indigo-600"
-                            type="checkbox"
-                            aria-label={`Select ${c.full_name}`}
-                            checked={checked.includes(c.student_id)}
-                            onChange={(e) =>
-                              setChecked((ids) =>
-                                e.target.checked
-                                  ? [...ids, c.student_id]
-                                  : ids.filter((id) => id !== c.student_id),
-                              )
-                            }
-                          />
-                        )}
-                        <div className="flex min-w-0 items-center gap-3"><StudentAvatar student={c}/><div className="min-w-0"><strong>{c.full_name}</strong>{tab==='results' && c.rank != null && <span className="ml-2 text-xs text-violet-600">#{c.rank}</span>}<p className="text-xs text-slate-500">
-                          {c.roll_number}
-                          {c.email ? ` · ${c.email}` : ""}
-                        </p>{(tab==="ats")&&drive&&<ResumeMatchSummary key={`resume-${version}`} driveId={driveId} candidate={c}/>}</div></div>
+                        <div className="compact-table-candidate">
+                          {tab === 'results' && <input className="h-4 w-4 shrink-0 accent-violet-600" type="checkbox" aria-label={`Select ${c.full_name}`} checked={checked.includes(c.student_id)} onChange={event=>setChecked(current=>event.target.checked?[...new Set([...current,c.student_id])]:current.filter(id=>id!==c.student_id))}/>}
+                          <StudentAvatar student={c} size="h-8 w-8"/>
+                          <div className="min-w-0"><strong title={c.full_name}>{c.full_name}</strong><p title={[c.roll_number,c.program,c.department_code,c.cgpa!=null?`CGPA ${c.cgpa}`:null].filter(Boolean).join(' · ')}>{[c.roll_number,c.department_code,c.cgpa!=null?`CGPA ${c.cgpa}`:null].filter(Boolean).join(' · ')}</p></div>
                         </div>
                       </td>
                       {tab === "results" ? (
                         <>
-                          <td className="p-3"><InterviewStatusBadge value={candidateInterviewStatus(c)}/><div className="mt-2"><AttemptBadge candidate={c} driveMaxAttempts={drive?.max_attempts} compact/></div><p className="mt-2 text-xs text-slate-500">{[c.program,c.department_code].filter(Boolean).join(" · ") || "Academic details unavailable"} · CGPA {c.cgpa==null?'Not available':c.cgpa}</p></td>
-                          <td className="p-3"><ATSMatchInfo candidate={c} compact/></td><td className="p-3"><span className="text-base font-medium">{c.overall_score==null?'—':`${c.overall_score}/100`}</span><p className="mt-1 text-xs text-slate-500">PRI {c.ranking_score==null?'—':`${c.ranking_score}/100`}</p></td>
-                          <td className="p-3"><p>{c.job_fit_score==null?'—':`${c.job_fit_score}/100`}</p><p className="mt-1 text-xs text-slate-500">{displayName(c.readiness || 'Not assessed')}</p></td>
-                          <td className="p-3"><p>{c.proctoring_score==null?'—':`${c.proctoring_score}/100`}</p><div className="mt-1"><StatusBadge value={c.integrity_review_label || c.integrity_review_status || 'not assessed'}/></div></td>
-                          <td className="p-3"><StatusBadge value={c.report_ready ? c.recommendation || 'Not assessed' : 'Not assessed'}/>{c.report_ready && <div className="mt-2"><CandidateStrengthGap driveId={driveId} candidate={c} onOpenReport={()=>void inspect(c,'reports')}/></div>}</td>
-                          <td className="p-3"><StatusBadge value={c.officer_decision || 'pending'}/><div className="mt-2 flex flex-col items-start gap-1 text-xs text-slate-500"><span>Student result</span><StatusBadge value={c.publication?.state || 'hidden'}/></div></td>
+                          <td className="p-3"><div className="compact-table-status"><InterviewStatusBadge value={candidateInterviewStatus(c)}/><AttemptBadge candidate={c} driveMaxAttempts={drive?.max_attempts} compact/></div></td>
+                          <td className="p-3"><ATSMatchInfo candidate={c} compact onOpen={()=>setAtsCandidate(c)}/></td>
+                          <td className="p-3"><div className="compact-table-scores"><span>Score <strong>{c.overall_score==null?'—':`${c.overall_score}/100`}</strong></span><span>PRI <strong>{c.ranking_score==null?'—':`${c.ranking_score}/100`}</strong></span></div></td>
+                          <td className="p-3"><StatusBadge value={c.report_ready ? c.recommendation || 'Not assessed' : 'Not assessed'}/></td>
+                          <td className="p-3"><StatusBadge value={c.officer_decision || 'pending'}/></td>
                         </>
                       ) : tab === "ats" ? (
                         <>
@@ -2558,13 +2539,7 @@ export default function DriveManagement({
                       )}
                       <td className="whitespace-nowrap px-4 py-3">
                         {tab === "results" ? (
-                          <div className="flex flex-wrap gap-2"><button
-                            className={btn}
-                            disabled={busy || !(c.report_ready || c.has_report_history)}
-                            onClick={() => void inspect(c, "reports")}
-                          >
-                            {c.report_ready || c.has_report_history ? "Full report" : "Report pending"}
-                          </button><button className={btn} onClick={()=>setAtsCandidate(c)}>ATS fit</button><button className={btn} onClick={()=>openCandidateDetails(c)}>View details</button><ResumeMatchSummary key={`resume-table-${version}`} driveId={driveId} candidate={c}/></div>
+                          <div className="compact-table-actions">{Boolean(c.report_ready || c.has_report_history)&&<button className={btn} disabled={busy} onClick={()=>void inspect(c, 'reports')}>Full Report</button>}<button className={btn} onClick={()=>setAttemptCandidate(c)}>Manage Attempts</button>{c.report_ready&&<button className={btn} onClick={()=>void inspect(c,'decision')}>Set decision</button>}</div>
                         ) : (
                           <button
                             className={btn}
@@ -2573,7 +2548,6 @@ export default function DriveManagement({
                               if(tab === 'candidates') {setParams(current=>{current.set('candidate',c.student_id);return current});return;}
                               setSelected(c);
                               setDetail(c);
-                              setAttempts(Math.max(Number(c.max_attempts || drive?.max_attempts || 1), Number(c.attempt_number || 1)));
                             }}
                           >
                             View details
@@ -2646,6 +2620,7 @@ export default function DriveManagement({
           }}
         />}</div>
       )}
+      {attemptCandidate && <ManageCandidateAttempts driveId={driveId} studentId={attemptCandidate.student_id} name={attemptCandidate.full_name} onClose={()=>setAttemptCandidate(null)} onSaved={()=>setVersion(v=>v+1)}/>}
       {atsCandidate && <ATSFitDetails driveId={driveId} candidate={atsCandidate} onClose={()=>setAtsCandidate(null)}/>}
       {selected && (
         <div
@@ -2707,29 +2682,7 @@ export default function DriveManagement({
                     </button>
                   </div>
                   <section className="rounded-xl border border-slate-200 bg-slate-50 p-4"><h4 className="font-medium">Attempt policy & AI Coach</h4><p className="mt-1 text-sm text-slate-500">Drive default: {drive?.max_attempts || 1} attempt(s). Manual limits apply only to this candidate.</p>{(drive?.score_attempt_rules || []).map((rule,index) => <p key={index} className="mt-2 text-sm">Score {rule.min_score}–{rule.max_score}: {rule.max_attempts} attempt(s){rule.require_coach ? ' · Complete AI Coach before the next attempt' : ''}</p>)}{!(drive?.score_attempt_rules || []).length && <p className="mt-2 text-sm text-slate-500">No score-based rules configured.</p>}<button className={`${btn} mt-3`} onClick={() => {setSelected(null);setDetail(null);setEditorStep(1);setFullEditor(true);setParams(p => {p.set('section','settings');p.delete('candidate');return p;});}}>Configure attempt & Coach rules</button></section>
-                  {drive && ["scheduled", "active"].includes(drive.status) && String(selected.assignment_status) !== "in_progress" && (
-                      <>
-                        <label className="block max-w-xs text-sm">
-                          Allowed attempts
-                          <input
-                            className={field}
-                            type="number"
-                            min={Number(selected.attempt_number || 1)}
-                            max={20}
-                            value={attempts}
-                            onChange={(e) =>
-                              setAttempts(
-                                Math.max(
-                                  Number(selected.attempt_number || 1),
-                                  Number(e.target.value),
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                        {["completed", "released", "expired", "failed"].includes(String(selected.evaluation_status || selected.assignment_status)) ? <button className={btn} disabled={busy || attempts <= Number(selected.attempt_number || 1)} onClick={() => void act(`candidates/${selected.student_id}/reopen`, { max_attempts_override: attempts })}>Save and reopen interview</button> : <button className={btn} disabled={busy} onClick={() => void act(`candidates/${selected.student_id}/attempt-limit`, { max_attempts: attempts })}>Save allowed attempts</button>}
-                      </>
-                    )}
+                  <button className={btn} onClick={()=>{setAttemptCandidate(selected);setSelected(null);setDetail(null);}}>Manage Attempts</button>
                 </>
               )}
             </div>

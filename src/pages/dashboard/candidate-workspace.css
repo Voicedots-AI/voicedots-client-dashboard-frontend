@@ -1,19 +1,49 @@
 /* The drawer is portalled so dashboard overflow and sticky headers cannot clip it. */
 .cf-control{min-width:0}.cf-backdrop{position:fixed;inset:0;background:#0f172a66;z-index:100;display:flex;justify-content:flex-end}.cf-drawer{width:min(600px,100%);height:100dvh;background:white;color:#334155;display:flex;flex-direction:column;box-shadow:-12px 0 40px #0f172a20}.cf-drawer>header,.cf-drawer>footer{padding:20px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e2e8f0;flex-shrink:0}.cf-drawer>header>div{flex:1;min-width:0}.cf-drawer h2{font-size:20px;font-weight:650}.cf-drawer p{font-size:12px;line-height:1.6}.cf-body{padding:24px;overflow:auto;display:grid;gap:20px}.cf-body fieldset{border-top:1px solid #e2e8f0;padding-top:16px;display:grid;gap:12px}.cf-body legend{font-size:14px;font-weight:650;color:#6d28d9;padding-right:8px}.cf-rule{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:grid;gap:12px}.cf-rule-heading{display:flex;align-items:end;gap:12px}.cf-rule-heading>label{flex:1;min-width:0}.cf-body label{font-size:12px;font-weight:500;display:grid;gap:6px}.cf-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.cf-choice-scroll{max-height:180px;overflow:auto;padding:8px;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px}.cf-choice-scroll label,.cf-body .cf-check{display:flex;align-items:center;gap:8px;padding:6px 0}.cf-drawer>footer{border-top:1px solid #e2e8f0;border-bottom:0;flex-wrap:wrap}.cf-drawer>footer>button:first-child{margin-right:auto}.cf-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.cf-chips button{display:flex;gap:6px;align-items:center;border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;border-radius:20px;padding:5px 10px;font-size:11px;max-width:100%}.cf-chips span{overflow-wrap:anywhere}.cf-error{color:#b91c1c;background:#fff1f2;padding:12px;border-radius:8px}.cf-note{color:#64748b}.cf-drawer :focus-visible{outline:3px solid #a78bfa;outline-offset:2px}.dark .cf-drawer{background:#0f172a;color:#e2e8f0}.dark .cf-rule{background:#1e293b;border-color:#334155}
+/* Candidate summaries share one density system. Detailed report styles stay separate. */
 #result-candidate-cards.candidate-card-grid{grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
 #result-candidate-cards>article{min-width:0;border-radius:16px;overflow:hidden}
-#result-candidate-cards header{padding:20px;gap:12px}#result-candidate-cards header>div{overflow-wrap:anywhere}
+#result-candidate-cards header{padding:20px;gap:12px;align-items:center}
+#result-candidate-cards .candidate-profile-identity{display:flex;flex-direction:column;justify-content:center;min-height:44px;min-width:0}
+#result-candidate-cards .candidate-profile-identity h4{overflow-wrap:anywhere;line-height:1.4}
+#result-candidate-cards .candidate-profile-identity p{overflow-wrap:anywhere;line-height:1.5}
+.candidate-avatar{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;text-align:center;vertical-align:middle;object-position:center;font-variant-numeric:normal}
 #result-candidate-cards .result-assessment-band{padding:12px 20px;gap:8px}
 #result-candidate-cards .result-evidence-rows>div{grid-template-columns:115px minmax(0,1fr);gap:12px;padding:12px 20px;align-items:start}
 #result-candidate-cards .result-evidence-rows dd{overflow-wrap:anywhere;line-height:1.5}
-#result-candidate-cards .result-score-chip{border-radius:8px;gap:6px;padding:6px 8px;font-size:11px}
+#result-candidate-cards .result-score-chip{border-radius:8px;gap:6px;padding:6px 8px;font-size:12px}
 #result-candidate-cards .result-decision-footer{padding:16px 20px}
-#result-candidate-table[data-layout=results] table{table-layout:fixed;min-width:1280px;font-size:12px}
-#result-candidate-table[data-layout=results] th,#result-candidate-table[data-layout=results] td{padding:16px 12px;vertical-align:top;overflow-wrap:anywhere;line-height:1.5}
-#result-candidate-table[data-layout=results] th:first-child{width:260px}#result-candidate-table[data-layout=results] th:last-child{width:230px}
-#result-candidate-table[data-layout=results] td:first-child>div{min-width:0}
-#result-candidate-table[data-layout=results] td:last-child>div{display:flex;flex-wrap:wrap;align-items:start;gap:8px}
-#result-candidate-table[data-layout=results] td:last-child button{font-size:11px;padding:6px 8px;white-space:normal}
+.compact-ats{display:grid;gap:6px;min-width:0;font-size:12px;line-height:18px}
+.compact-ats-heading,.compact-ats-keywords,.compact-ats-skills{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.compact-ats-status{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b}
+.compact-evidence,.compact-more{color:#7c3aed;font-weight:600;border-radius:4px}
+.compact-evidence:hover,.compact-more:hover{text-decoration:underline;background:#f5f3ff}
+.compact-evidence:focus-visible,.compact-more:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
+.compact-skill{display:block;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 6px;border-radius:4px}
+.compact-ats-skills.matching .compact-skill{background:#ecfdf5;color:#047857}.compact-ats-skills.missing .compact-skill{background:#fff1f2;color:#be123c}
+.compact-more{white-space:nowrap}
+#result-candidate-table[data-layout=results] table{table-layout:fixed;min-width:1190px;font-size:13px}
+#result-candidate-table[data-layout=results] th,#result-candidate-table[data-layout=results] td{padding:10px 12px;vertical-align:middle;line-height:18px;overflow:hidden}
+#result-candidate-table[data-layout=results] th{font-size:12px;letter-spacing:0;text-transform:none}
+#result-candidate-table[data-layout=results] th:nth-child(1){width:250px}#result-candidate-table[data-layout=results] th:nth-child(2){width:135px}#result-candidate-table[data-layout=results] th:nth-child(3){width:320px}#result-candidate-table[data-layout=results] th:nth-child(4){width:110px}#result-candidate-table[data-layout=results] th:nth-child(5){width:140px}#result-candidate-table[data-layout=results] th:nth-child(6){width:115px}#result-candidate-table[data-layout=results] th:nth-child(7){width:145px}
+#result-candidate-table[data-layout=results] td span.rounded-full{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 7px;font-size:12px;vertical-align:middle}
+#result-candidate-table[data-layout=results] tbody tr:nth-child(even){background:#fafaff}
+.compact-table-candidate{display:flex;align-items:center;gap:8px;min-width:0}
+.compact-table-candidate strong,.compact-table-candidate p{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.compact-table-candidate strong{font-size:13px;font-weight:600}.compact-table-candidate p{font-size:12px;color:#64748b}
+.compact-table-status,.compact-table-scores{display:grid;justify-items:start;gap:4px}
+.compact-table-scores{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#64748b}.compact-table-scores strong{color:#334155}
+.compact-table-actions{display:grid;justify-items:start;gap:2px}
+#result-candidate-table[data-layout=results] .compact-table-actions button{border:0;padding:0;font-size:12px;line-height:16px;font-weight:500;color:#7c3aed;background:transparent}
+#result-candidate-table[data-layout=results] .table-ats{gap:4px}
+#result-candidate-table[data-layout=results] .compact-ats-heading{flex-wrap:nowrap;gap:5px}
+#result-candidate-table[data-layout=results] .compact-ats-status{max-width:105px}
+#result-candidate-table[data-layout=results] .compact-ats-keywords{flex-wrap:nowrap;overflow:hidden;gap:4px}
+#result-candidate-table[data-layout=results] .compact-ats-skills{flex-wrap:nowrap;gap:3px;flex-shrink:1;overflow:hidden}
+#result-candidate-table[data-layout=results] .compact-skill{max-width:100px;min-width:0;flex-shrink:1}
+#result-candidate-table[data-layout=results] .compact-more{flex-shrink:0;font-size:12px}
+@media(max-width:700px){#result-candidate-cards.candidate-card-grid{gap:12px}#result-candidate-cards header{padding:16px;display:grid;grid-template-columns:16px 44px minmax(0,1fr);gap:10px}#result-candidate-cards header>button{grid-column:2/-1;justify-self:start}#result-candidate-cards .result-evidence-rows>div{grid-template-columns:minmax(0,1fr);gap:6px;padding:12px 16px}.compact-skill{max-width:145px}}
+
 .assessment-report-reference .assessment-reference-summary,.assessment-reference-layout{gap:16px}
 .candidate-review .scorecard-chart-grid{gap:16px;align-items:start}
 .candidate-full-reference .scorecard-chart-grid:not(.scorecard-evidence-panels)>section:nth-child(2){display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px 16px;align-items:center}
@@ -51,5 +81,4 @@
 .candidate-review .assessment-report-reference>header{padding-bottom:12px;margin-bottom:16px}
 .candidate-review .assessment-reference-profile img,.candidate-review .assessment-reference-avatar{width:80px;height:104px}
 .candidate-review .assessment-reference-summary{gap:12px}.candidate-review .assessment-reference-profile{gap:14px;align-items:center}.candidate-review .assessment-reference-profile img,.candidate-review .assessment-reference-avatar{width:72px;height:88px}.candidate-review .assessment-reference-profile h2{font-size:20px;line-height:1.2}.candidate-review .assessment-reference-profile p{margin:3px 0 8px}.candidate-review .assessment-reference-profile dl{gap:3px}.candidate-review .assessment-reference-kpi{padding:12px 14px;gap:4px;min-height:112px}.candidate-review .assessment-reference-kpi strong{font-size:27px}.candidate-review .assessment-reference-kpi b{font-size:16px}.candidate-review .assessment-reference-kpi p{line-height:1.3}.candidate-review .assessment-reference-kpi progress{height:6px}.candidate-review .assessment-reference-status{margin-top:7px!important;padding-top:6px}
-#result-candidate-table.result-workspace[data-layout="results"] table{min-width:1740px}#result-candidate-table.result-workspace[data-layout="results"] th:nth-child(2){width:180px}#result-candidate-table.result-workspace[data-layout="results"] th:nth-child(3){width:240px}#result-candidate-table.result-workspace[data-layout="results"] th:nth-child(4){width:140px}#result-candidate-table.result-workspace[data-layout="results"] th:nth-child(5){width:120px}#result-candidate-table.result-workspace[data-layout="results"] th:nth-child(6){width:140px}#result-candidate-table.result-workspace[data-layout="results"] th:nth-child(7){width:190px}#result-candidate-table.result-workspace[data-layout="results"] th:nth-child(8){width:160px}#result-candidate-table.result-workspace[data-layout="results"] th:last-child{width:190px}
 @media(max-width:700px){.candidate-review{--report-gap:12px}.candidate-review .scorecard-main,.candidate-review .scorecard-evidence-panels{gap:12px}.candidate-review .assessment-reference-kpi{padding:12px}.candidate-review .assessment-reference-profile img,.candidate-review .assessment-reference-avatar{width:60px;height:80px}}

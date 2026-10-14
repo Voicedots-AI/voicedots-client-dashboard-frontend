@@ -16,6 +16,7 @@ import { btn } from "./interviewAgentTypes";
 import { displayName, formatPlacementDateTime } from "./placementDisplay";
 import { roleLabels } from "./interviewAgentTypes";
 
+import ManageCandidateAttempts from "./ManageCandidateAttempts";
 import ReportAttemptNavigator from './ReportAttemptNavigator';
 import InterviewReviewPlayer from './InterviewReviewPlayer';
 import type {EvidenceMarker} from './InterviewEvidenceTimeline';
@@ -318,6 +319,7 @@ export default function CandidateReport({
     }
   }
   useEffect(() => {
+    setManageAttempts(false);
     setBundle(null);
     setDrive(null);
     setDecision(""); setNote(""); setSchedule(""); setNotice(""); setConfirm(null);
@@ -335,6 +337,7 @@ export default function CandidateReport({
     void load();
     return () => { loadRequest.current += 1; };
   }, [driveId, studentId]);
+  const [manageAttempts, setManageAttempts] = useState(false);
   const [selectedSession, setSelectedSession] = useState('');
   useEffect(()=>{setSelectedSession('')},[driveId,studentId]);
   const driveReports = useMemo(()=>((bundle?.reports || []) as Report[]).filter(item=>item.drive_id===driveId).sort((a,b)=>Number(b.attempt_number||1)-Number(a.attempt_number||1)),[bundle,driveId]);
@@ -676,6 +679,7 @@ export default function CandidateReport({
   ];
   return (
     <section className="candidate-review mx-auto w-full max-w-none space-y-5 pb-12 text-slate-900">
+      {manageAttempts && <ManageCandidateAttempts driveId={driveId} studentId={studentId} name={String(student.full_name || "Candidate")} onClose={()=>setManageAttempts(false)} onSaved={()=>{setNotice("Attempt policy updated.");void load();}}/>}
       <ReportKeyboardShortcuts videoRef={videoRef} onNextFlag={() => jumpToAdjacentFlag(1)} />
       <style>{"@media print{.report-nav,.report-back,.report-actions,.candidate-pager,.no-print{display:none!important}.candidate-report-content .hidden{display:block!important}details:not([open])>*:not(summary){display:block!important}article,details{break-inside:avoid}body{color:#111!important;background:#fff!important}}"}</style>
       <div className="candidate-pager no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -684,6 +688,7 @@ export default function CandidateReport({
           <span>/</span><span className="truncate">{show(drive?.company_name, "Placement drive")} · {show(drive?.role_title, "Role")}</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <button type="button" className={`${btn} text-xs`} onClick={()=>setManageAttempts(true)}>Manage Attempts</button>
           <ReportAttemptNavigator pending={((bundle?.drives||[]) as Report[]).filter(item=>item.drive_id===driveId&&item.attempt_number!=null&&['assigned','invited','in_progress','expired'].includes(item.assignment_status||'')&&!driveReports.some(saved=>saved.attempt_number===item.attempt_number))} attempts={driveReports} selected={report.session_id||''} loading={recordingLoading||transcriptLoading||integrityLoading} onSelect={session=>{if(session===report.session_id)return;videoRef.current?.pause();recordingRequest.current+=1;evidenceRequest.current+=1;setRecording(null);setTranscript(null);setIntegrity(null);setRecordingError('');setTranscriptError('');setIntegrityError('');setTranscriptLoading(false);setIntegrityLoading(false);setSelectedSession(session);setPlaybackTime(0);setIsPlaying(false);setBookmarkNotes([]);setBookmarkNote('');setExpanded({});setActiveEvent(0);setBookmarkFilter('all');setAnswerFilter('all');setAnswerSearch('');setNotice('');}}/>
           <button type="button" className={`${btn} shrink-0 px-2.5 py-1.5`} disabled={!canPrevious} aria-label="Previous candidate" onClick={() => onNavigate?.(-1)}><ChevronLeft size={15}/></button>
           <span className="min-w-16 shrink-0 text-center text-xs font-semibold text-slate-600">{candidatePosition ?? "—"} of {candidateTotal ?? "—"}</span>

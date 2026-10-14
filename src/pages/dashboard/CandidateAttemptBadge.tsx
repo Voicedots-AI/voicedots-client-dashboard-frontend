@@ -5,7 +5,7 @@ export function attemptValue(value: unknown, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : fallback;
 }
 
-function attemptCounts(candidate: CandidateAttempt, driveMaxAttempts?: unknown): [number, number] {
+export function attemptCounts(candidate: CandidateAttempt, driveMaxAttempts?: unknown): [number, number] {
   const current = attemptValue(candidate.attempt_number, 1);
   const maximum = attemptValue(candidate.max_attempts ?? driveMaxAttempts, 1);
   const status = String(candidate.assignment_status || "").toLowerCase();
