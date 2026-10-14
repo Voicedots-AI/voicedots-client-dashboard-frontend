@@ -1,0 +1,21 @@
+.qpg-syllabus-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;padding:0;margin:20px 0}
+.qpg-syllabus-steps>li{display:flex;align-items:center;gap:12px;min-width:0;padding:16px;border:1px solid #e5e7ef;border-radius:14px;background:#fafbfc;color:#7a879c;transition:background .2s,border-color .2s}
+.qpg-syllabus-step-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border:1px solid #e2e5ed;border-radius:50%;background:white;font-size:13px;font-weight:600}
+.qpg-syllabus-step-copy{flex:1;min-width:0}
+.qpg-syllabus-step-copy>div{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.qpg-syllabus-step-copy strong{font-size:13px;font-weight:600}
+.qpg-syllabus-step-state{font-size:10px;white-space:nowrap}
+.qpg-syllabus-steps .qpg-syllabus-step-copy p{font-size:11px;line-height:1.5;margin:5px 0 0;color:inherit}
+.qpg-syllabus-steps>li.is-current{border-color:#a78bfa;background:#f4efff;color:#6d28d9;box-shadow:0 0 0 2px #7c3aed0a}
+.is-current .qpg-syllabus-step-icon{background:#7c3aed;color:white;border-color:#7c3aed}
+.is-current .qpg-syllabus-step-state{padding:3px 7px;border-radius:6px;background:#e9ddff;font-weight:600}
+.qpg-syllabus-steps>li.is-complete{border-color:#d5ebe2;background:#f6fbf8;color:#27765a}
+.is-complete .qpg-syllabus-step-icon{background:#e3f4eb;color:#15803d;border-color:#cee7d9}
+.dark .qpg-syllabus-steps>li{background:#141e30;border-color:#334155;color:#94a3b8}
+.dark .qpg-syllabus-step-icon{background:#1e293b;border-color:#475569}
+.dark .qpg-syllabus-steps>li.is-current{background:#251b3d;border-color:#8b5cf6;color:#c4b5fd}
+.dark .is-current .qpg-syllabus-step-icon{background:#7c3aed;border-color:#7c3aed;color:white}
+.dark .is-current .qpg-syllabus-step-state{background:#3b2661}
+.dark .qpg-syllabus-steps>li.is-complete{background:#142a24;border-color:#275445;color:#86efac}
+.dark .is-complete .qpg-syllabus-step-icon{background:#1a3d2d;border-color:#275445;color:#86efac}
+@media(max-width:700px){.qpg-syllabus-steps{grid-template-columns:1fr;gap:8px}.qpg-syllabus-steps>li{padding:12px 14px}.qpg-syllabus-step-copy>div{justify-content:space-between}}

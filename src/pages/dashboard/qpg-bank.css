@@ -1,0 +1,129 @@
+/* Master Question Bank only: keep the paper workspace's existing presentation. */
+.qpg-bank-workspace{--erp-bg:#fff;--erp-text:#24324b;--erp-muted:#71829d;--erp-line:#e5e4f0;--erp-soft:#f8f9fc;--erp-accent:#7c3aed;color:var(--erp-text)}
+.qpg-bank-workspace>header{padding:26px 28px;border:1px solid var(--erp-line);border-radius:22px;background:var(--erp-bg)}
+.qpg-bank-workspace>header>p:first-child{display:flex;align-items:center;gap:8px;color:var(--erp-accent);font-size:11px;letter-spacing:.08em}
+.qpg-bank-workspace>header h1{margin-top:12px;font-size:28px;font-weight:650;letter-spacing:-.035em}
+.qpg-bank-workspace>header>p:last-child{max-width:760px;line-height:1.7;color:var(--erp-muted)}
+.qpg-bank-workspace>nav[aria-label="Question paper sections"]{width:fit-content;max-width:100%;gap:6px;padding:6px;border:0;border-radius:16px;background:#f0edf8}
+.qpg-bank-workspace>nav[aria-label="Question paper sections"]>button{padding:11px 18px;border-radius:11px;color:var(--erp-accent);background:transparent;box-shadow:none;font-weight:500}
+.qpg-bank-workspace>nav[aria-label="Question paper sections"]>button[aria-current=page]{background:var(--erp-bg);box-shadow:0 2px 6px #312e8108}
+.qpg-bank-workspace .erp-card{padding:24px;border-color:var(--erp-line);border-radius:20px;background:var(--erp-bg)}
+.qpg-bank-workspace>section[aria-label="Selected academic context"]{background:var(--erp-bg);border-color:var(--erp-line);border-radius:16px;padding:16px 20px}
+.qpg-bank-workspace input:not([type=checkbox]):not([type=radio]):not([type=file]),.qpg-bank-workspace select,.qpg-bank-workspace textarea{border-color:#dfe6f2;border-radius:10px;background:#fbfcff;color:var(--erp-text)}
+.qpg-bank-workspace input:focus-visible,.qpg-bank-workspace select:focus-visible,.qpg-bank-workspace textarea:focus-visible{outline:2px solid #a78bfa;outline-offset:2px}
+.qpg-library-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;padding-bottom:20px;border-bottom:1px solid var(--erp-line)}
+.qpg-bank-workspace .qpg-library-eyebrow{margin:0 0 7px;font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--erp-accent)}
+.qpg-bank-workspace .qpg-library-toolbar h2{margin:0;font-size:21px;letter-spacing:-.025em}
+.qpg-bank-workspace .qpg-library-description{max-width:480px;margin:7px 0 0;font-size:13px}
+.qpg-library-actions{display:flex;flex-wrap:wrap;gap:8px}
+.qpg-bank-workspace .qpg-library-actions button{border-radius:10px;min-height:40px}
+.qpg-bank-workspace .qpg-library-actions button:last-child{background:var(--erp-accent);color:#fff}
+.qpg-question-library table thead{background:var(--erp-soft);color:var(--erp-muted);font-size:11px}
+.qpg-question-library table th{font-weight:500;border-color:var(--erp-line)}
+.qpg-question-library table tbody tr:hover{background:#faf8ff}
+.qpg-question-library table tbody td{font-size:12px}
+.qpg-question-library table tbody td:first-child{font-size:13px}
+.qpg-question-library table tbody td:first-child button{color:var(--erp-accent)}
+.dark .qpg-bank-workspace{--erp-bg:#0f172a;--erp-text:#e2e8f0;--erp-muted:#94a3b8;--erp-line:#334155;--erp-soft:#182337;--erp-accent:#a78bfa}
+.dark .qpg-bank-workspace>nav[aria-label="Question paper sections"]{background:#201b38}
+.dark .qpg-bank-workspace input:not([type=checkbox]):not([type=radio]):not([type=file]),.dark .qpg-bank-workspace select,.dark .qpg-bank-workspace textarea{background:#141e30;border-color:#334155}
+.dark .qpg-question-library table tbody tr:hover{background:#201b38}
+@media(max-width:640px){.qpg-bank-workspace>header{padding:20px}.qpg-bank-workspace>header h1{font-size:24px}.qpg-bank-workspace .erp-card{padding:18px}.qpg-library-actions{width:100%}.qpg-library-actions button{flex:1}.qpg-bank-workspace>nav[aria-label="Question paper sections"]>button{padding:10px 12px}}
+
+.qpg-bank-workspace .qpg-curriculum-card{padding:24px;max-width:100%}
+.qpg-curriculum-heading{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.qpg-curriculum-icon{display:grid;place-items:center;width:42px;height:42px;flex-shrink:0;background:#f3efff;color:var(--erp-accent);border-radius:12px}
+.qpg-bank-workspace .qpg-curriculum-heading h2{margin:0;font-size:18px;font-weight:600}
+.qpg-bank-workspace .qpg-curriculum-heading p{margin:4px 0 0;font-size:13px}
+.qpg-curriculum-options{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px}
+.qpg-saved-curriculum{display:grid;gap:8px;min-width:0;font-size:12px;color:var(--erp-muted)}
+.qpg-bank-workspace .qpg-saved-curriculum select{width:100%;height:46px;padding:10px 14px;font-size:13px;background:var(--erp-bg)}
+.qpg-curriculum-upload{min-width:190px}
+.qpg-curriculum-file{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;height:46px;padding:10px 18px;border:1px solid #ddd6fe;background:#faf8ff;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--erp-accent);transition:background .15s,border-color .15s}
+.qpg-curriculum-file:hover{background:#f3efff;border-color:#c4b5fd}
+.qpg-curriculum-file input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.qpg-curriculum-file:focus-within{outline:2px solid #a78bfa;outline-offset:3px}
+.qpg-curriculum-file.is-disabled{opacity:.5;cursor:wait}
+.qpg-curriculum-file.is-disabled input{cursor:wait}
+.qpg-curriculum-selected{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:14px;padding:14px 16px;border-radius:12px;background:#f7f5fc;border:1px solid var(--erp-line)}
+.qpg-curriculum-selected>div{display:grid;gap:4px;min-width:0}
+.qpg-selected-label{font-size:10px;color:var(--erp-muted);letter-spacing:.05em;text-transform:uppercase}
+.qpg-selected-name{font-size:13px;color:var(--erp-text);overflow-wrap:anywhere}
+.qpg-curriculum-selected>button{flex-shrink:0;background:#7c3aed;color:#fff;border-radius:9px;box-shadow:none}
+.qpg-curriculum-footer{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 20px;margin-top:12px;font-size:11px;color:var(--erp-muted)}
+.qpg-curriculum-footer>span{flex-shrink:0}
+.qpg-curriculum-footer>details{flex:1;min-width:140px}
+.qpg-curriculum-footer summary{width:fit-content;cursor:pointer;list-style:none;text-decoration:underline;text-underline-offset:3px}
+.qpg-bank-workspace .qpg-curriculum-footer p{font-size:12px;margin:10px 0 0;max-width:720px;line-height:1.6}
+.dark .qpg-curriculum-icon{background:#231b3b}
+.dark .qpg-curriculum-file,.dark .qpg-curriculum-selected{background:#1d1930;border-color:#40365c}
+@media(max-width:640px){.qpg-curriculum-options{grid-template-columns:1fr}.qpg-curriculum-upload{min-width:0}.qpg-bank-workspace .qpg-curriculum-card{padding:18px}.qpg-curriculum-selected{align-items:stretch;flex-direction:column;gap:12px}.qpg-curriculum-footer>details{min-width:0;flex-basis:100%}}
+
+.qpg-back-to-bank{padding-left:0;color:#6d28d9;font-size:13px}
+.qpg-bank-workspace .qpg-bank-import{max-width:960px;margin-top:0}
+.qpg-import-header{display:flex;align-items:center;gap:13px;margin-bottom:24px}
+.qpg-import-icon{display:grid;place-items:center;flex-shrink:0;width:46px;height:46px;border-radius:13px;color:var(--erp-accent);background:#f3efff}
+.qpg-bank-workspace .qpg-import-header h2{margin:0;font-size:20px;font-weight:600}
+.qpg-bank-workspace .qpg-import-header p{margin:5px 0 0;font-size:13px}
+.qpg-import-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;margin:0 0 20px;padding:0}
+.qpg-import-flow li{display:flex;align-items:center;gap:11px;padding:14px;background:var(--erp-soft);border:1px solid var(--erp-line);border-radius:12px}
+.qpg-import-step-number{display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;border-radius:50%;border:1px solid var(--erp-line);background:var(--erp-bg);font-size:12px;color:var(--erp-muted)}
+.qpg-import-flow li:first-child{border-color:#c4b5fd;background:#faf8ff}
+.qpg-import-flow li:first-child .qpg-import-step-number{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.qpg-import-flow h3{font-size:13px;font-weight:600;margin:0}
+.qpg-bank-workspace .qpg-import-flow p{font-size:11px;margin:4px 0 0}
+.qpg-import-upload{display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 20px;border:1px dashed #c4b5fd;border-radius:16px;background:#fdfcff;text-align:center}
+.qpg-import-upload>.qpg-import-icon{width:52px;height:52px;margin-bottom:4px}
+.qpg-import-upload h3{font-size:16px;font-weight:600;margin:0}
+.qpg-bank-workspace .qpg-import-upload p{font-size:13px;margin:0}
+.qpg-import-limit{font-size:11px;color:var(--erp-muted)}
+.qpg-import-upload>button{margin-top:6px;padding:10px 24px;border-radius:10px;background:#7c3aed;color:white}
+.dark .qpg-import-icon{background:#231b3b}
+.dark .qpg-import-flow li:first-child,.dark .qpg-import-upload{background:#1d1930;border-color:#40365c}
+@media(max-width:640px){.qpg-import-flow{grid-template-columns:1fr;gap:8px}.qpg-import-flow li{padding:12px}.qpg-import-header{align-items:flex-start}.qpg-bank-workspace .qpg-import-header h2{font-size:18px}.qpg-import-upload{padding:24px 16px}}
+
+.qpg-paper-workspace .qpg-pattern-editor>div:first-child{padding-bottom:16px;border-bottom:1px solid var(--erp-line)}
+.qpg-paper-workspace .qpg-pattern-editor>div:first-child h2{font-size:20px;margin:0}
+.qpg-saved-patterns{display:grid;gap:8px;font-size:12px;color:var(--erp-muted)}
+.qpg-paper-workspace .qpg-saved-patterns select{min-height:44px;font-size:13px}
+.qpg-pattern-editor>section{border-color:var(--erp-line);border-radius:14px}
+.qpg-paper-workspace .qpg-pattern-editor h3{font-size:14px;font-weight:600}
+.qpg-pattern-editor .qpg-pattern-settings{padding:20px;background:var(--erp-soft)}
+.qpg-pattern-settings label{font-size:12px;color:var(--erp-muted)}
+.qpg-paper-workspace .qpg-pattern-settings input,.qpg-paper-workspace .qpg-pattern-settings select{height:44px;background:var(--erp-bg)}
+.qpg-pattern-editor>details{border-color:var(--erp-line);background:var(--erp-bg);border-radius:13px}
+.qpg-pattern-editor>details>summary{font-size:13px}
+.qpg-pattern-editor>details>summary>div>span:last-child{font-size:12px}
+.qpg-pattern-actions{padding-top:18px;border-top:1px solid var(--erp-line)}
+.qpg-pattern-actions button{min-height:40px;border-radius:10px;font-size:13px}
+.qpg-pattern-actions button:nth-child(3){background:#7c3aed;color:white}
+.qpg-paper-workspace nav[aria-label="Question paper views"]{gap:8px;margin-top:4px;padding-bottom:14px;border-bottom:1px solid var(--erp-line)}
+.qpg-paper-workspace nav[aria-label="Question paper views"] button{font-size:12px;border-radius:9px;box-shadow:none}
+@media(max-width:640px){.qpg-pattern-editor .qpg-pattern-settings{padding:15px}.qpg-pattern-actions button{flex:1}}
+
+.qpg-paper-editor>h2{font-size:20px;margin-bottom:6px}
+.qpg-paper-library{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.qpg-paper-library>label{display:grid;gap:7px;flex:1;min-width:220px;font-size:12px;color:var(--erp-muted)}
+.qpg-paper-library>button{height:43px;border-radius:10px}
+.qpg-paper-library select{height:43px;font-size:13px}
+.qpg-paper-editor section[aria-label="Paper progress"]{background:#f7f4ff;border-color:#e5dcf8;border-radius:14px}
+.qpg-paper-editor section[aria-label="Paper progress"] progress{accent-color:#7c3aed}
+.qpg-paper-toolbar{padding:4px 0 12px;gap:8px}
+.qpg-paper-toolbar button{font-size:13px;min-height:40px;border-radius:10px;box-shadow:none}
+.qpg-paper-toolbar button:first-child:not([data-variant=outline]){background:#7c3aed;color:white}
+.qpg-paper-settings,.qpg-paper-advanced{border:1px solid var(--erp-line);border-radius:13px;background:var(--erp-bg);padding:16px;margin:16px 0}
+.qpg-paper-settings>summary,.qpg-paper-advanced>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--erp-text)}
+.qpg-paper-settings>summary>span{margin-left:10px;font-size:11px;font-weight:400;color:var(--erp-muted)}
+.qpg-paper-editor>details[aria-label]:not([aria-label="Paper coverage"]){border-radius:13px;border-color:var(--erp-line)}
+.qpg-paper-editor>details[aria-label]>summary .font-semibold{font-size:14px}
+.qpg-paper-editor>details[aria-label]>summary .text-sm{font-size:12px}
+.qpg-paper-settings label{font-size:12px;color:var(--erp-muted)}
+.dark .qpg-paper-editor section[aria-label="Paper progress"]{background:#231b38;border-color:#40365c}
+@media(max-width:640px){.qpg-paper-library>label{min-width:0;flex-basis:100%}.qpg-paper-settings>summary>span{display:block;margin:5px 0 0}.qpg-paper-toolbar button{flex:1}}
+
+.qpg-ai-tools>summary>span{margin-left:10px;font-size:11px;font-weight:400;color:var(--erp-muted)}
+.qpg-ai-tools>section{margin-bottom:0;padding:16px;border-radius:11px}
+.qpg-paper-editor .qpg-paper-toolbar{margin-bottom:8px}
+.qpg-paper-editor .qpg-paper-toolbar button:first-child{background:transparent;color:var(--erp-accent);border-color:var(--erp-line)}
+.qpg-paper-editor .qpg-paper-settings{margin:12px 0}
+@media(max-width:640px){.qpg-ai-tools>summary>span{display:block;margin:5px 0 0}}

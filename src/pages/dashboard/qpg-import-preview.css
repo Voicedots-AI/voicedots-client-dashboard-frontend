@@ -1,0 +1,28 @@
+.qpg-import-destination{padding:14px 16px;background:#f6f3fd;border:1px solid #e8dff8;border-radius:12px;margin-bottom:20px}
+.qpg-import-destination>span{display:block;font-size:10px;letter-spacing:.08em;color:#7c3aed;margin-bottom:5px}
+.qpg-import-destination strong{font-size:14px;color:#24324b}
+.qpg-import-destination p{font-size:12px;color:#71829d;margin:6px 0 0}
+.qpg-import-counts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.qpg-import-counts>span{font-size:12px;padding:9px 12px;border-radius:9px;background:#f1f5f9;color:#475569}
+.qpg-import-counts strong{font-size:15px;margin-right:4px}
+.qpg-import-counts .is-valid{background:#effaf4;color:#22704e}.qpg-import-counts .is-issue{background:#fff8eb;color:#986b21}
+.qpg-import-issues{border:1px solid #f3dfb5;border-radius:10px;background:#fffbf2;padding:12px 14px;margin-bottom:20px;font-size:12px;color:#936826}
+.qpg-import-issues summary{cursor:pointer;font-weight:600}.qpg-import-issues p{margin:10px 0}.qpg-import-issues ul{list-style:disc;padding-left:18px;line-height:1.7}
+.qpg-import-list-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:20px 0 12px}
+.qpg-import-list-heading h3{font-size:15px;font-weight:600}.qpg-import-list-heading label{display:flex;align-items:center;gap:7px;font-size:12px;color:#64748b}
+.qpg-import-question-list{display:grid;gap:12px}
+.qpg-import-question{padding:16px;border:1px solid #e5e7ef;border-radius:13px;background:#fff}.qpg-import-question.is-removed{opacity:.55}
+.qpg-import-question-top,.qpg-import-question-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.qpg-import-row-reference{display:flex;align-items:center;gap:9px;font-size:12px;color:#64748b}.qpg-import-row-reference strong{color:#475569}.qpg-import-row-reference span{font-size:11px}
+.qpg-import-row-status{font-size:10px;border-radius:6px;padding:4px 7px;background:#effaf4;color:#22704e}.qpg-import-row-status.has-errors{background:#fff4e1;color:#956119}
+.qpg-import-question-text{margin:12px 0 14px;font-size:14px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;color:#24324b}
+.qpg-import-metadata,.qpg-import-row-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}.qpg-import-metadata span{font-size:11px;background:#f5f6fa;padding:4px 8px;border-radius:6px;color:#64748b}
+.qpg-import-row-actions button{font-size:12px}
+.qpg-import-row-details{border-top:1px solid #edf0f5;padding-top:11px;margin-top:12px;font-size:12px;color:#64748b}.qpg-import-row-details summary{cursor:pointer;width:fit-content}
+.qpg-import-row-details dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}.qpg-import-row-details dt{font-size:11px;color:#94a3b8}.qpg-import-row-details dd{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:#475569}
+.qpg-import-row-errors,.qpg-import-row-notes{list-style:disc;padding-left:18px;margin:12px 0;line-height:1.7}.qpg-import-row-errors{color:#b45345}.qpg-import-row-notes{color:#986b21}
+.qpg-import-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:#64748b}.qpg-import-pagination>div{display:flex;gap:8px}
+.dark .qpg-import-destination{background:#241c38;border-color:#40365c}.dark .qpg-import-destination strong,.dark .qpg-import-question-text{color:#e2e8f0}
+.dark .qpg-import-question{background:#0f172a;border-color:#334155}.dark .qpg-import-metadata span{background:#1e293b;color:#94a3b8}.dark .qpg-import-row-details{border-color:#334155}.dark .qpg-import-row-details dd{color:#cbd5e1}
+.dark .qpg-import-issues{background:#2b2417;border-color:#574523;color:#e5bd70}
+@media(max-width:640px){.qpg-import-question{padding:13px}.qpg-import-question-bottom{align-items:flex-start;flex-direction:column}.qpg-import-row-details dl{grid-template-columns:1fr}.qpg-import-pagination{flex-wrap:wrap}.qpg-import-row-reference{flex-wrap:wrap}}

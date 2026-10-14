@@ -36,6 +36,14 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
   const { access: collegeAccess } = useCollegeAccess();
   const { enabled: emailEnabled } = useEmailCapabilities();
 
+  const questionPaperNavigation: NavItem = {
+    id: "question-papers", icon: FileText, label: "Question Paper Generation", path: "/dashboard/question-papers",
+    children: [
+      { id: "master-question-bank", label: "Master Question Bank", path: "/dashboard/question-papers/question-bank" },
+      { id: "paper-generation", label: "Paper Generation", path: "/dashboard/question-papers/paper-generation" },
+    ],
+  };
+
   const placementChildren:NavChild[]=[{id:'placement-dashboard',label:'Dashboard',path:'/dashboard/placement-management?view=dashboard'},{id:'placement-feedback',label:'Feedback Dashboard',path:'/dashboard/placement-management?view=feedback'},{id:'placement-drives',label:'Placement drives',path:'/dashboard/placement-management?view=placements'}];
   const navItems: NavItem[] = user?.portal_role === "placement_staff" ? [
     { id: "drives", icon: BriefcaseBusiness, label: "Placement management", path: "/dashboard/placement-management",children:placementChildren },
@@ -44,7 +52,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     { id: "agents", icon: Mic, label: "Interview agents", path: "/dashboard/placement-management?view=agents" },
     { id: "placement-settings", icon: Settings, label: "Placement settings", path: "/dashboard/placement-management?view=settings" },
     { id: "erp", icon: BookOpen, label: "ERP", path: "/dashboard/erp" },
-    { id: "question-papers", icon: FileText, label: "Question Paper Generation", path: "/dashboard/question-papers" },
+    questionPaperNavigation,
     { id: "attendance", icon: Building2, label: "Institution Management", path: "/dashboard/attendance" },
   ] : [
     { id: "home", icon: Home, label: "Home", path: "/dashboard" },
@@ -61,7 +69,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
       ],
     },
     ...(collegeAccess?.enabled ? [{ id: "college", icon: GraduationCap, label: "Placement management", path: "/dashboard/placement-management",children:placementChildren }, { id: "attendance", icon: Building2, label: "Institution Management", path: "/dashboard/attendance" }, { id: "erp", icon: BookOpen, label: "ERP", path: "/dashboard/erp" }] : []),
-    ...(collegeAccess?.enabled ? [{ id: "question-papers", icon: FileText, label: "Question Paper Generation", path: "/dashboard/question-papers" }] : []),
+    ...(collegeAccess?.enabled ? [questionPaperNavigation] : []),
     { id: "settings", icon: Settings, label: "Settings", path: "/dashboard/settings" },
   ];
 
@@ -74,7 +82,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     return view ? (new URLSearchParams(location.search).get("view") || "placements") === view : true;
   };
   const inGroup = (item: NavItem) =>
-    matchesRoute(item.path) || !!item.children?.some((child) => matchesRoute(child.path));
+    matchesRoute(item.path) || !!item.children?.some((child) => matchesRoute(child.path)) || (item.id === "question-papers" && location.pathname.startsWith(`${item.path}/`));
 
   // Groups start open when you're inside them.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
