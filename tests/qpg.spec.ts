@@ -68,12 +68,14 @@ async function setup(page:Page,failed=false,published=false){
  });
  await page.goto('/dashboard/question-papers');
  await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Subject Master',exact:true}).click();
- await page.getByLabel('Program',{exact:true}).selectOption('BTECH');
- await page.getByLabel('Branch',{exact:true}).selectOption('CSE');
+ await page.getByRole('button',{name:'Open existing subjects'}).click();
+ await page.getByLabel('Degree',{exact:true}).selectOption('BTECH');
+ await page.getByLabel('Department',{exact:true}).selectOption('CSE');
  await page.getByLabel('Year',{exact:true}).selectOption('2');
  await page.getByLabel('Semester',{exact:true}).selectOption('4');
  await page.getByLabel('Subject',{exact:true}).selectOption('s1');
  await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Question Papers',exact:true}).click();
+ if(await page.getByRole('button',{name:'Open existing subjects',exact:true}).count())await page.getByRole('button',{name:'Open existing subjects',exact:true}).click();
  await page.getByLabel('Program',{exact:true}).selectOption('BTECH');
  await page.getByLabel('Branch',{exact:true}).selectOption('CSE');
  await page.getByLabel('Year',{exact:true}).selectOption('2');
@@ -386,7 +388,9 @@ test('final paper review approves, locks, exports and shows immutable history',a
  await expect(page.getByRole('button',{name:'Save Draft',exact:true})).toHaveCount(0);
  await page.getByRole('button',{name:'Finalize and Lock',exact:true}).click();
  await expect(page.getByRole('button',{name:'Replace Question',exact:true})).toHaveCount(0);
+ const exportRequest=page.waitForRequest(request=>new URL(request.url()).pathname.endsWith('/papers/p1/export'));
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export PDF',exact:true}).click();
+ const exportQuery=new URL((await exportRequest).url()).searchParams;expect(exportQuery.get('template_id')).toBe('university');expect(exportQuery.get('format')).toBe('PDF');
  await expect((await download).suggestedFilename()).toContain('question-paper-v1-r3.pdf');
  await page.getByText('Revision History',{exact:true}).click();
  await expect(page.getByText('Reviewed the complete paper.',{exact:true})).toBeVisible();
@@ -685,7 +689,7 @@ async function officialExportSetup(page:Page,allowAnswers=true,failure=false){
 }
 
 test('locked student and answer documents PDF DOCX preview and export history',async({page})=>{
- const {records,requests}=await officialExportSetup(page);const dialog=page.getByRole('dialog',{name:'Download Final Paper'});await dialog.getByLabel('Export template').selectOption('tpl1');await dialog.getByRole('button',{name:'Preview Document'}).click();await expect(dialog.getByRole('article',{name:'Document Preview'})).toBeVisible();await expect(dialog.getByText('Answer / solution:',{exact:false})).toHaveCount(0);
+ const {records,requests}=await officialExportSetup(page);const dialog=page.getByRole('dialog',{name:'Download Final Paper'});await expect(dialog.getByLabel('Export template')).toHaveValue('university');await dialog.getByLabel('Export template').selectOption('tpl1');await dialog.getByRole('button',{name:'Preview Document'}).click();await expect(dialog.getByRole('article',{name:'Document Preview'})).toBeVisible();await expect(dialog.getByText('Answer / solution:',{exact:false})).toHaveCount(0);
  for(const [kind,format] of [['STUDENT','PDF'],['STUDENT','DOCX'],['ANSWER','PDF'],['ANSWER','DOCX']]){
   await dialog.getByRole('radio',{name:`${kind==='ANSWER'?'Answer Key':'Student Paper'} ${format}`,exact:true}).check();
   if(kind==='ANSWER'){await dialog.getByRole('button',{name:'Preview Document'}).click();await expect(dialog.getByText('Answer / solution: Stored faculty solution.',{exact:true})).toBeVisible();}
@@ -710,7 +714,7 @@ test('grouped QPG navigation preserves subject context and accessible actions',a
  await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('Year 2 › Semester 4');
  await primary.getByRole('button',{name:'Question Papers'}).click();await expect(page.getByLabel('Program',{exact:true})).toHaveCount(0);
  await primary.getByRole('button',{name:'Subject Master'}).click();
- await expect(page.getByLabel('Program',{exact:true})).toHaveValue('BTECH');
+ await expect(page.getByLabel('Degree',{exact:true})).toHaveValue('BTECH');
  await primary.getByRole('button',{name:'Syllabus Master'}).click();
  await expect(page.getByRole('region',{name:'Syllabus Master'})).toBeVisible();
  await primary.getByRole('button',{name:'Question Papers'}).click();await page.getByRole('navigation',{name:'Question Papers workspace'}).getByRole('button',{name:'Question Bank'}).click();
@@ -759,7 +763,7 @@ test('Reports academic filters cards coverage distributions usage papers and CSV
  await page.route('**/question-papers/reports?*',r=>{captured=r.request().url();return r.fulfill({json:reportFixture()});});
  await page.route('**/question-papers/reports/export?*',r=>{captured=r.request().url();return r.fulfill({contentType:'text/csv',body:'Report,Field,Value\nBank,total,4',headers:{'Content-Disposition':'attachment; filename="qpg-report.csv"'}});});
  await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Reports',exact:true}).click();
- await expect(page.getByLabel('Program',{exact:true})).toHaveValue('BTECH');
+ await expect(page.getByLabel('Degree',{exact:true})).toHaveValue('BTECH');
  await page.getByLabel('Report syllabus',{exact:true}).selectOption('sv1');
  await page.getByLabel('Event date range',{exact:true}).selectOption('LAST_7_DAYS');
  await page.getByRole('button',{name:'View Reports',exact:true}).click();await expect(page.getByRole('region',{name:'At a glance'})).toBeVisible();for(const title of ['Question and paper status details','Syllabus coverage and question distribution','Question usage and unused questions','Finalized papers and pattern usage (1)','Finalized papers and pattern usage (0)','Advanced: similarity, validation and AI activity'])await openDetails(page.getByRole('region',{name:'Reports and Analytics'}),title);
@@ -791,8 +795,9 @@ test('readonly bank details conceal answer and version payload even when an old 
  await page.route('**/question-papers/academic-options',route=>route.fulfill({json:{programs:[{code:'BTECH',display_name:'B.Tech',duration_years:4,departments:[{code:'CSE',display_name:'Computer Science'}]}],erp_subjects:[],can_setup:false,can_write:false}}));
  await page.reload();
  await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Subject Master',exact:true}).click();
- await page.getByLabel('Program',{exact:true}).selectOption('BTECH');
- await page.getByLabel('Branch',{exact:true}).selectOption('CSE');
+ await page.getByRole('button',{name:'Open existing subjects'}).click();
+ await page.getByLabel('Degree',{exact:true}).selectOption('BTECH');
+ await page.getByLabel('Department',{exact:true}).selectOption('CSE');
  await page.getByLabel('Year',{exact:true}).selectOption('2');
  await page.getByLabel('Semester',{exact:true}).selectOption('4');
  await page.getByLabel('Subject',{exact:true}).selectOption('s1');
@@ -845,17 +850,20 @@ test('bound hierarchy generation preserves node and revision identity',async({pa
  await expect(page.getByLabel('Marks per question',{exact:true})).toHaveValue('6');await page.getByRole('button',{name:/^Generate \d+ questions?$/}).click();await expect(page.getByText('Paper binding changed. Refresh the exact node.',{exact:true})).toBeVisible();
 });
 
-async function paperJourney(page:Page,stale=false){
+async function paperJourney(page:Page,stale=false,failedBuild=false){
  await assemblySetup(page);
  const paper=await page.evaluate(async()=>{const r=await fetch('/v3/college/question-papers/papers/p1');return r.json();});
  const candidates=[1,2].map(n=>({id:'r'+n,decision:'PENDING',duplicate:n===2,question_id:null as string|null,review_status:null as string|null,warnings:[],provenance:[],question:{question_text:n===2?'Existing exact duplicate':'Unique first question',question_type:'MCQ',marks:1,co_id:'co1',unit_id:'u1',topic_id:'t1',bloom_level:'K1',difficulty:'EASY',answer:'TCP',options:['TCP','UDP'],rationale:'Syllabus example'}}));
  const build={id:'build1',status:'COMPLETED',revision:1,stale,paper_revision:paper.revision,positions:candidates.map((c,index)=>({item_id:'i'+(index+1),label:String(index+1),section:'Part A',request:{...c.question},job:{id:'j'+(index+1),status:'COMPLETED',revision:1,failure_reason:'',results:[c]}}))};
+ if(failedBuild){build.status='FAILED';build.positions[1].job.status='FAILED';build.positions[1].job.failure_reason='AI request timed out.';build.positions[1].job.results=[];}
+ let retried=false;
  let regenerations=0,saves=0;let failRegeneration=false;
  await page.route(/\/v3\/college\/question-papers\//,async route=>{
   const path=new URL(route.request().url()).pathname,method=route.request().method();let json:unknown;
   if(path.endsWith('/generation-config'))json={enabled:true};
   else if(path.endsWith('/papers'))json={items:[paper]};
   else if(path.endsWith('/ai-build'))json={build};
+  else if(path.endsWith('/retry')){expect(route.request().postDataJSON().expected_revision).toBe(build.revision);retried=true;build.status='COMPLETED';build.positions[1].job.status='COMPLETED';build.positions[1].job.failure_reason='';build.positions[1].job.results=[candidates[1]];build.revision++;json=build;}
   else if(path.endsWith('/rebase')){build.stale=false;build.revision++;json=build;}
   else if(path.endsWith('/regenerate')){
    if(failRegeneration)return route.fulfill({status:409,json:{detail:'Refresh the completed build before replacing a candidate.'}});
@@ -883,7 +891,7 @@ async function paperJourney(page:Page,stale=false){
   return route.fulfill({json});
  });
  await page.getByRole('button',{name:'Question Bank',exact:true}).click();await page.getByRole('button',{name:'Prepare Paper',exact:true}).click();await page.getByRole('button',{name:'Create paper view',exact:true}).click();
- return {paper,build,candidates,regenerations:()=>regenerations,saves:()=>saves,failRegeneration:()=>{failRegeneration=true;}};
+ return {paper,build,candidates,retried:()=>retried,regenerations:()=>regenerations,saves:()=>saves,failRegeneration:()=>{failRegeneration=true;}};
 }
 
 test('AI paper journey recovers duplicate, restores draft after question review, assembles and locks',async({page})=>{
@@ -961,3 +969,13 @@ test('paper pattern editor works without secure-context randomUUID',async({page}
  await page.getByRole('button',{name:'New Pattern',exact:true}).click();
  await page.getByRole('button',{name:'Add section',exact:true}).click();await expect(page.getByLabel('Section name')).toHaveCount(2);
 });
+
+ test('failed AI paper build offers visible regeneration and preserves completed candidates',async({page})=>{
+ const fixture=await paperJourney(page,false,true);const first=JSON.stringify(fixture.build.positions[0]);
+ const panel=page.getByRole('region',{name:'Build paper with AI'});
+ await expect(panel.getByRole('button',{name:'Regenerate failed questions (1)',exact:true})).toBeVisible();
+ await expect(panel.getByText('Select Regenerate failed questions to retry unfinished positions. Completed candidates and saved questions are preserved.',{exact:true})).toBeVisible();
+ await panel.getByRole('button',{name:'Regenerate failed questions (1)',exact:true}).click();
+ await expect.poll(()=>fixture.retried()).toBe(true);expect(JSON.stringify(fixture.build.positions[0])).toBe(first);
+ await expect(panel.getByRole('button',{name:'Regenerate failed questions (1)',exact:true})).toHaveCount(0);
+ });

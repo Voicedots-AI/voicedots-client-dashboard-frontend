@@ -36,6 +36,14 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
   const { access: collegeAccess } = useCollegeAccess();
   const { enabled: emailEnabled } = useEmailCapabilities();
 
+  const questionPaperNavigation: NavItem = {
+    id: "question-papers", icon: FileText, label: "Question Paper Generation", path: "/dashboard/question-papers",
+    children: [
+      { id: "master-question-bank", label: "Master Question Bank", path: "/dashboard/question-papers/question-bank" },
+      { id: "paper-generation", label: "Paper Generation", path: "/dashboard/question-papers/paper-generation" },
+    ],
+  };
+
   const navItems: NavItem[] = user?.portal_role === "placement_staff" ? [
     { id: "drives", icon: BriefcaseBusiness, label: "Placement drives", path: "/dashboard/placement-management?view=placements" },
     { id: "candidates", icon: Users, label: "Candidates", path: "/dashboard/placement-management?view=candidates" },
@@ -43,7 +51,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     { id: "agents", icon: Mic, label: "Interview agents", path: "/dashboard/placement-management?view=agents" },
     { id: "placement-settings", icon: Settings, label: "Placement settings", path: "/dashboard/placement-management?view=settings" },
     { id: "erp", icon: BookOpen, label: "ERP", path: "/dashboard/erp" },
-    { id: "question-papers", icon: FileText, label: "Question Paper Generation", path: "/dashboard/question-papers" },
+    questionPaperNavigation,
     { id: "attendance", icon: Building2, label: "Institution Management", path: "/dashboard/attendance" },
   ] : [
     { id: "home", icon: Home, label: "Home", path: "/dashboard" },
@@ -60,7 +68,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
       ],
     },
     ...(collegeAccess?.enabled ? [{ id: "college", icon: GraduationCap, label: "Placement management", path: "/dashboard/placement-management" }, { id: "attendance", icon: Building2, label: "Institution Management", path: "/dashboard/attendance" }, { id: "erp", icon: BookOpen, label: "ERP", path: "/dashboard/erp" }] : []),
-    ...(collegeAccess?.enabled ? [{ id: "question-papers", icon: FileText, label: "Question Paper Generation", path: "/dashboard/question-papers" }] : []),
+    ...(collegeAccess?.enabled ? [questionPaperNavigation] : []),
     { id: "settings", icon: Settings, label: "Settings", path: "/dashboard/settings" },
   ];
 
@@ -73,7 +81,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     return view ? (new URLSearchParams(location.search).get("view") || "placements") === view : true;
   };
   const inGroup = (item: NavItem) =>
-    matchesRoute(item.path) || !!item.children?.some((child) => matchesRoute(child.path));
+    matchesRoute(item.path) || !!item.children?.some((child) => matchesRoute(child.path)) || (item.id === "question-papers" && location.pathname.startsWith(`${item.path}/`));
 
   // Groups start open when you're inside them.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
@@ -111,6 +119,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
                 <div key={item.id}>
                   <button
                     type="button"
+                    aria-expanded={hasChildren ? !!expanded : undefined}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (hasChildren && !isCollapsed) {
@@ -135,11 +144,12 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
                   {expanded && (
                     <div className="mt-1 ms-6 ps-3 border-s border-slate-200 dark:border-slate-800 space-y-1">
                       {item.children!.map((child) => {
-                        const childActive = location.pathname === child.path.split("?")[0] && new URLSearchParams(location.search).get("view") === new URLSearchParams(child.path.split("?")[1] || "").get("view");
+                        const childActive = matchesRoute(child.path);
                         return (
                           <button
                             key={child.id}
                             type="button"
+                            aria-current={childActive ? "page" : undefined}
                             onClick={(e) => { e.stopPropagation(); go(child.path); }}
                             className={`w-full text-left py-2 px-3 text-[13px] font-medium rounded-lg transition-colors ${childActive ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" : "text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"}`}
                           >
