@@ -1,3 +1,4 @@
+import {templateDefaults} from './qpgFormatPresets';
 import {useEffect,useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {qpgApi,label} from '@/api/qpgApi';
@@ -7,10 +8,10 @@ import Dialog from './QpgDialog';
 import QpgRenderPreview from './QpgRenderPreview';
 import QpgTemplateEditor from './QpgTemplateEditor';
 import type {RenderModel} from './QpgRenderPreview';
-export type TemplateConfig={institution_name?:string;institution_short_name?:string;layout_style?:string;paper_code?:string;regulation_text?:string;common_to_text?:string;show_question_mapping?:boolean;header_alignment:string;institution_alignment:string;logo_placement:string;show_logo:boolean;show_address:boolean;show_page_numbers:boolean;show_fields:string[];address_text:string;contact_text:string;header_text:string;footer_text:string;section_style:string;numbering:string};
+export type TemplateConfig=import('./qpgDocumentSettings').DocumentStyle & {paper_pattern?:import('./QpgBlueprintPanel').Config|null;reference_filename?:string;institution_name?:string;institution_short_name?:string;layout_style?:string;paper_code?:string;regulation_text?:string;common_to_text?:string;show_question_mapping?:boolean;header_alignment:string;institution_alignment:string;logo_placement:string;show_logo:boolean;show_address:boolean;show_page_numbers:boolean;show_fields:string[];address_text:string;contact_text:string;header_text:string;footer_text:string;section_style:string;numbering:string};
 export type PaperTemplate={id:string;name:string;description:string;configuration:TemplateConfig;version:number;revision:number;status:string;used:boolean;has_logo:boolean};
-const fields=['institution_short_name','program','branch','year','semester','academic_session','examination_session','course_code','course_name','duration','maximum_marks'];
-const defaults:TemplateConfig={header_alignment:'CENTER',institution_alignment:'CENTER',logo_placement:'CENTER',show_logo:true,show_address:true,show_page_numbers:true,show_fields:fields.slice(1),address_text:'',contact_text:'',header_text:'',footer_text:'',section_style:'NORMAL',numbering:'CONTINUOUS'};
+
+const defaults=templateDefaults;
 const university:TemplateConfig={...defaults,layout_style:'UNIVERSITY',show_logo:false,show_address:false,show_question_mapping:true,section_style:'UPPERCASE',show_fields:['program','branch','semester','examination_session','course_code','course_name','duration','maximum_marks'],paper_code:'',regulation_text:'',common_to_text:''};
 export default function QpgTemplatesPanel(){
  const [rows,setRows]=useState<PaperTemplate[]>([]),[canWrite,setCanWrite]=useState(false),[branding,setBranding]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[editor,setEditor]=useState<{row?:PaperTemplate;name:string;description:string;config:TemplateConfig;file?:File}|null>(null),[preview,setPreview]=useState<RenderModel|null>(null);

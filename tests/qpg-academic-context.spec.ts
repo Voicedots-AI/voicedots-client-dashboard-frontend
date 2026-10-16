@@ -1,4 +1,5 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Page} from '@playwright/test';
+async function goWorkspace(page:Page,section:'Paper Generation'|'Master Question Bank'){const menu=page.getByRole('complementary').getByRole('button',{name:'Question Paper Generation',exact:true});if(await menu.getAttribute('aria-expanded')!=='true')await menu.click();await page.getByRole('complementary').getByRole('button',{name:section,exact:true}).click();}
 test('academic hierarchy sends reviewed context and preserves independent paper selection',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
  let captured:Record<string,unknown>|undefined;
@@ -29,9 +30,9 @@ test('academic hierarchy sends reviewed context and preserves independent paper 
  await page.getByRole('button',{name:'Continue to Syllabus Master'}).click();
  await expect.poll(()=>captured?.institution_name).toBe('JNTUH');
  expect(captured).toMatchObject({education_level:'Undergraduate',batch_name:'2022-23',specialization_name:'AI & ML',branch_code:'CSE',program_code:'BTECH'});
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Question Papers',exact:true}).click();
+ await goWorkspace(page,'Paper Generation');
  await expect(page.getByLabel('Subject',{exact:true})).toHaveValue('');
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Subject Master',exact:true}).click();
+ await goWorkspace(page,'Master Question Bank');
  await expect(page.getByLabel('Institution',{exact:true})).toHaveValue('JNTUH');
  await expect(page.getByLabel('Branch',{exact:true})).toHaveValue('AI & ML');
  await page.getByLabel('Institution',{exact:true}).selectOption('Dhanalakshmi Srinivasan CET');
@@ -81,13 +82,13 @@ test('Question Bank and Prepare Paper share an independent full hierarchy across
  for(const [title,value] of [['Institution','JNTUH'],['Education level','Undergraduate'],['Batch','2022-23'],['Degree','BTECH'],['Department','CSE'],['Branch','AI & ML'],['Year','2'],['Semester','3'],['Subject','bank-subject']])await page.getByLabel(title,{exact:true}).selectOption(value);
  await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('JNTUH');
  expect(requested?.get('institution_name')).toBe('JNTUH');expect(requested?.get('batch_name')).toBe('2022-23');expect(requested?.get('specialization_name')).toBe('AI & ML');expect(requested?.get('branch_code')).toBe('CSE');
- await page.getByRole('navigation',{name:'Question Papers workspace'}).getByRole('button',{name:'Prepare Paper'}).click();
+ await goWorkspace(page,'Paper Generation');
  await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('AI & ML');
  await page.reload();await page.getByRole('button',{name:'Change Subject',exact:true}).click();
  await expect(page.getByLabel('Institution',{exact:true})).toHaveValue('JNTUH');await expect(page.getByLabel('Batch',{exact:true})).toHaveValue('2022-23');await expect(page.getByLabel('Branch',{exact:true})).toHaveValue('AI & ML');
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Subject Master',exact:true}).click();
+ await goWorkspace(page,'Master Question Bank');
  await expect(page.getByLabel('Institution',{exact:true})).toHaveValue('');
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Question Papers',exact:true}).click();
+ await goWorkspace(page,'Paper Generation');
  await page.getByLabel('Institution',{exact:true}).selectOption('Demo College');
  await expect(page.getByLabel('Education level',{exact:true})).toHaveValue('');await expect(page.getByLabel('Degree',{exact:true})).toBeDisabled();await expect(page.getByLabel('Subject',{exact:true})).toHaveValue('');
 });
