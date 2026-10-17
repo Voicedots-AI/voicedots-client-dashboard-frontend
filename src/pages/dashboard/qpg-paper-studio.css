@@ -47,6 +47,10 @@
  .qpg-paper-editor .qpg-studio-preview .qpg-preview-canvas{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 }
 
+.qpg-scroll-shortcuts{display:flex;justify-content:flex-end;gap:12px;position:sticky;top:0;z-index:11;padding:7px 2px;background:var(--erp-bg,#fff);border-bottom:1px solid var(--erp-line,#e5e4f0)}
+.qpg-scroll-shortcuts button,.qpg-preview-top{font-size:11px;color:var(--erp-accent,#7c3aed);padding:4px 6px;border-radius:5px}
+.qpg-scroll-shortcuts button:hover,.qpg-preview-top:hover{background:#7c3aed0d}
+.qpg-scroll-shortcuts button:focus-visible,.qpg-preview-top:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
 .qpg-preview-navigation{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:10px}
 
 /* Keep paper actions aligned at every editor width. */
@@ -59,6 +63,46 @@
 .dark .qpg-studio-controls .qpg-paper-toolbar>button.text-red-600:hover{background:#450a0a}
 @media(min-width:1500px){.qpg-studio-controls .qpg-paper-toolbar{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
+.qpg-studio-workspace{position:relative}
+.qpg-scroll-top-arrow{position:absolute;left:42.5%;top:50%;transform:translate(-50%,-50%);z-index:20;display:grid;place-items:center;width:34px;height:34px;border:1px solid #ddd6fe;border-radius:50%;background:var(--erp-bg,#fff);color:var(--erp-accent,#7c3aed);box-shadow:0 3px 12px #312e8120;font-size:21px;line-height:1;transition:background .15s,box-shadow .15s}
+.qpg-scroll-top-arrow:hover{background:#f3efff;box-shadow:0 4px 16px #7c3aed35}
+.qpg-scroll-top-arrow:focus-visible{outline:2px solid #8b5cf6;outline-offset:3px}
+.dark .qpg-scroll-top-arrow:hover{background:#231b3b}
+@media(max-width:1190px){.qpg-scroll-top-arrow{position:sticky;top:12px;left:auto;justify-self:end;transform:none;grid-row:1;margin-bottom:-34px}}
+
+/* Prominent escape to the page header, above the independent scroll areas. */
+.qpg-scroll-top-arrow{top:10px;transform:translateX(-50%);width:38px;height:38px;border:2px solid #a78bfa;background:#7c3aed;color:#fff;box-shadow:0 3px 12px #7c3aed40;font-weight:600}
+.qpg-scroll-top-arrow:hover{background:#6d28d9;box-shadow:0 4px 18px #7c3aed60}
+.dark .qpg-scroll-top-arrow{background:#7c3aed;color:#fff;border-color:#c4b5fd}
+.dark .qpg-scroll-top-arrow:hover{background:#6d28d9}
+@media(max-width:1190px){.qpg-scroll-top-arrow{top:12px;transform:none}}
+
+.qpg-scroll-top-arrow[hidden]{display:none}
+.qpg-scroll-top-arrow{animation:qpg-scroll-float 2.8s ease-in-out infinite;outline:3px solid #c4b5fd66;outline-offset:3px;transition:background .18s,box-shadow .18s,outline-color .18s}
+.qpg-scroll-top-arrow:hover{animation-play-state:paused;outline-color:#a78bfa;box-shadow:0 0 0 7px #8b5cf61a,0 6px 20px #7c3aed55}
+@keyframes qpg-scroll-float{0%,100%{translate:0 0}50%{translate:0 -4px}}
+@media(prefers-reduced-motion:reduce){.qpg-scroll-top-arrow{animation:none;transition:none}}
+@media(max-width:1190px){.qpg-scroll-top-arrow{display:none}}
+
+@media(min-width:1191px){
+ .qpg-paper-workspace>.qpg-paper-editor[data-scroll-workspace="true"]{position:sticky;top:12px;z-index:12}
+ .qpg-paper-editor[data-scroll-workspace="true"] .qpg-studio-workspace{height:calc(100dvh - 160px)}
+}
+
+/* Anchor below the 64px dashboard bar and fit both panes to the viewport. */
+@media(min-width:1191px){
+ .qpg-paper-workspace>.qpg-paper-editor[data-scroll-workspace="true"]{top:76px;height:calc(100dvh - 88px);min-height:0;display:flex;flex-direction:column;box-sizing:border-box}
+ .qpg-paper-editor[data-scroll-workspace="true"]>.qpg-studio-heading,.qpg-paper-editor[data-scroll-workspace="true"]>.qpg-studio-tabs{flex-shrink:0}
+ .qpg-paper-editor[data-scroll-workspace="true"]>.qpg-studio-paper-content{display:flex;flex-direction:column;flex:1;min-height:0}
+ .qpg-paper-editor[data-scroll-workspace="true"] .qpg-studio-workspace{flex:1;height:auto;min-height:0}
+ .qpg-paper-editor[data-scroll-workspace="true"] .qpg-studio-paper-content>.qpg-paper-library{flex-shrink:0}
+}
+
+@media(min-width:1191px){
+ .qpg-paper-workspace>.qpg-paper-editor[data-scroll-pinned="true"]{position:fixed;top:76px;left:var(--qpg-pin-left);width:var(--qpg-pin-width);height:calc(100dvh - 88px);z-index:30;margin:0}
+}
+
+
 /* Page-sized preview with browser column pagination. */
 .qpg-paginated-sheet{overflow:hidden;min-height:0;background:#fff}
 .qpg-page-flow{width:700px;height:990px}
@@ -70,13 +114,13 @@
 .qpg-page-navigation button{padding:4px 8px;border:1px solid var(--erp-line,#e5e4f0);border-radius:6px;color:var(--erp-accent,#7c3aed)}
 .qpg-page-navigation button:disabled{opacity:.4;cursor:not-allowed}
 .qpg-preview-canvas:has(.qpg-paginated-sheet){padding:8px}
-
+@media(min-width:1191px){.qpg-paper-editor .qpg-studio-workspace{grid-template-columns:minmax(0,1.3fr) minmax(320px,.7fr)}.qpg-scroll-top-arrow{left:65%}}
 
 .qpg-page-flow>article{overflow:visible}
 
 /* Paper Studio stays in normal page flow. */
 .qpg-paper-workspace>.qpg-paper-editor{position:static;top:auto;left:auto;width:auto;height:auto}
-
+.qpg-scroll-top-arrow{display:none}
 
 /* Keep the page large and the surrounding preview controls compact. */
 .qpg-preview-header{padding:8px 10px;gap:8px;flex-wrap:wrap}
@@ -188,3 +232,35 @@
 .qpg-studio-controls .qpg-editor-tabs button[aria-pressed=true]{background:var(--erp-bg,#fff);color:var(--erp-accent,#7c3aed);box-shadow:0 1px 5px #312e8112}
 .qpg-studio-controls .qpg-editor-tabs button:hover{color:var(--erp-accent,#7c3aed);background:#7c3aed0a}
 @media(max-width:640px){.qpg-studio-controls .qpg-editor-tabs button{font-size:12px;padding:10px 8px}.qpg-studio-controls .qpg-studio-progress{padding:14px}}
+
+/* A compact, dismissible candidate notice leaves room for the document. */
+.qpg-preview-draft-notice{display:flex;align-items:flex-start;gap:8px;flex-shrink:0;margin:4px 8px 6px;padding:6px 8px;border-radius:7px;background:#f5f3ff;color:#6d28d9;font-size:11px;line-height:1.4}
+.qpg-preview-draft-notice>span{flex:1;min-width:0}
+.qpg-preview-draft-notice>button{display:grid;place-items:center;flex-shrink:0;width:24px;height:24px;margin:-3px -3px -3px 0;border-radius:5px;font-size:19px;line-height:1;color:inherit}
+.qpg-preview-draft-notice>button:hover{background:#ede9fe}
+.qpg-preview-draft-notice>button:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
+.dark .qpg-preview-draft-notice{background:#231b3b;color:#c4b5fd}
+.dark .qpg-preview-draft-notice>button:hover{background:#35254f}
+
+.qpg-paper-editor .qpg-back-to-papers{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:8px 14px;border:1px solid #ddd6fe;border-radius:10px;background:var(--erp-bg,#fff);color:var(--erp-accent,#7c3aed);font-size:12px;font-weight:500;box-shadow:0 1px 3px #312e8108;transition:background .15s,border-color .15s,box-shadow .15s}
+.qpg-paper-editor .qpg-back-to-papers:hover:not(:disabled){background:#f5f3ff;border-color:#a78bfa;box-shadow:0 2px 6px #7c3aed14}
+.qpg-paper-editor .qpg-back-to-papers:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
+.dark .qpg-paper-editor .qpg-back-to-papers{border-color:#594278}
+.dark .qpg-paper-editor .qpg-back-to-papers:hover:not(:disabled){background:#231b3b}
+
+.qpg-paper-editor .qpg-back-to-papers{min-height:40px;padding:9px 17px;border:1.5px solid #c4b5fd;border-radius:11px;background:#f3efff;color:#6d28d9;font-size:13px;font-weight:700;box-shadow:0 2px 5px #7c3aed12}
+.qpg-paper-editor .qpg-back-to-papers:hover:not(:disabled){background:#ede9fe;border-color:#8b5cf6;box-shadow:0 3px 9px #7c3aed20}
+.dark .qpg-paper-editor .qpg-back-to-papers{background:#2b1d44;color:#ddd6fe;border-color:#7c5aa6}
+.dark .qpg-paper-editor .qpg-back-to-papers:hover:not(:disabled){background:#382555;border-color:#a78bfa}
+
+.qpg-template-builder{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}
+.qpg-template-builder-fields{min-width:0}
+.qpg-template-builder-preview{position:sticky;top:0;min-width:0;padding:12px;border:1px solid var(--erp-line,#e5e4f0);border-radius:12px;background:var(--erp-soft,#f8f9fc)}
+.qpg-template-builder-preview>h3{font-size:13px}
+.qpg-template-preview-canvas{width:100%;max-height:56vh;overflow:auto;background:#fff;border:1px solid #e5e4f0;border-radius:6px}
+.qpg-template-preview-canvas article{border:0;border-radius:0}
+@media(max-width:800px){.qpg-template-builder{grid-template-columns:1fr}.qpg-template-builder-preview{position:static}.qpg-template-preview-canvas{max-height:50vh}}
+
+.qpg-template-editor-footer>div{max-width:100%;flex-wrap:wrap}
+.qpg-template-builder fieldset{min-inline-size:0}
+.qpg-template-builder label,.qpg-template-builder input,.qpg-template-builder select{min-width:0;max-width:100%}

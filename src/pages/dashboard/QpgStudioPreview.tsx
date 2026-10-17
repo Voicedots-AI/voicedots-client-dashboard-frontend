@@ -11,6 +11,7 @@ import type {RenderModel} from './QpgRenderPreview';
 type Props={onCustomize?:(part:string)=>void;selection?:{number:string;sequence:number}|null;aiBuild?:AiBuild|null;paper:{id:string;revision:number;status:string;metadata?:{document_details?:DocumentDetails;document_style?:DocumentStyle}};subject:Subject;template:string;templates:PaperTemplate[];onTemplate:(id:string)=>void;onManage:()=>void;onPatterns:()=>void;draft?:{title:string;instructions:string;examinationSession:string;documentDetails?:DocumentDetails;documentStyle?:DocumentStyle};dirty:boolean;onQuestion:(number:string)=>void;onDetails:()=>void};
 export default function QpgStudioPreview({onCustomize,paper,subject,template,draft,dirty,onQuestion,onDetails,aiBuild,selection}:Props){
  const [model,setModel]=useState<RenderModel|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false),[zoom,setZoom]=useState('page'),[retry,setRetry]=useState(0),[frameWidth,setFrameWidth]=useState(0),[frameHeight,setFrameHeight]=useState(0),[page,setPage]=useState(0),[pageCount,setPageCount]=useState(1);
+ const [dismissedDraftNotice,setDismissedDraftNotice]=useState('');
  const frameRef=useRef<HTMLDivElement>(null);
  const sheetRef=useRef<HTMLDivElement>(null);
  const scopeRef=useRef('');
@@ -59,8 +60,8 @@ export default function QpgStudioPreview({onCustomize,paper,subject,template,dra
  useEffect(()=>{
   let cancelled=false;
   const measure=()=>{if(cancelled)return;const flow=sheetRef.current?.querySelector<HTMLElement>('article');if(!flow)return;const count=Math.max(1,Math.ceil((flow.scrollWidth-36)/700));setPageCount(count);setPage(current=>Math.min(current,count-1));};
-  const raf=requestAnimationFrame(measure);void document.fonts.ready.then(measure);
-  return()=>{cancelled=true;cancelAnimationFrame(raf);};
+  const raf=requestAnimationFrame(measure);void document.fonts.ready.then(measure);window.addEventListener('qpg-image-loaded',measure);
+  return()=>{cancelled=true;cancelAnimationFrame(raf);window.removeEventListener('qpg-image-loaded',measure);};
  },[liveModel,scale]);
  useEffect(()=>{setPage(0);setPageCount(1);},[paper.id]);
 
@@ -68,7 +69,7 @@ export default function QpgStudioPreview({onCustomize,paper,subject,template,dra
 
  return <div className="qpg-preview-shell"><header className="qpg-preview-header"><div><h3>Paper preview</h3><p>{paper.status==='LOCKED'?'Final document':candidatePreview?'AI candidate draft · not assembled':dirty?'Live · unsaved details':'Live preview'} · Revision {paper.revision}</p></div><div className="qpg-preview-navigation"><button type="button" className="qpg-preview-edit-link" onClick={onDetails} title="Open paper details">Edit details ↗</button><label className="text-xs">Zoom <select aria-label="Preview zoom" value={zoom} onChange={e=>setZoom(e.target.value)}><option value="page">Fit page</option><option value="fit">Fit width</option>{[65,85,100].map(n=><option key={n} value={n}>{n}%</option>)}</select></label></div></header>
 
- {candidatePreview&&<p role="status" className="mx-4 mb-2 rounded-lg bg-violet-50 p-2 text-xs text-violet-800">Showing generated candidates, including questions not yet saved. Resolve the remaining questions, then assemble to make them part of the paper.</p>}
+ {candidatePreview&&dismissedDraftNotice!==`${paper.id}:${aiBuildId}`&&<div role="status" className="qpg-preview-draft-notice"><span>AI draft preview. Save and assemble candidates to add them to this paper.</span><button type="button" aria-label="Dismiss AI draft notice" title="Dismiss notice" onClick={()=>setDismissedDraftNotice(`${paper.id}:${aiBuildId}`)}>×</button></div>}
 
 
 
