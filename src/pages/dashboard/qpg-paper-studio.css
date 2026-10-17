@@ -157,3 +157,34 @@
 .qpg-studio-controls[data-editor-tab=questions]>.qpg-paper-settings,
 .qpg-studio-controls[data-editor-tab=customize]>.qpg-paper-settings{display:none}
 .qpg-studio-controls[data-editor-tab=details]>.qpg-questions-only{display:none}
+
+/* Keep Studio navigation visible while the editor and preview scroll below. */
+.qpg-paper-workspace .qpg-paper-editor>.qpg-studio-heading{
+ position:sticky;
+ top:64px;
+ z-index:20;
+ background:var(--erp-bg,#fff);
+ padding:8px 0;
+ border-bottom:1px solid var(--erp-line,#e5e4f0);
+ box-shadow:0 3px 6px #17203b05;
+}
+@media(max-width:650px){
+ .qpg-paper-workspace .qpg-paper-editor>.qpg-studio-heading{padding:6px 0}
+}
+
+/* Stack the page tabs, subject context and workflow beneath the dashboard bar. */
+.qpg-paper-workspace>nav[aria-label="Question paper sections"]{position:sticky;top:64px;z-index:33;box-shadow:0 0 0 6px var(--erp-soft,#f8f9fc)}
+.qpg-paper-workspace>section.qpg-paper-context{position:sticky;top:calc(64px + var(--qpg-nav-height,38px) + 8px);z-index:32;box-shadow:0 0 0 6px var(--erp-soft,#f8f9fc)}
+.qpg-paper-workspace .qpg-paper-editor>.qpg-studio-heading{top:calc(64px + var(--qpg-nav-height,38px) + var(--qpg-context-height,56px) + 20px);z-index:31}
+
+/* Clear status hierarchy and comfortable editor section controls. */
+.qpg-studio-controls .qpg-studio-progress{padding:16px 18px 12px;border:1px solid var(--erp-line,#e5e4f0);border-radius:14px;background:var(--erp-soft,#f8f9fc);margin-bottom:12px}
+.qpg-studio-controls .qpg-studio-progress>div{align-items:center;gap:12px;font-size:14px}
+.qpg-studio-controls .qpg-studio-progress strong{font-size:17px;font-weight:600;color:var(--erp-text,#24324b)}
+.qpg-studio-controls .qpg-studio-progress>div>span{font-size:13px;color:var(--erp-muted,#71829d)}
+.qpg-studio-controls .qpg-studio-progress progress{display:block;height:6px;margin-top:14px;border-radius:999px;overflow:hidden}
+.qpg-studio-controls .qpg-editor-tabs{gap:6px;padding:4px;background:var(--erp-soft,#f8f9fc);border:1px solid var(--erp-line,#e5e4f0);border-radius:12px;margin-bottom:18px;flex-wrap:wrap}
+.qpg-studio-controls .qpg-editor-tabs button{flex:1;min-height:44px;padding:10px 14px;font-size:14px;font-weight:500;border:0;border-radius:8px;white-space:nowrap;color:var(--erp-muted,#71829d)}
+.qpg-studio-controls .qpg-editor-tabs button[aria-pressed=true]{background:var(--erp-bg,#fff);color:var(--erp-accent,#7c3aed);box-shadow:0 1px 5px #312e8112}
+.qpg-studio-controls .qpg-editor-tabs button:hover{color:var(--erp-accent,#7c3aed);background:#7c3aed0a}
+@media(max-width:640px){.qpg-studio-controls .qpg-editor-tabs button{font-size:12px;padding:10px 8px}.qpg-studio-controls .qpg-studio-progress{padding:14px}}

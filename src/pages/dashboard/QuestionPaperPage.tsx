@@ -48,11 +48,12 @@ function savedWorkspaceAcademic(){
   try{const saved=JSON.parse(sessionStorage.getItem('qpg-workspace-academic')||'null');if(saved&&Object.keys(emptyAcademic).every(key=>typeof saved[key]==='string')&&typeof saved.legacy==='boolean')return saved as Academic&{legacy:boolean};return {...emptyAcademic,legacy:false};}catch{return {...emptyAcademic,legacy:false};}
 }
 function QuestionWorkspace({institution}:{institution:string}){
+  const workspaceRef=useRef<HTMLElement>(null);
   const location=useLocation();
   const navigate=useNavigate();
   const requestedView=new URLSearchParams(location.search).get('view');
   const generationPage=location.pathname.endsWith('/paper-generation');
-  const routeTab=['review','drafts'].includes(requestedView||'')?'bank':requestedView==='home'?'academic':requestedView||(generationPage?'papers':'academic');
+  const routeTab=generationPage&&requestedView==='reports'?'papers':['review','drafts'].includes(requestedView||'')?'bank':requestedView==='home'?'academic':requestedView||(generationPage?'papers':'academic');
   const [tab,setTabState]=useState(routeTab);
   useEffect(()=>{setTabState(routeTab);},[routeTab]);
   const generationWorkspace=generationPage||(!location.pathname.endsWith('/question-bank')&&['blueprint','papers','templates'].includes(tab));
@@ -237,9 +238,17 @@ function QuestionWorkspace({institution}:{institution:string}){
     }catch(e){setError(collegeError(e));}
     finally{setReleaseBusy('');}
   }
-  return <main className={`erp-workspace min-w-0 qpg-bank-workspace ${generationWorkspace?'qpg-paper-workspace':'qpg-bank-compact'}`}>
+  useEffect(()=>{
+    const workspace=workspaceRef.current;if(!workspace||!generationWorkspace)return;
+    const nav=workspace.querySelector<HTMLElement>(':scope > nav[aria-label="Question paper sections"]');
+    const context=workspace.querySelector<HTMLElement>(':scope > .qpg-paper-context');
+    const measure=()=>{workspace.style.setProperty('--qpg-nav-height',`${nav?.offsetHeight||0}px`);workspace.style.setProperty('--qpg-context-height',`${context?.offsetHeight||0}px`);};
+    const observer=new ResizeObserver(measure);if(nav)observer.observe(nav);if(context)observer.observe(context);measure();
+    return()=>observer.disconnect();
+  },[generationWorkspace,loading,changingContext,selectedSubject?.id,tab]);
+  return <main ref={workspaceRef} className={`erp-workspace min-w-0 qpg-bank-workspace ${generationWorkspace?'qpg-paper-workspace':'qpg-bank-compact'}`}>
     <header className="mb-6"><p className="text-sm text-slate-500">{!generationWorkspace&&<BookOpen size={16} aria-hidden="true"/>}{institution}</p><h1 className="mt-1 text-2xl font-bold">{generationWorkspace?'Question Paper Studio':'Master Question Bank'}</h1><p className="mt-2 text-sm text-slate-500">{generationWorkspace?'Choose a format, add questions and export your paper.':'Add, import or generate questions. Edit and reuse them in your papers.'}</p></header>
-    <nav aria-label="Question paper sections" className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 pb-2">{sectionTabs.map(([key,title])=>{const active=key==='papers'?tab==='papers':key==='bank'?module==='bank':tab===key;return <Button key={key} className="shrink-0 focus-visible:ring-2 focus-visible:ring-indigo-600" aria-current={active?'page':undefined} variant={active?'default':'ghost'} onClick={()=>{if(key==='papers')setPaperLibraryRequest(n=>n+1);setTab(key);}}>{title}</Button>;})}</nav>
+    {!generationWorkspace&&<nav aria-label="Question paper sections" className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 pb-2">{sectionTabs.map(([key,title])=>{const active=key==='papers'?tab==='papers':key==='bank'?module==='bank':tab===key;return <Button key={key} className="shrink-0 focus-visible:ring-2 focus-visible:ring-indigo-600" aria-current={active?'page':undefined} variant={active?'default':'ghost'} onClick={()=>{if(key==='papers')setPaperLibraryRequest(n=>n+1);setTab(key);}}>{title}</Button>;})}</nav>}
 
     {error&&<p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {notice&&<p role="status" className="mb-4 rounded-xl bg-indigo-50 p-3 text-sm text-indigo-700">{notice}</p>}
