@@ -118,3 +118,42 @@
  .qpg-paper-editor .qpg-studio-preview .qpg-preview-canvas{flex:1;min-height:0;max-height:none;overflow:auto}
  .qpg-preview-header,.qpg-page-navigation,.qpg-preview-shell>p:last-child{flex-shrink:0}
 }
+
+/* A single practical workspace: details, pattern and questions beside the paper. */
+.qpg-section-number{display:inline-grid;place-items:center;flex-shrink:0;width:24px;height:24px;border-radius:50%;background:#ede9fe;color:#6d28d9;font-size:12px;font-weight:600;margin-right:8px}
+.qpg-studio-controls .qpg-paper-settings{padding:14px!important;border:1px solid var(--erp-line,#e5e4f0)!important;border-radius:12px;margin:12px 0!important;background:var(--erp-bg,#fff)}
+.qpg-studio-controls .qpg-paper-settings>summary{display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600;list-style:none;gap:4px}
+.qpg-studio-controls .qpg-paper-settings>summary>span:last-child{margin-left:auto;color:var(--erp-muted,#71829d);font-size:10px;font-weight:400}
+.qpg-studio-controls .qpg-paper-settings label{font-size:11px;gap:4px}
+.qpg-studio-controls .qpg-paper-settings input,.qpg-studio-controls .qpg-paper-settings textarea{padding:7px 9px;min-height:34px;font-size:12px}
+.qpg-pattern-overview{padding:14px;border:1px solid var(--erp-line,#e5e4f0);border-radius:12px;margin:12px 0;background:var(--erp-bg,#fff)}
+.qpg-pattern-overview>summary{display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600;list-style:none}
+.qpg-pattern-overview small{display:block;font-size:11px;font-weight:400;color:var(--erp-muted,#71829d);margin-top:3px}
+.qpg-pattern-overview-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:12px 0}
+.qpg-pattern-overview-parts>div{display:grid;gap:5px;padding:10px;border:1px solid var(--erp-line,#e5e4f0);border-radius:8px;font-size:11px}
+.qpg-pattern-overview-parts strong{font-weight:600}
+.qpg-pattern-overview>p{font-size:11px!important;margin:8px 0}
+.qpg-overview-questions{padding:12px 0 8px;scroll-margin-top:16px}
+.qpg-overview-questions h3{display:flex;align-items:center;font-size:14px;font-weight:600}
+.qpg-overview-questions p{font-size:11px!important;margin:5px 0 0}
+.qpg-studio-controls[data-editor-tab=overview]>.qpg-paper-settings{display:block}
+.qpg-studio-actionbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;position:sticky;bottom:0;z-index:15;margin:12px -2px -2px;padding:10px 2px 2px;border-top:1px solid var(--erp-line,#e5e4f0);background:var(--erp-bg,#fff)}
+.qpg-studio-actionbar>button{min-height:34px;height:auto;padding:7px 12px;font-size:12px;border-radius:8px}
+.qpg-studio-actionbar .qpg-studio-save-state{flex:1;min-width:120px;font-size:11px}
+.qpg-studio-actionbar>button.text-red-600{color:#dc2626}
+.qpg-editor-tabs{gap:12px;margin-bottom:10px}
+.qpg-editor-tabs button{font-size:11px;padding:7px 2px}
+@media(min-width:640px){.qpg-studio-controls .qpg-paper-settings .sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1600px){.qpg-studio-controls .qpg-paper-settings>div:first-of-type{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.qpg-studio-actionbar .qpg-studio-save-state{flex-basis:100%}.qpg-studio-actionbar>button{flex:1}}
+.dark .qpg-section-number{background:#312248;color:#ddd6fe}
+.qpg-paper-editor[data-overview-workspace=true][data-workspace-mode=simple]>nav[aria-label="Paper studio"]{display:none}
+.qpg-paper-more-actions{position:relative;font-size:11px}
+.qpg-paper-more-actions>summary{padding:8px 10px;cursor:pointer;color:var(--erp-muted,#71829d)}
+.qpg-paper-more-actions>div{position:absolute;bottom:100%;left:0;display:grid;gap:6px;min-width:160px;padding:8px;background:var(--erp-bg,#fff);border:1px solid var(--erp-line,#e5e4f0);border-radius:10px;box-shadow:0 6px 20px #17203b14}
+.qpg-paper-more-actions button{font-size:11px;min-height:32px}
+
+/* Keep academic details and question editing in distinct tabs. */
+.qpg-studio-controls[data-editor-tab=questions]>.qpg-paper-settings,
+.qpg-studio-controls[data-editor-tab=customize]>.qpg-paper-settings{display:none}
+.qpg-studio-controls[data-editor-tab=details]>.qpg-questions-only{display:none}
