@@ -6,7 +6,7 @@ import QpgQuestionIntelligencePanel from './QpgQuestionIntelligencePanel';
 import QpgRepetitionPanel from './QpgRepetitionPanel';
 import QpgGeneratePanel from './QpgGeneratePanel';
 import QpgPaperPanel from './QpgPaperPanel';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { FormEvent, ReactNode } from 'react';
 import { Plus, Upload, Sparkles, BookOpen, ArrowLeft } from 'lucide-react';
@@ -133,6 +133,19 @@ function QuestionWorkspace({institution}:{institution:string}){
   const [dialog,setDialog]=useState<'question'|'subject'|'cos'|'units'|'topics'|'details'|'imports'|'degree'|'department'|null>(null);
   const [selected,setSelected]=useState<Question|null>(null);
   const program=options?.programs.find(p=>p.code===context.program);
+  const checkedSavedWorkspace=useRef(false);
+  useEffect(()=>{
+    if(!options||checkedSavedWorkspace.current)return;
+    checkedSavedWorkspace.current=true;
+    const degree=options.programs.find(p=>p.code===qpgContext.program);
+    const catalogMissing=!!qpgContext.program&&(!degree||!!qpgContext.branch&&!degree.departments.some(d=>d.code===qpgContext.branch));
+    const fields=(Object.keys(emptyAcademic) as (keyof Academic)[]).filter(key=>qpgAcademic[key]);
+    const academicMissing=!qpgLegacy&&fields.length>0&&!(options.academic_contexts||[]).some(c=>fields.every(key=>c[key]===qpgAcademic[key])&&(!qpgContext.program||c.program_code===qpgContext.program)&&(!qpgContext.branch||c.branch_code===qpgContext.branch));
+    if(catalogMissing||academicMissing){
+      setQpgAcademic({...emptyAcademic});setQpgContext({program:'',branch:'',year:'',semester:'',subject:''});setQpgSubjects([]);
+      setNotice('Your previously selected academic context is no longer available. Choose a subject from the current database below.');
+    }
+  },[options,qpgAcademic,qpgContext,qpgLegacy]);
   const qpgProgram=options?.programs.find(p=>p.code===qpgContext.program);
   const selectedSubject=qpgSubjects.find(s=>s.id===qpgContext.subject);
   const syllabusSubject=subjects.find(s=>s.id===context.subject);
