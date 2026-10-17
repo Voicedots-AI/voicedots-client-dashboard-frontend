@@ -3,9 +3,9 @@
 .qpg-template-thumbnail{position:relative;padding:0;display:block}.qpg-thumbnail-document{position:absolute;top:0;left:0;width:700px;transform:scale(.14);transform-origin:top left;pointer-events:none;display:block!important}.qpg-thumbnail-document>article{border:0;border-radius:0;min-height:940px;padding:36px}
 
 /* Paper Studio: keep the editing surface compact and the document in view. */
-.qpg-studio-progress{padding:12px 0 6px}.qpg-studio-progress>div{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#64748b}.qpg-studio-progress strong{font-weight:600;color:#475569}.qpg-studio-progress progress{height:4px;width:100%;accent-color:#8b5cf6;margin-top:8px}.qpg-studio-save-state{flex-basis:100%;font-size:11px;color:#64748b}.qpg-editor-tabs{display:flex;gap:18px;border-bottom:1px solid #e9e5f2;margin-bottom:16px}.qpg-editor-tabs button{padding:10px 2px;font-size:13px;color:#64748b;border-bottom:2px solid transparent}.qpg-editor-tabs button[aria-pressed=true]{color:#7c3aed;border-bottom-color:#8b5cf6}.qpg-studio-controls[data-editor-tab=details]>.qpg-questions-only{display:none}.qpg-studio-controls[data-editor-tab=questions]>.qpg-paper-settings{display:none}.qpg-position-card{scroll-margin-top:160px;outline:none;transition:box-shadow .2s}.qpg-position-card[data-focused=true]{box-shadow:0 0 0 2px #a78bfa}.qpg-preview-question-link{display:block;font-size:10px;color:#7c3aed;opacity:0;border-radius:4px;padding:2px 5px;margin-left:-5px}.qpg-preview-sheet article div:hover>.qpg-preview-question-link,.qpg-preview-question-link:focus-visible{opacity:1;background:#f5f3ff}.qpg-template-summary{display:flex;justify-content:space-between;gap:12px;cursor:pointer;font-size:12px;list-style:none;font-weight:600}.qpg-template-summary>span+span{font-weight:400;color:#64748b}.qpg-template-picker[open]>.flex{margin-top:14px}.qpg-preview-details-link{display:block;margin:0 16px 8px;color:#7c3aed;font-size:11px}.qpg-preview-update{font-size:11px;color:#64748b;margin-bottom:8px}.qpg-preview-error{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:12px;border-radius:10px;font-size:12px;margin-bottom:12px}.qpg-preview-error button{margin-top:8px;text-decoration:underline}.qpg-studio-controls .qpg-paper-settings>summary{display:none}.qpg-studio-controls .qpg-paper-settings{margin-top:0;border:0;padding:0}.dark .qpg-studio-progress strong{color:#cbd5e1}.qpg-preview-canvas{min-height:400px}.qpg-preview-question-link:focus-visible,.qpg-editor-tabs button:focus-visible,.qpg-template-summary:focus-visible{outline:2px solid #8b5cf6;outline-offset:3px}
+.qpg-studio-progress{padding:12px 0 6px}.qpg-studio-progress>div{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#64748b}.qpg-studio-progress strong{font-weight:600;color:#475569}.qpg-studio-progress progress{height:4px;width:100%;accent-color:#8b5cf6;margin-top:8px}.qpg-studio-save-state{flex-basis:100%;font-size:11px;color:#64748b}.qpg-editor-tabs{display:flex;flex-wrap:wrap;gap:18px;border-bottom:1px solid #e9e5f2;margin-bottom:16px}.qpg-editor-tabs button{padding:10px 2px;font-size:13px;color:#64748b;border-bottom:2px solid transparent}.qpg-editor-tabs button[aria-pressed=true]{color:#7c3aed;border-bottom-color:#8b5cf6}.qpg-studio-controls[data-editor-tab=details]>.qpg-questions-only{display:none}.qpg-studio-controls[data-editor-tab=questions]>.qpg-paper-settings{display:none}.qpg-position-card{scroll-margin-top:160px;outline:none;transition:box-shadow .2s}.qpg-position-card[data-focused=true]{box-shadow:0 0 0 2px #a78bfa}.qpg-preview-question-link{display:block;font-size:10px;color:#7c3aed;opacity:0;border-radius:4px;padding:2px 5px;margin-left:-5px}.qpg-preview-sheet article div:hover>.qpg-preview-question-link,.qpg-preview-question-link:focus-visible{opacity:1;background:#f5f3ff}.qpg-template-summary{display:flex;justify-content:space-between;gap:12px;cursor:pointer;font-size:12px;list-style:none;font-weight:600}.qpg-template-summary>span+span{font-weight:400;color:#64748b}.qpg-template-picker[open]>.flex{margin-top:14px}.qpg-preview-details-link{display:block;margin:0 16px 8px;color:#7c3aed;font-size:11px}.qpg-preview-update{font-size:11px;color:#64748b;margin-bottom:8px}.qpg-preview-error{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:12px;border-radius:10px;font-size:12px;margin-bottom:12px}.qpg-preview-error button{margin-top:8px;text-decoration:underline}.qpg-studio-controls .qpg-paper-settings>summary{display:none}.qpg-studio-controls .qpg-paper-settings{margin-top:0;border:0;padding:0}.dark .qpg-studio-progress strong{color:#cbd5e1}.qpg-preview-canvas{min-height:400px}.qpg-preview-question-link:focus-visible,.qpg-editor-tabs button:focus-visible,.qpg-template-summary:focus-visible{outline:2px solid #8b5cf6;outline-offset:3px}
 
-.qpg-paper-editor[data-workspace-mode=simple] .qpg-full-controls{display:none}.qpg-paper-editor[data-workspace-mode=full] .qpg-simple-add{display:none}.qpg-simple-add{padding:14px 0 18px;border-bottom:1px solid #ece8f2;margin-bottom:18px}.qpg-simple-add h3,.qpg-design-setup h3{font-weight:600;font-size:14px}.qpg-studio-advanced{border-top:1px solid #ece8f2;padding:16px 0;margin-top:22px}.qpg-studio-advanced>summary{cursor:pointer;font-size:12px;font-weight:600;color:#64748b}.qpg-design-setup{padding:12px 0 20px}.qpg-studio-controls[data-editor-tab=design]>.qpg-questions-only,.qpg-studio-controls[data-editor-tab=design]>.qpg-paper-settings{display:none}.qpg-paper-editor[data-workspace-mode=simple] .qpg-studio-controls>.qpg-ai-tools{border:1px solid #e9e5f2;background:#faf9fd;border-radius:12px;padding:12px}.qpg-ai-simple>div:first-child p,.qpg-ai-simple>div:first-child>span{display:none}.qpg-ai-simple{padding:12px!important;background:transparent!important;border:0!important;margin:0!important}.qpg-ai-simple h3{font-size:14px}.qpg-ai-simple h4{font-size:13px}.qpg-paper-editor[data-workspace-mode=simple] .qpg-studio-heading h2{font-size:20px!important}.qpg-studio-workspace [id^=qpg-ai-tools]{scroll-margin-top:150px}
+.qpg-paper-editor[data-workspace-mode=simple] .qpg-full-controls{display:none}.qpg-paper-editor[data-workspace-mode=full] .qpg-simple-add{display:none}.qpg-simple-add{padding:14px 0 18px;border-bottom:1px solid #ece8f2;margin-bottom:18px}.qpg-simple-add h3,.qpg-design-setup h3{font-weight:600;font-size:14px}.qpg-studio-advanced{border-top:1px solid #ece8f2;padding:16px 0;margin-top:22px}.qpg-studio-advanced>summary{cursor:pointer;font-size:12px;font-weight:600;color:#64748b}.qpg-design-setup{padding:12px 0 20px}.qpg-studio-controls[data-editor-tab=export]>.qpg-questions-only,.qpg-studio-controls[data-editor-tab=export]>.qpg-paper-settings{display:none}.qpg-paper-editor[data-workspace-mode=simple] .qpg-studio-controls>.qpg-ai-tools{border:1px solid #e9e5f2;background:#faf9fd;border-radius:12px;padding:12px}.qpg-ai-simple>div:first-child p,.qpg-ai-simple>div:first-child>span{display:none}.qpg-ai-simple{padding:12px!important;background:transparent!important;border:0!important;margin:0!important}.qpg-ai-simple h3{font-size:14px}.qpg-ai-simple h4{font-size:13px}.qpg-paper-editor[data-workspace-mode=simple] .qpg-studio-heading h2{font-size:20px!important}.qpg-studio-workspace [id^=qpg-ai-tools]{scroll-margin-top:150px}
 
 
 .qpg-question-navigator{border:1px solid #e8e3f0;border-radius:12px;padding:14px;margin:12px 0 18px;background:#fcfbfe}.qpg-question-navigator header{display:flex;justify-content:space-between;gap:12px;align-items:center}.qpg-question-navigator h3{font-size:13px;font-weight:600}.qpg-question-navigator header button,.qpg-issue-link{font-size:12px;color:#b45309;text-decoration:underline;text-underline-offset:3px}.qpg-navigator-part{margin-top:12px}.qpg-navigator-part h4{font-size:11px;color:#64748b;margin-bottom:7px}.qpg-navigator-part>div{display:flex;flex-wrap:wrap;gap:5px}.qpg-navigator-part button{font-size:11px;padding:5px 7px;border-radius:6px;border:1px solid transparent;min-width:32px}.qpg-navigator-part button.ready{background:#eefbf3;color:#166534;border-color:#d1eadb}.qpg-navigator-part button.attention{background:#fff8e7;color:#92400e;border-color:#f3dfb0}.qpg-navigator-part button[aria-current=true]{outline:2px solid #8b5cf6;outline-offset:1px}.qpg-question-navigator>p{font-size:10px;color:#94a3b8;margin-top:10px}.qpg-question-issue{padding:14px;border:1px solid #f0dfbd;border-radius:12px;margin-bottom:12px}.qpg-question-issue h3{font-size:14px;font-weight:600}.qpg-question-issue p{font-size:13px;line-height:1.6;color:#92400e;margin:8px 0 12px}.qpg-question-issue>div{display:flex;gap:8px;flex-wrap:wrap}.dark .qpg-question-navigator{background:#151b28;border-color:#334155}.qpg-navigator-part button:focus-visible,.qpg-issue-link:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
@@ -20,3 +20,101 @@
 .qpg-library-table{position:relative;max-width:100%;min-width:0}.qpg-library-table .sr-only{left:0;top:0}
 
 .qpg-preview-sheet [data-preview-question] p{font-size:inherit;line-height:inherit;color:inherit}
+
+.qpg-studio-controls[data-editor-tab=customize]>.qpg-questions-only,.qpg-studio-controls[data-editor-tab=customize]>.qpg-paper-settings{display:none}
+
+.qpg-paper-workspace .qpg-studio-heading{gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.qpg-paper-workspace .qpg-studio-heading>button{height:30px;font-size:11px;padding:4px 10px}
+.qpg-paper-workspace .qpg-studio-tabs{padding:3px;margin-bottom:10px;border-radius:9px}
+.qpg-paper-workspace .qpg-studio-tabs button{padding:6px 12px;border-radius:6px;font-size:12px}
+.qpg-workflow-steps{display:flex;align-items:center;gap:16px}
+.qpg-workflow-steps button{display:flex;align-items:center;gap:7px;font-size:11px;color:#64748b;white-space:nowrap}
+.qpg-workflow-steps button>span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#f0edf8;color:#64748b;font-size:10px}
+.qpg-workflow-steps button[aria-current=step]{color:#6d28d9;font-weight:600}
+.qpg-workflow-steps button[aria-current=step]>span{background:#7c3aed;color:white}
+.qpg-workflow-steps button:disabled{opacity:.45;cursor:not-allowed}
+.dark .qpg-workflow-steps button{color:#94a3b8}.dark .qpg-workflow-steps button>span{background:#1e293b;color:#c4b5fd}.dark .qpg-workflow-steps button[aria-current=step]{color:#c4b5fd}.dark .qpg-workflow-steps button[aria-current=step]>span{background:#7c3aed;color:white}
+@media(max-width:650px){.qpg-workflow-steps{order:3;flex-basis:100%;justify-content:space-between;gap:8px}.qpg-paper-workspace .qpg-studio-heading>button:last-child{margin-left:auto}.qpg-workflow-steps button{font-size:10px;gap:5px}}
+
+/* Two independent desktop scroll areas for editing and reading the paper. */
+@media(min-width:1191px){
+ .qpg-paper-editor .qpg-studio-workspace{height:calc(100dvh - 140px);min-height:420px;align-items:stretch}
+ .qpg-paper-editor .qpg-studio-controls{height:100%;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding-right:10px;scroll-padding-top:12px}
+ .qpg-paper-editor .qpg-studio-controls .qpg-paper-toolbar{position:relative;top:auto}
+ .qpg-paper-editor .qpg-studio-preview{position:static;height:100%;min-height:0}
+ .qpg-paper-editor .qpg-studio-preview>.qpg-preview-shell{display:flex;flex-direction:column;height:100%;min-height:0}
+ .qpg-paper-editor .qpg-studio-preview .qpg-preview-header,.qpg-paper-editor .qpg-studio-preview .qpg-preview-details-link,.qpg-paper-editor .qpg-studio-preview .qpg-preview-shell>p{flex-shrink:0}
+ .qpg-paper-editor .qpg-studio-preview .qpg-preview-canvas{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+}
+
+.qpg-preview-navigation{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:10px}
+
+/* Keep paper actions aligned at every editor width. */
+.qpg-studio-controls .qpg-paper-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px}
+.qpg-studio-controls .qpg-paper-toolbar .qpg-studio-save-state{grid-column:1 / -1;margin-bottom:2px;font-size:11px}
+.qpg-studio-controls .qpg-paper-toolbar>button{display:inline-flex;align-items:center;justify-content:center;min-width:0;width:100%;min-height:36px;height:auto;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.4;box-shadow:none;white-space:normal;text-align:center}
+.qpg-studio-controls .qpg-paper-toolbar>button.text-red-600{border:1px solid #fecaca;background:transparent;color:#dc2626}
+.qpg-studio-controls .qpg-paper-toolbar>button.text-red-600:hover{background:#fef2f2}
+.dark .qpg-studio-controls .qpg-paper-toolbar>button.text-red-600{border-color:#7f1d1d;color:#f87171}
+.dark .qpg-studio-controls .qpg-paper-toolbar>button.text-red-600:hover{background:#450a0a}
+@media(min-width:1500px){.qpg-studio-controls .qpg-paper-toolbar{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* Page-sized preview with browser column pagination. */
+.qpg-paginated-sheet{overflow:hidden;min-height:0;background:#fff}
+.qpg-page-flow{width:700px;height:990px}
+.qpg-page-flow>article{box-sizing:border-box;width:700px;height:990px;margin:0;padding:36px!important;column-width:628px;column-gap:72px;column-fill:auto;border:0;border-radius:0}
+.qpg-page-flow>article>div.min-w-\[540px\]{display:contents}
+.qpg-page-flow [data-preview-question]{break-inside:avoid}
+.qpg-page-flow h3,.qpg-page-flow h4{break-after:avoid}
+.qpg-page-navigation{display:flex;align-items:center;justify-content:center;gap:16px;flex-shrink:0;padding:7px 10px;border-top:1px solid var(--erp-line,#e5e4f0);font-size:11px}
+.qpg-page-navigation button{padding:4px 8px;border:1px solid var(--erp-line,#e5e4f0);border-radius:6px;color:var(--erp-accent,#7c3aed)}
+.qpg-page-navigation button:disabled{opacity:.4;cursor:not-allowed}
+.qpg-preview-canvas:has(.qpg-paginated-sheet){padding:8px}
+
+
+.qpg-page-flow>article{overflow:visible}
+
+/* Paper Studio stays in normal page flow. */
+.qpg-paper-workspace>.qpg-paper-editor{position:static;top:auto;left:auto;width:auto;height:auto}
+
+
+/* Keep the page large and the surrounding preview controls compact. */
+.qpg-preview-header{padding:8px 10px;gap:8px;flex-wrap:wrap}
+.qpg-preview-header h3{font-size:12px;margin:0}
+.qpg-preview-header p{font-size:10px!important;line-height:1.3!important;margin:2px 0 0!important}
+.qpg-preview-navigation{gap:6px}
+.qpg-preview-navigation label{font-size:10px}
+.qpg-preview-edit-link{font-size:10px;color:var(--erp-accent,#7c3aed);padding:4px}
+.qpg-preview-shell>p:last-child{font-size:10px!important;line-height:1.3!important;margin:0;padding:6px 10px}
+.qpg-preview-canvas:has(.qpg-paginated-sheet){padding:6px;max-height:none;min-height:0}
+.qpg-page-flow>article{font-family:"Times New Roman",Times,serif;color:#111}
+.qpg-page-flow>article p{color:inherit;font-size:inherit;line-height:1.35}
+.qpg-page-flow>article [data-preview-question]{line-height:1.35}
+.qpg-page-flow>article [data-preview-question] p{margin-top:0;margin-bottom:0}
+.qpg-page-flow>article [data-preview-question]{margin-top:10px;margin-bottom:10px}
+.qpg-page-navigation{gap:10px;padding:5px 8px}
+@media(min-width:1191px){
+ .qpg-paper-editor .qpg-studio-workspace{height:auto;min-height:0;align-items:start;grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+ .qpg-paper-editor .qpg-studio-controls{height:auto;max-height:calc(100dvh - 140px)}
+ .qpg-paper-editor .qpg-studio-preview{height:auto}
+ .qpg-paper-editor .qpg-studio-preview>.qpg-preview-shell{height:auto}
+ .qpg-paper-editor .qpg-studio-preview .qpg-preview-canvas{flex:none;max-height:none;overflow:auto}
+}
+
+/* Let the page preview set the row height; stretch the editor to match it. */
+@media(min-width:1191px){
+ .qpg-paper-editor .qpg-studio-workspace{align-items:stretch}
+ .qpg-paper-editor .qpg-studio-controls{contain:size;height:auto;min-height:0;max-height:none;align-self:stretch;overflow-y:auto}
+ .qpg-paper-editor .qpg-studio-preview{height:100%;min-height:0}
+ .qpg-paper-editor .qpg-studio-preview>.qpg-preview-shell{height:100%;box-sizing:border-box}
+}
+
+/* Show a complete selectable page within a single preview window. */
+@media(min-width:1191px){
+ .qpg-paper-editor .qpg-studio-workspace{height:calc(100dvh - 180px);min-height:460px;align-items:stretch}
+ .qpg-paper-editor .qpg-studio-controls{contain:none;height:100%;min-height:0;max-height:none}
+ .qpg-paper-editor .qpg-studio-preview{height:100%;min-height:0}
+ .qpg-paper-editor .qpg-studio-preview>.qpg-preview-shell{display:flex;flex-direction:column;height:100%;min-height:0}
+ .qpg-paper-editor .qpg-studio-preview .qpg-preview-canvas{flex:1;min-height:0;max-height:none;overflow:auto}
+ .qpg-preview-header,.qpg-page-navigation,.qpg-preview-shell>p:last-child{flex-shrink:0}
+}

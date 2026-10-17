@@ -1,5 +1,3 @@
-import type {ReactNode} from 'react';
-import QpgStyleControls from './QpgStyleControls';
 import type {DocumentStyle,DocumentDetails} from './qpgDocumentSettings';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import type {Build as AiBuild} from './QpgAiBuildPanel';
@@ -10,14 +8,14 @@ import type {PaperTemplate} from './QpgTemplatesPanel';
 import QpgRenderPreview from './QpgRenderPreview';
 import type {RenderModel} from './QpgRenderPreview';
 
-type Props={exportControl?:ReactNode;onStyle?:(style:DocumentStyle)=>void;selection?:{number:string;sequence:number}|null;aiBuild?:AiBuild|null;paper:{id:string;revision:number;status:string;metadata?:{document_details?:DocumentDetails;document_style?:DocumentStyle}};subject:Subject;template:string;templates:PaperTemplate[];onTemplate:(id:string)=>void;onManage:()=>void;onPatterns:()=>void;draft?:{title:string;instructions:string;examinationSession:string;documentDetails?:DocumentDetails;documentStyle?:DocumentStyle};dirty:boolean;onQuestion:(number:string)=>void;onDetails:()=>void};
-export default function QpgStudioPreview({exportControl,onStyle,paper,subject,template,templates,draft,dirty,onQuestion,onDetails,aiBuild,selection}:Props){
- const [model,setModel]=useState<RenderModel|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false),[zoom,setZoom]=useState('fit'),[retry,setRetry]=useState(0),[frameWidth,setFrameWidth]=useState(0);
+type Props={onCustomize?:(part:string)=>void;selection?:{number:string;sequence:number}|null;aiBuild?:AiBuild|null;paper:{id:string;revision:number;status:string;metadata?:{document_details?:DocumentDetails;document_style?:DocumentStyle}};subject:Subject;template:string;templates:PaperTemplate[];onTemplate:(id:string)=>void;onManage:()=>void;onPatterns:()=>void;draft?:{title:string;instructions:string;examinationSession:string;documentDetails?:DocumentDetails;documentStyle?:DocumentStyle};dirty:boolean;onQuestion:(number:string)=>void;onDetails:()=>void};
+export default function QpgStudioPreview({onCustomize,paper,subject,template,draft,dirty,onQuestion,onDetails,aiBuild,selection}:Props){
+ const [model,setModel]=useState<RenderModel|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false),[zoom,setZoom]=useState('page'),[retry,setRetry]=useState(0),[frameWidth,setFrameWidth]=useState(0),[frameHeight,setFrameHeight]=useState(0),[page,setPage]=useState(0),[pageCount,setPageCount]=useState(1);
  const frameRef=useRef<HTMLDivElement>(null);
- const scopeRef=useRef('');const formattingRef=useRef<HTMLDetailsElement>(null);
- function focusFormatting(part:string){if(!formattingRef.current)return;formattingRef.current.open=true;const name=part==='college'?'College alignment':part==='title'?'Title alignment':'Section heading alignment';requestAnimationFrame(()=>{const fields=formattingRef.current?.querySelectorAll('label');for(const field of fields||[])if(field.textContent?.startsWith(name)){field.querySelector('select')?.focus({preventScroll:true});break;}});}
+ const sheetRef=useRef<HTMLDivElement>(null);
+ const scopeRef=useRef('');
  const handledNavigation=useRef('');
- useEffect(()=>{const node=frameRef.current;if(!node)return;const observer=new ResizeObserver(entries=>setFrameWidth(entries[0].contentRect.width));observer.observe(node);return()=>observer.disconnect();},[]);
+ useEffect(()=>{const node=frameRef.current;if(!node)return;const observer=new ResizeObserver(entries=>{setFrameWidth(entries[0].contentRect.width);setFrameHeight(entries[0].contentRect.height);});observer.observe(node);return()=>observer.disconnect();},[]);
  useEffect(()=>{
   if(!selection)return;
   const requestKey=`${selection.sequence}:${selection.number}`;if(handledNavigation.current===requestKey)return;
@@ -26,14 +24,15 @@ export default function QpgStudioPreview({exportControl,onStyle,paper,subject,te
   const target=Array.from(frame.querySelectorAll<HTMLElement>('[data-preview-question]')).find(node=>node.dataset.previewQuestion===key);
   if(!target)return;
   handledNavigation.current=requestKey;
-  const rect=target.getBoundingClientRect(),container=frame.getBoundingClientRect();
-  frame.scrollTo({top:Math.max(0,frame.scrollTop+rect.top-container.top-24),behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  const rect=target.getBoundingClientRect();
+  const sheet=sheetRef.current;if(sheet){const sheetRect=sheet.getBoundingClientRect();const ratio=sheetRect.width/700;const flow=sheet.querySelector<HTMLElement>('article');const flowRect=flow?.getBoundingClientRect();if(flowRect)setPage(Math.max(0,Math.floor((rect.left-flowRect.left)/ratio/700)));}
+  frame.scrollTo({top:0,left:0});
  },[selection,model]);
  const aiBuildId=aiBuild?.id;
  const buildStale=aiBuild?.stale;
  const candidatePreview=!!aiBuild&&aiBuild.positions.some(p=>p.job?.results.some(r=>r.decision!=='REJECTED'));
  const candidateRevision=aiBuild?.positions.map(p=>`${p.item_id}:${p.job?.id}:${p.job?.revision}`).join('|')||'';
- const choices=[{id:'university',name:'University',configuration:{institution_name:''}},{id:'default',name:'Institution',configuration:{institution_name:''}},...templates.filter(t=>t.status==='ACTIVE')];
+
  useEffect(()=>{const c=new AbortController();setLoading(true);setError('');if(scopeRef.current!==paper.id){setModel(null);scopeRef.current=paper.id;}
  const load=async()=>{
   if(paper.status==='LOCKED')return (await qpgApi.get<{render_model:RenderModel}>(`papers/${paper.id}/export-preview?revision=${paper.revision}&template_id=${encodeURIComponent(template)}&document_type=STUDENT`,c.signal)).render_model;
@@ -55,15 +54,24 @@ export default function QpgStudioPreview({exportControl,onStyle,paper,subject,te
   if(draft){fields=fields.filter(f=>f.label!=='Examination Session');if(draft.examinationSession&&(model.layout.show_fields?.includes('examination_session')||model.fields.some(f=>f.label==='Examination Session')))fields.push({label:'Examination Session',value:draft.examinationSession});}
   return {...model,title:draft?.title??model.title,instructions:draft?.instructions??model.instructions,fields,institution:{name:printed.institution_name?.trim()||model.institution.name,address:printed.address?.trim()||(collegeChanged?'':model.institution.address),contact:printed.contact?.trim()||(collegeChanged?'':model.institution.contact)},layout:{...model.layout,...Object.fromEntries(Object.entries(style).filter(([,v])=>v!=null))}};
  },[model,draft,paper.metadata]);
- const scale=zoom==='fit'?Math.min(1,Math.max(.3,(frameWidth-32)/700)):Number(zoom)/100;
+ const widthScale=Math.min(1,Math.max(.1,(frameWidth-16)/700));
+ const scale=zoom==='page'?Math.min(widthScale,Math.max(.1,(frameHeight-16)/990)):zoom==='fit'?widthScale:Number(zoom)/100;
+ useEffect(()=>{
+  let cancelled=false;
+  const measure=()=>{if(cancelled)return;const flow=sheetRef.current?.querySelector<HTMLElement>('article');if(!flow)return;const count=Math.max(1,Math.ceil((flow.scrollWidth-36)/700));setPageCount(count);setPage(current=>Math.min(current,count-1));};
+  const raf=requestAnimationFrame(measure);void document.fonts.ready.then(measure);
+  return()=>{cancelled=true;cancelAnimationFrame(raf);};
+ },[liveModel,scale]);
+ useEffect(()=>{setPage(0);setPageCount(1);},[paper.id]);
 
- const heading=liveModel?.institution.name||choices.find(t=>t.id===template)?.configuration.institution_name;
- return <div className="qpg-preview-shell"><header className="qpg-preview-header"><div><h3>Paper preview</h3><p>{paper.status==='LOCKED'?'Final document':candidatePreview?'AI candidate draft · not assembled':dirty?'Live · unsaved details':'Live preview'} · Revision {paper.revision}</p></div><label className="text-xs">Zoom <select aria-label="Preview zoom" value={zoom} onChange={e=>setZoom(e.target.value)}><option value="fit">Fit width</option>{[65,85,100].map(n=><option key={n} value={n}>{n}%</option>)}</select></label></header>
- {exportControl}
- {heading&&<p className="px-4 py-2 text-xs text-slate-500">College heading: <strong>{heading}</strong></p>}{heading&&subject.institution_name&&heading.toLowerCase()!==subject.institution_name.toLowerCase()&&<p role="status" className="mx-4 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">The printed college differs from this subject’s institution. Check the college name in Paper details before downloading.</p>}
+
+
+ return <div className="qpg-preview-shell"><header className="qpg-preview-header"><div><h3>Paper preview</h3><p>{paper.status==='LOCKED'?'Final document':candidatePreview?'AI candidate draft · not assembled':dirty?'Live · unsaved details':'Live preview'} · Revision {paper.revision}</p></div><div className="qpg-preview-navigation"><button type="button" className="qpg-preview-edit-link" onClick={onDetails} title="Open paper details">Edit details ↗</button><label className="text-xs">Zoom <select aria-label="Preview zoom" value={zoom} onChange={e=>setZoom(e.target.value)}><option value="page">Fit page</option><option value="fit">Fit width</option>{[65,85,100].map(n=><option key={n} value={n}>{n}%</option>)}</select></label></div></header>
+
  {candidatePreview&&<p role="status" className="mx-4 mb-2 rounded-lg bg-violet-50 p-2 text-xs text-violet-800">Showing generated candidates, including questions not yet saved. Resolve the remaining questions, then assemble to make them part of the paper.</p>}
- {onStyle&&<details ref={formattingRef} className="qpg-template-picker"><summary className="qpg-template-summary"><span>Customize paper</span><span>Alignment, fonts &amp; spacing ⌄</span></summary><div className="mt-3"><QpgStyleControls value={draft?.documentStyle||paper.metadata?.document_style||{}} onChange={onStyle}/><button type="button" className="mt-3 text-xs text-violet-600" onClick={()=>onStyle({})}>Reset paper formatting</button><p className="mt-2 text-xs text-slate-500">Updates live. Save Draft to keep these settings. Select a college, title or section heading in the preview to customize it.</p></div></details>}
- <button type="button" className="qpg-preview-details-link" onClick={onDetails}>↗ Open paper details</button>
- <div ref={frameRef} className="qpg-preview-canvas" aria-busy={loading}>{loading&&<p role="status" className="qpg-preview-update">Updating preview…{model?' Previous preview shown.':''}</p>}{error&&<div role="alert" className="qpg-preview-error"><p>{error}</p>{model&&<p>Previous preview shown.</p>}<button type="button" onClick={()=>setRetry(n=>n+1)}>Retry preview</button></div>}{liveModel&&<div style={{width:700,zoom:scale}} className="qpg-preview-sheet"><QpgRenderPreview model={liveModel} onQuestion={onQuestion} selectedQuestion={selection?.number} onFormat={onStyle?focusFormatting:undefined}/></div>}</div><p className="p-3 text-xs text-slate-500">{paper.status==='LOCKED'?'Export uses this selected template.':'Details update live. Save Draft to keep your changes. Final page breaks are applied during export.'}</p>
+
+
+
+ <div ref={frameRef} className="qpg-preview-canvas" role="region" aria-label="Scrollable paper preview" tabIndex={0} aria-busy={loading}>{loading&&<p role="status" className="qpg-preview-update">Updating preview…{model?' Previous preview shown.':''}</p>}{error&&<div role="alert" className="qpg-preview-error"><p>{error}</p>{model&&<p>Previous preview shown.</p>}<button type="button" onClick={()=>setRetry(n=>n+1)}>Retry preview</button></div>}{liveModel&&<div ref={sheetRef} style={{width:700,height:990,zoom:scale}} className="qpg-preview-sheet qpg-paginated-sheet"><div className="qpg-page-flow" style={{transform:`translateX(-${page*700}px)`}}><QpgRenderPreview model={liveModel} onQuestion={onQuestion} selectedQuestion={selection?.number} onFormat={onCustomize}/></div></div>}</div><nav className="qpg-page-navigation" aria-label="Preview pages"><button type="button" disabled={page===0} onClick={()=>{setPage(p=>p-1);frameRef.current?.scrollTo({top:0,left:0});}}>← Previous</button><span aria-live="polite">Page {page+1} of {pageCount}</span><button type="button" disabled={page>=pageCount-1} onClick={()=>{setPage(p=>p+1);frameRef.current?.scrollTo({top:0,left:0});}}>Next →</button></nav><p className="p-3 text-xs text-slate-500">{paper.status==='LOCKED'?'Export uses this selected template.':'Live page preview. Final PDF and Word page breaks may differ.'}</p>
  </div>;
 }
