@@ -70,6 +70,17 @@ export type BatchUploadResult = {
 };
 
 export const outboundBatchesApi = {
+  async downloadTemplate() {
+    const response = await apiClient.get('/v3/outbound-batches/template', { responseType: 'blob' });
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'outbound-campaign-template.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
   async list() {
     return (await apiClient.get<BatchSummary[]>('/v3/outbound-batches')).data;
   },
