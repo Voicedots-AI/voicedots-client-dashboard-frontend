@@ -21,11 +21,14 @@ import {
   type Program,
 } from "@/api/collegeApi";
 import { useCollegeAccess } from "@/hooks/useCollegeAccess";
+import PlacementDashboard from "./PlacementDashboard";
+import CandidateDirectory from "./CandidateDirectory";
+import FeedbackDashboard from "./FeedbackDashboard";
 import CreateDriveWizard from "./CreateDriveWizard";
 import DriveManagement, { InterviewResultsSettings, ReadinessPolicy } from "./DriveManagement";
 import InterviewAgents from "./InterviewAgents";
 import PlacementAnalytics, { type Analytics } from "./PlacementAnalytics";
-import PlacementCandidates from "./PlacementCandidates";
+
 import StaffImport from "./StaffImport";
 import { displayName, formatDateOnly, formatPlacementDateTime, PLACEMENT_TIME_ZONE } from "./placementDisplay";
 
@@ -143,13 +146,15 @@ export default function CollegeManagementPage() {
   } = useCollegeAccess();
   const [params, setParams] = useSearchParams();
   const requestedTab = (params.get("view") || "placements") as
+      | "dashboard"
+      | "feedback"
       | "placements"
       | "analytics"
       | "agents"
       | "settings"
       | "staff"
       | "candidates";
-  const tab = (placementStaff && requestedTab === "staff") || (!placementStaff && requestedTab === "candidates") ? "placements" : requestedTab,
+  const tab = (placementStaff && requestedTab === "staff") ? "placements" : requestedTab,
     driveId = params.get("drive"),
     draftId = params.get("draft"),
     creating = params.get("create") === "1";
@@ -315,6 +320,8 @@ export default function CollegeManagementPage() {
       p.delete("section");
       return p;
     });
+  if (tab === "dashboard") return <PlacementDashboard />;
+  if (tab === "feedback") return <FeedbackDashboard/>;
   if (creating)
     return (
       <CreateDriveWizard
@@ -407,8 +414,8 @@ export default function CollegeManagementPage() {
           {notice}
         </p>
       )}
-      {tab === "candidates" && placementStaff ? (
-        <PlacementCandidates />
+      {tab === "candidates" ? (
+        <CandidateDirectory />
       ) : tab === "staff" && !placementStaff ? (
         <Navigate to="/dashboard/attendance" replace />
       ) : tab === "analytics" ? (

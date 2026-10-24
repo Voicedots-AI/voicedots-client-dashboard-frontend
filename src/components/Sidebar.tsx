@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Building2, BarChart3, BriefcaseBusiness, GraduationCap, Home, MessageSquare, Mic, Settings, LogOut, Users, Radio, ChevronDown, BookOpen, TicketCheck, FileText,
 } from "lucide-react";
@@ -44,8 +44,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     ],
   };
 
+  const placementChildren:NavChild[]=[{id:'placement-dashboard',label:'Dashboard',path:'/dashboard/placement-management?view=dashboard'},{id:'placement-feedback',label:'Feedback Dashboard',path:'/dashboard/placement-management?view=feedback'},{id:'placement-drives',label:'Placement drives',path:'/dashboard/placement-management?view=placements'}];
   const navItems: NavItem[] = user?.portal_role === "placement_staff" ? [
-    { id: "drives", icon: BriefcaseBusiness, label: "Placement drives", path: "/dashboard/placement-management?view=placements" },
+    { id: "drives", icon: BriefcaseBusiness, label: "Placement management", path: "/dashboard/placement-management",children:placementChildren },
     { id: "candidates", icon: Users, label: "Candidates", path: "/dashboard/placement-management?view=candidates" },
     { id: "analytics", icon: BarChart3, label: "Analytics & reports", path: "/dashboard/placement-management?view=analytics" },
     { id: "agents", icon: Mic, label: "Interview agents", path: "/dashboard/placement-management?view=agents" },
@@ -67,7 +68,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
         ...(emailEnabled ? [{ id: "gmail", label: "Gmail", path: "/dashboard/communications/gmail" }] : []),
       ],
     },
-    ...(collegeAccess?.enabled ? [{ id: "college", icon: GraduationCap, label: "Placement management", path: "/dashboard/placement-management" }, { id: "attendance", icon: Building2, label: "Institution Management", path: "/dashboard/attendance" }, { id: "erp", icon: BookOpen, label: "ERP", path: "/dashboard/erp" }] : []),
+    ...(collegeAccess?.enabled ? [{ id: "college", icon: GraduationCap, label: "Placement management", path: "/dashboard/placement-management",children:placementChildren }, { id: "attendance", icon: Building2, label: "Institution Management", path: "/dashboard/attendance" }, { id: "erp", icon: BookOpen, label: "ERP", path: "/dashboard/erp" }] : []),
     ...(collegeAccess?.enabled ? [questionPaperNavigation] : []),
     { id: "settings", icon: Settings, label: "Settings", path: "/dashboard/settings" },
   ];
@@ -87,6 +88,14 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(navItems.filter((i) => i.children).map((i) => [i.id, inGroup(i)]))
   );
+
+  useEffect(() => {
+    setOpenGroups(previous => {
+      const next = { ...previous };
+      for (const item of navItems) if (item.children && inGroup(item)) next[item.id] = true;
+      return next;
+    });
+  }, [location.pathname, location.search, collegeAccess?.enabled, user?.portal_role]);
 
   const go = (path: string) => {
     navigate(path);
@@ -119,6 +128,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
                 <div key={item.id}>
                   <button
                     type="button"
+                    aria-label={item.label}
                     aria-expanded={hasChildren ? !!expanded : undefined}
                     onClick={(e) => {
                       e.stopPropagation();
