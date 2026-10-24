@@ -430,84 +430,6 @@ function CandidateDetails({
   const history = (value.history || value.attempts || []) as Data[];
   const skills = (value.skills || []) as Data[];
   const atsPending = mode === "ats" && candidate.assignment_status !== "completed";
-  const [reportBundle, setReportBundle] = useState<Data | null>(null);
-  const [reportLoading, setReportLoading] = useState(true);
-  const [reportError, setReportError] = useState("");
-  const [recording, setRecording] = useState<Data | null>(null);
-  const [recordingLoading, setRecordingLoading] = useState(false);
-  const [recordingError, setRecordingError] = useState("");
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [playbackFailed, setPlaybackFailed] = useState(false);
-  useEffect(() => {
-    const controller = new AbortController();
-    setReportLoading(true); setReportError(""); setReportBundle(null);
-    setRecording(null); setRecordingError(""); setPlaybackFailed(false);
-    collegeApi.get<Data>(`students/${encodeURIComponent(candidate.student_id)}/reports`, controller.signal)
-      .then(bundle => { if (!controller.signal.aborted) setReportBundle(bundle); })
-      .catch(error => { if (!controller.signal.aborted) setReportError(collegeError(error)); })
-      .finally(() => { if (!controller.signal.aborted) setReportLoading(false); });
-    return () => controller.abort();
-  }, [candidate.student_id]);
-  const driveReport = ((reportBundle?.reports || []) as Data[]).find(item => String(item.drive_id || "") === driveId);
-  const scoreDetail = (driveReport?.detail && typeof driveReport.detail === "object" ? driveReport.detail : {}) as Data;
-  const dimensionRows = ([...(Array.isArray(scoreDetail.core_dimensions) ? scoreDetail.core_dimensions : []), ...(Array.isArray(scoreDetail.domain_dimensions) ? scoreDetail.domain_dimensions : [])] as Data[]);
-  const dimensionByName = new Map(dimensionRows.map(item => [String(item.dimension || ""), item]));
-  const competencies = ["communication", "resume_ownership", "confidence_conduct", "structured_thinking", "domain_knowledge", "applied_evidence", "role_awareness"].map(name => ({ name, value: dimensionByName.get(name) }));
-  const strengths = Array.isArray(scoreDetail.strengths) ? scoreDetail.strengths : [];
-  const development = Array.isArray(scoreDetail.priority_improvement_areas) ? scoreDetail.priority_improvement_areas : [];
-  const evidenceText = (raw: unknown) => {
-    if (typeof raw === "string") return raw;
-    if (!raw || typeof raw !== "object") return "";
-    const item = raw as Data;
-    return String(item.text || item.focus || item.strength || item.problem || item.summary || item.rationale || "");
-  };
-  const reviews = (Array.isArray(scoreDetail.question_reviews) ? scoreDetail.question_reviews : []) as Data[];
-  const questionsByAnswerId = new Map(reviews.filter(review => review.answer_id != null && typeof review.question === "string" && review.question.trim()).map(review => [String(review.answer_id), String(review.question)]));
-  const reportDate = Date.parse(String(driveReport?.completed_at || ""));
-  const recordingDuration = recording?.duration_seconds;
-  const durationAvailable = typeof recordingDuration === "number" && Number.isFinite(recordingDuration) && recordingDuration >= 0;
-  const timestampLabel = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
-  const highlights = reviews.flatMap((review, index) => {
-    // Concatenated recording segments have no reliable wall-clock seek mapping.
-    if (recording?.status !== "ready" || !recording.playback_url || Number(recording.segment_count) !== 1) return [];
-    const start = Date.parse(String(recording.started_at || ""));
-    const point = Date.parse(String(review.asked_at || ""));
-    const offset = (point - start) / 1000;
-    if (!Number.isFinite(offset) || offset < 0 || (durationAvailable && offset > recordingDuration) || typeof review.question !== "string" || !review.question.trim()) return [];
-    return [{ question: review.question, offset, key: String(review.answer_id ?? index) }];
-  });
-  const followUp = development.slice(0, 3);
-  function playHighlight(offset: number) {
-    const video = videoRef.current;
-    if (!video) return;
-    video.scrollIntoView({ behavior: "smooth", block: "center" });
-    const seekAndPlay = () => {
-      if (videoRef.current !== video || !video.isConnected) return;
-      try {
-        video.currentTime = Number.isFinite(video.duration) ? Math.min(offset, video.duration) : offset;
-        void video.play().catch(() => setPlaybackFailed(true));
-      } catch { setPlaybackFailed(true); }
-    };
-    if (video.readyState === 0) video.addEventListener("loadedmetadata", seekAndPlay, { once: true });
-    else seekAndPlay();
-  }
-  async function loadDrawerRecording() {
-    if (!driveReport?.session_id) return;
-    setRecordingLoading(true); setRecordingError(""); setPlaybackFailed(false);
-    try {
-      setRecording(await collegeApi.get<Data>(`students/${encodeURIComponent(candidate.student_id)}/reports/${encodeURIComponent(String(driveReport.session_id))}/recording`));
-    } catch (error) { setRecordingError(collegeError(error)); }
-    finally { setRecordingLoading(false); }
-  }
-  useEffect(() => {
-    if (!driveReport?.session_id) return;
-    void loadDrawerRecording();
-  }, [driveReport?.session_id, candidate.student_id]);
-  useEffect(() => {
-    if (!["recording", "uploading", "processing"].includes(String(recording?.status || ""))) return;
-    const timer = window.setInterval(() => { if (document.visibilityState !== "hidden") void loadDrawerRecording(); }, 10000);
-    return () => window.clearInterval(timer);
-  }, [recording?.status, driveReport?.session_id]);
   return (
     <div className="space-y-4">
       <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
@@ -594,74 +516,6 @@ function CandidateDetails({
           </>
         )}
       </dl>
-      <section className="min-w-0 rounded-2xl border border-blue-100 bg-white p-4 text-[#08295b] sm:p-6" aria-labelledby="candidate-scorecard-heading">
-        <div className="border-b border-blue-100 pb-5">
-          <h4 id="candidate-scorecard-heading" className="text-2xl font-extrabold tracking-tight sm:text-3xl">Candidate Assessment Scorecard</h4>
-          <p className="mt-2 text-sm leading-6 text-[#08295b]/75 sm:text-base">Role-specific interview evidence for employer review</p>
-        </div>
-        {reportLoading ? <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-6 text-sm" role="status">Loading assessment…</div> : reportError ? <div className="mt-6 rounded-xl border border-rose-100 bg-rose-50 p-6 text-sm text-rose-800" role="alert">{reportError}</div> : !driveReport ? <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-6 text-sm">No assessment is available for this candidate and drive.</div> : <div className="mt-6 min-w-0 space-y-6">
-          <article className="flex flex-col gap-5 rounded-2xl border border-blue-100 bg-white p-5 sm:flex-row sm:p-6">
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-3xl font-extrabold text-[#08295b] sm:h-28 sm:w-28" aria-label="Candidate initials">{candidate.full_name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "—"}</div>
-            <div className="min-w-0 flex-1">
-              <h5 className="break-words text-2xl font-extrabold tracking-tight sm:text-3xl">{candidate.full_name}</h5>
-              <p className="mt-1 break-words text-sm text-[#08295b]/70">{candidate.roll_number || "—"}</p>
-              <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-                <div><dt className="font-bold">Target Role</dt><dd className="mt-1 break-words text-[#08295b]/80">{drive?.role_title || String(driveReport.role_title || "—")}</dd></div>
-                <div><dt className="font-bold">Company</dt><dd className="mt-1 break-words text-[#08295b]/80">{drive?.company_name || String(driveReport.company_name || "—")}</dd></div>
-                <div><dt className="font-bold">Report date</dt><dd className="mt-1 text-[#08295b]/80">{Number.isFinite(reportDate) ? new Date(reportDate).toLocaleString() : "—"}</dd></div>
-                <div><dt className="font-bold">Recorded duration</dt><dd className="mt-1 text-[#08295b]/80">{durationAvailable ? timestampLabel(recordingDuration) : "—"}</dd></div>
-                <div><dt className="font-bold">Questions reviewed</dt><dd className="mt-1 text-[#08295b]/80">{reviews.length || "—"}</dd></div>
-              </dl>
-            </div>
-          </article>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <article className="flex min-w-0 flex-col rounded-2xl border border-blue-100 bg-[#eaf6ff] p-5 sm:p-6"><h5 className="text-sm font-bold">Overall Score</h5><div className="mt-4 flex flex-wrap items-baseline gap-1"><strong className="text-5xl font-extrabold tracking-tight">{typeof driveReport.overall_score === "number" ? driveReport.overall_score : "—"}</strong><span className="text-lg font-semibold">/100</span></div><div className="mt-5 h-3 overflow-hidden rounded-full bg-blue-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-sky-400" style={{ width: `${typeof driveReport.overall_score === "number" ? driveReport.overall_score : 0}%` }}/></div></article>
-            <article className="flex min-w-0 flex-col rounded-2xl border border-amber-100 bg-[#fff8e6] p-5 sm:p-6"><h5 className="text-sm font-bold">Readiness</h5><strong className="mt-5 break-words text-2xl font-extrabold leading-tight text-amber-700">{driveReport.readiness ? displayName(String(driveReport.readiness)) : "—"}</strong><p className="mt-4 text-xs leading-5 text-amber-900/70">Based on this interview assessment</p></article>
-            <article className="flex min-w-0 flex-col rounded-2xl border border-teal-100 bg-[#eafaf5] p-5 sm:p-6"><h5 className="text-sm font-bold">Assessment Scope</h5><strong className="mt-4 text-5xl font-extrabold tracking-tight">{competencies.filter(item=>typeof item.value?.band === "number").length}</strong><span className="mt-2 text-sm font-semibold text-teal-800">of 7 competencies assessed</span></article>
-          </div>
-          <article className="flex gap-4 rounded-2xl border border-blue-100 border-l-4 border-l-blue-500 bg-[#eaf6ff] p-5 sm:p-6">
-            <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 sm:flex" aria-hidden="true"><CheckCircle2 size={25}/></span>
-            <div className="min-w-0"><h5 className="text-xl font-extrabold">Executive Assessment Summary</h5><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-[#08295b]/85">{scoreDetail.executive_summary ? String(scoreDetail.executive_summary) : "No executive summary was supplied for this assessment."}</p></div>
-          </article>
-          <section aria-labelledby="candidate-competencies-heading" className="min-w-0">
-            <h5 id="candidate-competencies-heading" className="mb-4 text-xl font-extrabold sm:text-2xl">Competency Results</h5>
-            <div className="overflow-x-auto rounded-xl border border-blue-100">
-              <table className="w-full min-w-[640px] table-fixed text-left text-sm">
-                <thead className="bg-[#e7f3fd]"><tr><th className="w-[25%] px-4 py-3 font-bold">Competency</th><th className="w-[25%] px-4 py-3 font-bold">Score</th><th className="w-[14%] px-3 py-3 text-center font-bold">Role Target</th><th className="w-[36%] px-4 py-3 font-bold">Evidence</th></tr></thead>
-                <tbody>{competencies.map(({name,value: dimension}) => {
-                  const percentage = typeof dimension?.percentage === "number" ? Number(dimension.percentage) : null;
-                  const band = typeof dimension?.band === "number" ? Number(dimension.band) : null;
-                  const ids = Array.isArray(dimension?.evidence_answer_ids) ? dimension.evidence_answer_ids : [];
-                  const evidence = ids.map(id => questionsByAnswerId.get(String(id)) || `Answer ${String(id)}`);
-                  return <tr key={name} className="border-t border-blue-100 align-top">
-                    <th scope="row" className="break-words px-4 py-5 font-bold leading-6">{displayName(name)}</th>
-                    <td className="px-4 py-5"><div className="flex items-center gap-3"><b className="shrink-0 text-base">{percentage == null ? "—" : `${percentage}%`}</b><span className="h-2.5 min-w-8 flex-1 overflow-hidden rounded-full bg-blue-100"><span className="block h-full rounded-full bg-gradient-to-r from-blue-600 to-sky-400" style={{width:`${percentage ?? 0}%`}}/></span></div><span className="mt-2 block text-xs text-[#08295b]/65">{band == null ? "Not assessed" : `Band ${band}/4`}</span></td>
-                    <td className="px-3 py-5 text-center text-base text-[#08295b]/55" aria-label="Role target not provided">—</td>
-                    <td className="px-4 py-5"><details className="group"><summary className="cursor-pointer break-words text-xs leading-6 text-[#08295b]/80 marker:text-blue-500">{ids.length ? ids.some(id => questionsByAnswerId.has(String(id))) ? evidence.join(" · ") : `Answers ${ids.map(String).join(", ")}` : "No linked answer evidence"}</summary><p className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-blue-50 p-3 text-xs leading-6">{dimension?.rationale ? String(dimension.rationale) : "No rationale was supplied."}</p></details></td>
-                  </tr>;
-                })}</tbody>
-              </table>
-            </div>
-          </section>
-          <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-2xl border border-teal-100 bg-[#eafaf5] p-5 sm:p-6"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700" aria-hidden="true"><CheckCircle2 size={22}/></span><h5 className="text-xl font-extrabold">Demonstrated Strengths</h5></div>{strengths.length ? <ul className="mt-5 space-y-4">{strengths.map((item,index)=><li key={index} className="flex gap-3 text-sm leading-6 text-teal-950"><CheckCircle2 size={17} className="mt-1 shrink-0 text-teal-600" aria-hidden="true"/><span className="min-w-0 whitespace-pre-wrap break-words">{evidenceText(item)}</span></li>)}</ul> : <p className="mt-4 text-sm leading-6 text-teal-900/70">No strength evidence was supplied for this assessment.</p>}</article>
-            <article className="rounded-2xl border border-amber-100 bg-[#fff8e6] p-5 sm:p-6"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600" aria-hidden="true"><span className="h-5 w-5 rounded-full border-4 border-amber-500"/></span><div><h5 className="text-xl font-extrabold">Areas to Explore</h5><p className="mt-1 text-xs font-semibold text-amber-800">Development Plan</p></div></div>{development.length ? <div className="mt-5 space-y-5">{development.map((raw,index)=>{const item=(raw && typeof raw === "object" ? raw : {focus:raw}) as Data;const actions=Array.isArray(item.actions)?item.actions:[];return <div key={index} className="flex gap-3 text-sm leading-6 text-amber-950"><span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" aria-hidden="true"/><div className="min-w-0 break-words"><strong>{String(item.focus || `Development item ${index+1}`)}</strong>{Boolean(item.problem) && <p className="mt-1">{String(item.problem)}</p>}{actions.length>0&&<ul className="mt-2 list-disc space-y-1 pl-4">{actions.map((action,i)=><li key={i}>{String(action)}</li>)}</ul>}</div></div>})}</div> : <p className="mt-4 text-sm leading-6 text-amber-900/70">No development items were supplied for this assessment.</p>}</article>
-          </div>
-          <section className="min-w-0 rounded-2xl border border-blue-100 bg-white p-5 sm:p-6" aria-labelledby="candidate-highlights-heading">
-            <h5 id="candidate-highlights-heading" className="mb-4 text-xl font-extrabold">Interview Evidence Highlights</h5>
-            <div className="overflow-x-auto rounded-xl border border-blue-100"><table className="w-full min-w-[440px] text-left text-sm"><thead className="bg-[#e7f3fd]"><tr><th className="px-4 py-3 font-bold">Timestamp</th><th className="px-4 py-3 font-bold">Question / Topic</th><th className="px-4 py-3 font-bold">Score</th></tr></thead><tbody>{highlights.length ? highlights.map(item => <tr key={item.key} className="border-t border-blue-100 align-top"><td className="whitespace-nowrap px-4 py-4"><button type="button" className="rounded-lg bg-blue-50 px-3 py-2 font-bold text-blue-700 transition hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600" onClick={() => playHighlight(item.offset)} aria-label={`Play at ${timestampLabel(item.offset)}: ${item.question}`}>Play {timestampLabel(item.offset)}</button></td><td className="min-w-0 break-words px-4 py-4 leading-6">{item.question}</td><td className="px-4 py-4 text-[#08295b]/55" aria-label="Question score not provided">—</td></tr>) : <tr><td colSpan={3} className="px-4 py-5 text-sm leading-6 text-[#08295b]/70">No seek-ready question highlights are available. Review the full recording below.</td></tr>}</tbody></table></div>
-          </section>
-          <section className="rounded-2xl border border-blue-100 bg-white p-5 sm:p-6" aria-labelledby="candidate-followup-heading"><h5 id="candidate-followup-heading" className="text-xl font-extrabold">Recommended Employer Follow-Up</h5>{followUp.length ? <ol className="mt-5 space-y-5">{followUp.map((raw, index) => {
-            const item = (raw && typeof raw === "object" ? raw : { focus: raw }) as Data;
-            const actions = Array.isArray(item.actions) ? item.actions : [];
-            return <li key={index} className="flex gap-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">{index + 1}</span><div className="min-w-0 break-words pt-1 text-sm leading-6"><strong>{typeof item.focus === "string" && item.focus.trim() ? item.focus : "No focus was supplied."}</strong>{typeof item.problem === "string" && item.problem.trim() && <p className="mt-1 text-[#08295b]/80">{item.problem}</p>}{actions.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-[#08295b]/80">{actions.map((action, actionIndex) => <li key={actionIndex}>{String(action)}</li>)}</ul>}</div></li>;
-          })}</ol> : <p className="mt-4 text-sm leading-6 text-[#08295b]/70">No development items were supplied to guide employer follow-up.</p>}</section>
-        </div>}
-      </section>
-      <section className="min-w-0 rounded-2xl border border-blue-100 bg-white p-5 text-[#08295b] sm:p-6" aria-labelledby="candidate-recording-heading">
-        <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wider text-blue-600">Interview evidence</p><h4 id="candidate-recording-heading" className="mt-2 text-xl font-extrabold sm:text-2xl">Interview Recordings</h4></div>{Boolean(driveReport?.session_id) && <button type="button" className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:opacity-60" disabled={recordingLoading} onClick={()=>void loadDrawerRecording()}>Refresh</button>}</div>
-        {!driveReport?.session_id ? <p className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6">No interview session is available for this drive.</p> : recordingLoading && !recording ? <p className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6" role="status">Loading private recording…</p> : recordingError ? <p className="mt-5 rounded-xl border border-rose-100 bg-rose-50 p-5 text-sm text-rose-800" role="alert">{recordingError}</p> : recording?.playback_url && recording.status === "ready" ? <><video ref={videoRef} className="mt-5 aspect-video w-full rounded-xl bg-[#08295b] object-contain" controls playsInline preload="metadata" src={String(recording.playback_url)} onError={()=>setPlaybackFailed(true)} aria-label={`Interview recording for ${candidate.full_name}`}/>{playbackFailed && <p className="mt-3 rounded-lg bg-rose-50 p-3 text-xs text-rose-800">Playback failed. Refresh to request a new secure link.</p>}{Number(recording.segment_count || 0)>1 && <p className="mt-3 rounded-lg bg-blue-50 p-3 text-xs leading-5 text-[#08295b]/75">This interview contains {String(recording.segment_count)} recording segments. Seek-ready segment timestamps are not available, so segment links are not shown.</p>}</> : <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6"><p>{["recording","uploading","processing"].includes(String(recording?.status || "")) ? "The recording is still being prepared." : recording?.status === "expired" ? "The recording retention period has ended." : recording?.status === "failed" ? "The recording could not be saved." : "No recording is available for this interview."}</p>{Boolean(recording?.message) && <p className="mt-1 text-xs">{String(recording?.message)}</p>}</div>}
-      </section>
       {mode === "candidates" && <ResumeMatchSummary driveId={driveId} candidate={candidate}/>}
       {mode === "ats" && !atsPending && skills.length > 0 && (
         <div>
@@ -2760,7 +2614,7 @@ export default function DriveManagement({
             role="dialog"
             aria-modal="true"
             aria-label={`${tab === "ats" ? "ATS fit" : "Candidate"} details for ${selected.full_name}`}
-            className="ml-auto h-full w-full max-w-5xl overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950"
+            className={`ml-auto h-full w-full ${tab === "ats" ? "max-w-5xl" : "max-w-2xl"} overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950`}
           >
               <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
