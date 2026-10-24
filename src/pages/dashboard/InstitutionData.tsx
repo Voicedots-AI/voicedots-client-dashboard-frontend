@@ -1,3 +1,5 @@
+import InstitutionQpgSetup from './InstitutionQpgSetup';
+import {educationLevels} from './QpgInstitutionSelector';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Camera, Plus, RefreshCw, Upload, X } from 'lucide-react';
 import { collegeApi, collegeError, type CollegeStudent, type Program } from '@/api/collegeApi';
@@ -15,7 +17,7 @@ const phoneLengths:Record<string,number|[number,number]>={'+91':10,'+1':10,'+44'
 
 function Dialog({title,close,busy,children}:{title:string;close:()=>void;busy:boolean;children:React.ReactNode}){
  const ref=useRef<HTMLDialogElement>(null); useEffect(()=>{ref.current?.showModal();return()=>ref.current?.close()},[]);
- return <dialog ref={ref} onCancel={e=>{e.preventDefault();if(!busy)close()}} className={`${card} m-auto max-h-[90dvh] w-[calc(100%_-_24px)] max-w-3xl overflow-y-auto text-slate-900 backdrop:bg-slate-950/50 dark:text-white`}><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-bold">{title}</h2><button className={button} disabled={busy} onClick={close} aria-label="Close"><X size={18}/></button></div>{children}</dialog>
+ return <dialog ref={ref} aria-label={title} onCancel={e=>{e.preventDefault();if(!busy)close()}} className={`${card} m-auto max-h-[90dvh] w-[calc(100%_-_24px)] max-w-3xl overflow-y-auto text-slate-900 backdrop:bg-slate-950/50 dark:text-white`}><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-bold">{title}</h2><button className={button} disabled={busy} onClick={close} aria-label="Close"><X size={18}/></button></div>{children}</dialog>
 }
 
 function NewPhoto({value,onChange,onVerified}:{value:string;onChange:(value:string)=>void;onVerified:(valid:boolean)=>void}){
@@ -59,7 +61,7 @@ export function AcademicSetup({programs,refresh}:{programs:Program[];refresh:()=
   setBusy(true);setError('');
   try {
    const payload=form.kind==='program'
-    ?{code:values.get('code'),display_name:values.get('name'),duration_years:Number(values.get('duration'))}
+    ?{code:values.get('code'),display_name:values.get('name'),duration_years:Number(values.get('duration')),education_level:values.get('education_level')}
     :{program_code:values.get('program'),code:values.get('code'),current_code:values.get('current_code')||undefined,display_name:values.get('name')};
    await collegeApi.save(`academic-catalog/${form.kind}s`,payload);
    setForm(null);refresh();
@@ -84,16 +86,18 @@ export function AcademicSetup({programs,refresh}:{programs:Program[];refresh:()=
   <div className="flex flex-wrap justify-between gap-3"><div><h2 className="text-xl font-bold">Academic setup</h2><p className="text-sm text-slate-500">Programs own departments and supply roster and placement options.</p></div><button className={primary} disabled={busy} onClick={()=>setForm({kind:'program'})}><Plus size={16}/>Add program</button></div>
   {error&&<p role="alert" className="text-rose-600">{error}</p>}
   <div className="grid gap-4 lg:grid-cols-2">{programs.map(program=><article className={card} key={program.code}>
-   <div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-bold">{displayName(program.display_name)}</h3><p className="mt-1 text-sm text-slate-500">{program.code} · {program.duration_years} years · {program.departments.length} departments</p></div><div className="flex gap-2"><button className={button} disabled={busy} onClick={()=>setForm({kind:'program',program})}>Edit program</button><button className={button} disabled={busy} onClick={()=>void removeProgram(program)}>Delete program</button></div></div>
+   <div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-bold">{displayName(program.display_name)}</h3><p className="mt-1 text-sm text-slate-500">{program.code} · {program.education_level||'Education level not configured'} · {program.duration_years} years · {program.departments.length} departments</p></div><div className="flex gap-2"><button className={button} disabled={busy} onClick={()=>setForm({kind:'program',program})}>Edit program</button><button className={button} disabled={busy} onClick={()=>void removeProgram(program)}>Delete program</button></div></div>
    <div className="mt-4 flex flex-wrap gap-2">{program.departments.map(department=><span key={department.code} className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700">{displayName(department.display_name)} ({department.code})<button type="button" className="font-semibold underline" disabled={busy} onClick={()=>setForm({kind:'department',program,department})}>Edit</button><button type="button" className="font-semibold text-rose-700 underline" disabled={busy} aria-label={`Remove ${department.code} from ${program.code}`} onClick={()=>void removeDepartment(program,department)}>Delete</button></span>)}</div>
    <button className={`${button} mt-4`} disabled={busy} onClick={()=>setForm({kind:'department',program})}><Plus size={15}/>Add department</button>
   </article>)}</div>
   {!programs.length&&<p className={card}>No programs configured.</p>}
+  <InstitutionQpgSetup programs={programs}/>
   {form&&<Dialog title={form.kind==='program'?(form.program?'Edit program':'Add program'):form.department?`Edit ${form.department.display_name}`:`Add department to ${form.program?.display_name}`} busy={busy} close={()=>setForm(null)}>
    <form className="space-y-4" onSubmit={save}>
     {form.kind==='department'&&<><input type="hidden" name="program" value={form.program?.code}/>{form.department&&<input type="hidden" name="current_code" value={form.department.code}/>}</>}
     <label className="block text-sm">{form.kind==='program'?'Program code *':'Department code *'}<input className={input} name="code" required readOnly={form.kind==='program'&&Boolean(form.program)} placeholder={form.kind==='program'?'e.g. B.Tech':'e.g. CSE'} defaultValue={form.kind==='program'?form.program?.code:form.department?.code}/></label>
     <label className="block text-sm">{form.kind==='program'?'Program name *':'Department name *'}<input className={input} name="name" required placeholder={form.kind==='program'?'e.g. Bachelor of Technology':'e.g. Computer Science and Engineering'} defaultValue={form.kind==='program'?form.program?.display_name:form.department?.display_name}/></label>
+    {form.kind==='program'&&<label className="block text-sm">Education level *<select className={input} name="education_level" required defaultValue={form.program?.education_level||''}><option value="">Choose education level</option>{educationLevels.map(level=><option key={level} value={level}>{level}</option>)}</select></label>}
     {form.kind==='program'&&<label className="block text-sm">Program duration (years) *<input className={input} name="duration" type="number" min="1" max="8" required placeholder="4" defaultValue={form.program?.duration_years||4}/></label>}
     <div className="flex justify-end gap-2"><button type="button" className={button} disabled={busy} onClick={()=>setForm(null)}>Cancel</button><button className={primary} disabled={busy}>{busy?'Saving…':'Save'}</button></div>
    </form>

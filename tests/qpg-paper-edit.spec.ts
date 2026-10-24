@@ -23,6 +23,7 @@ test('finalized paper opens an editable version without overwriting the original
   await route.fulfill({json});
  });
  await page.goto('/dashboard/question-papers/paper-generation?view=papers');
+ await page.getByRole('button',{name:'Final exam',exact:true}).click();
  await page.getByRole('button',{name:'Edit paper',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'Edit finalized paper'})).toBeVisible();
  await page.getByRole('button',{name:'Create editable draft',exact:true}).click();
@@ -33,14 +34,16 @@ test('finalized paper opens an editable version without overwriting the original
  await page.getByRole('button',{name:'Save Draft',exact:true}).click();
  await expect(page.getByText('Paper details saved.',{exact:false})).toBeVisible();
  expect(newVersions).toBe(1);expect(original.title).toBe('Final exam');expect(original.status).toBe('LOCKED');expect(draft?.title).toBe('Updated exam');
+ await page.getByRole('button',{name:'Questions',exact:true}).click();
  const part=page.locator('details[aria-label="Part A"]');await part.locator('summary').first().click();
- await expect(part.getByRole('button',{name:'Replace Question',exact:true})).toBeEnabled();
+ await expect(part.getByRole('button',{name:'Replace from bank',exact:true})).toBeEnabled();
  await expect(page.getByRole('region',{name:'Question availability'})).not.toBeVisible();
  await page.reload();
- await expect(page.getByRole('button',{name:'Edit details',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Updated exam',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Exam details',exact:true})).toBeVisible();
  await expect(page.locator('.qpg-ai-tools')).not.toHaveAttribute('open','');
  await expect(page.getByLabel('Paper title',{exact:true})).not.toBeVisible();
- await page.getByRole('button',{name:'Edit details',exact:true}).click();
+ await page.getByRole('button',{name:'Exam details',exact:true}).click();
  await expect(page.getByLabel('Paper title',{exact:true})).toBeVisible();
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

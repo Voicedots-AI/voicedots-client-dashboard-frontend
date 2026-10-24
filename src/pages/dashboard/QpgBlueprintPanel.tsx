@@ -1,3 +1,4 @@
+import {universityPattern} from './qpgFormatPresets';
 import {createUuid} from '@/lib/uuid';
 import Dialog from './QpgDialog';
 import {useEffect,useRef,useState} from 'react';
@@ -13,21 +14,13 @@ type Section={main_questions?:MainQuestion[];id:string;name:string;order:number;
 type Target={id:string;marks:Amount;unit_id?:string};
 type Percent={level:string;percent:Amount};
 type Coverage={cos:Target[];units:Target[];topics:Target[];bloom:Percent[];difficulty:Percent[]};
-type Config={title:string;total_marks:Amount;duration_minutes:number;sections:Section[];coverage:Coverage};
+export type Config={title:string;total_marks:Amount;duration_minutes:number;sections:Section[];coverage:Coverage};
 type Validation={sections?:{id:string;offered_marks:string;attempted_marks:string}[];valid:boolean;errors:string[];offered_marks:string;attempted_marks:string;checks:string[]};
 type Blueprint={id:string;family_id:string;version:number;revision:number;status:string;syllabus_version_id:string;config:Config;validation:Validation;created_by:string;published_by:string|null};
 type Syllabus={id:string;version:number;status:string;content:{cos:SyllabusItem[];units:SyllabusItem[];topics:SyllabusItem[]}};
 const input='w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900';
 const newSection=(order:number):Section=>({id:createUuid(),name:`Section ${order}`,order,offered:1,attempted:1,marks_each:1,question_type:null,format:'STANDARD',mandatory:true,choice_groups:[],time_minutes:null});
 const blank=():Config=>({title:'',total_marks:30,duration_minutes:60,sections:[newSection(1)],coverage:{cos:[],units:[],topics:[],bloom:[],difficulty:[]}});
-function universityPattern(kind:string):Config {
- const alternative=kind==='two-parts';
- const nested=kind==='six-five';
- const section=(order:number,name:string,count:number,marks:number,type:string):Section=>({...newSection(order),name,offered:count,attempted:count,marks_each:marks,question_type:type});
- const final=section(alternative?2:3,alternative?'Part B':'Part C',alternative?5:6,alternative?16:11,'DESCRIPTIVE');
- final.main_questions=Array.from({length:alternative?5:6},(_,i)=>({id:createUuid(),marks:alternative?16:11,choose:1,branches:['a','b'].map((branch)=>({id:createUuid(),marks:alternative?16:11,children:(nested&&i===5?[6,5]:alternative&&branch==='b'&&(i===1||i===2)?[8,8]:alternative&&branch==='b'&&i===3?[12,4]:[]).map(marks=>({id:createUuid(),marks}))}))}));
- return {title:alternative?'100 marks · Two Parts':nested?'100 marks · Three Parts with 6 + 5':'100 marks · Three Parts',total_marks:100,duration_minutes:180,coverage:{cos:[],units:[],topics:[],bloom:[],difficulty:[]},sections:[section(1,alternative?'Part A':'Part A (MCQ)',10,alternative?2:1,alternative?'SHORT_ANSWER':'MCQ'),...(!alternative?[section(2,'Part B',12,2,'SHORT_ANSWER')]:[]),final]};
-}
 export default function QpgBlueprintPanel({subject,onSyllabus}:{subject:Subject;onSyllabus?:()=>void}){
  const pinSequence=useRef(0);
  const [pendingPattern,setPendingPattern]=useState<{key:string;title:string}|null>(null);

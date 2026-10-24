@@ -89,6 +89,7 @@ const AppRoutes = () => {
           {/* KNOWLEDGE BASE */}
           <Route path="knowledge" element={<KnowledgePage />} />
 
+
           <Route path="college" element={<Navigate to="/dashboard/placement-management" replace />} />
           <Route path="placement-management" element={<CollegeManagementPage />} />
           <Route path="erp" element={<ErpPage />} />

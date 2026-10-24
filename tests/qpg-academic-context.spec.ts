@@ -1,124 +1,40 @@
-import {test,expect} from '@playwright/test';
-test('academic hierarchy sends reviewed context and preserves independent paper selection',async({page})=>{
+import {test,expect,type Page} from '@playwright/test';
+async function goWorkspace(page:Page,section:'Paper Generation'|'Master Question Bank'){const menu=page.getByRole('complementary').getByRole('button',{name:'Question Paper Generation',exact:true});if(await menu.getAttribute('aria-expanded')!=='true')await menu.click();await page.getByRole('complementary').getByRole('button',{name:section,exact:true}).click();}
+const institution='Dhanalakshmi Srinivasan CET';
+const academic={institution_name:institution,education_level:'Undergraduate',batch_name:'2024–2028',specialization_name:'Computer Science',program_code:'BTECH',branch_code:'CSE'};
+const subject={...academic,id:'bank-subject',code:'DS',name:'Data Structures',year_number:2,semester_number:3,batch_id:'batch24',batch_year:2024};
+async function setup(page:Page,{missing=false}={}){
  await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
- let captured:Record<string,unknown>|undefined;
+ const writes:Record<string,unknown>[]=[],queries:URLSearchParams[]=[];
  await page.route(/\/v[13]\//,async route=>{
-  const path=new URL(route.request().url()).pathname;
-  let json:unknown={};
-  if(path.endsWith('/users/me'))json={user_id:'faculty',name:'Faculty',email:'faculty@local.test'};
-  if(path.endsWith('/college/access'))json={enabled:true,college_name:'Dhanalakshmi Srinivasan CET'};
-  if(path.endsWith('/academic-options'))json={programs:[{code:'BTECH',display_name:'B.Tech',duration_years:4,departments:[{code:'CSE',display_name:'Computer Science'}]}],academic_contexts:[],erp_subjects:[],can_setup:true,can_write:true};
-  if(path.endsWith('/curricula'))json={items:[{id:'doc',filename:'JNTUH.pdf',course_count:1}]};
-  if(path.endsWith('/curricula/doc'))json={id:'doc',filename:'JNTUH.pdf',courses:[{code:'CS302PC',name:'Data Structures',year_number:2,semester_number:3,cos:[],units:[],warnings:[],academic_metadata:{institution_name:{value:'JNTUH',source:'JAWAHARLAL NEHRU TECHNOLOGICAL UNIVERSITY'},batch_name:{value:'2022-23',source:'AY 2022-23 Batch'},specialization_name:{value:'AI & ML',source:'COMPUTER SCIENCE AND ENGINEERING (AI & ML)'}}}]};
-  if(path.endsWith('/subjects'))json={items:[]};
-  if(path.endsWith('/subjects/from-curriculum')){captured=route.request().postDataJSON();json={...captured,id:'new-subject'};}
-  await route.fulfill({json});
- });
- await page.goto('/dashboard/question-papers');
- await page.getByLabel('Saved curricula').selectOption('doc');
- await page.getByLabel('Institution',{exact:true}).selectOption('JNTUH');
- await expect(page.getByLabel('Education level',{exact:true})).toBeEnabled();
- await page.getByLabel('Education level',{exact:true}).selectOption('Undergraduate');
- await page.getByLabel('Batch',{exact:true}).selectOption('2022-23');
- await page.getByLabel('Degree',{exact:true}).selectOption('BTECH');
- await page.getByLabel('Department',{exact:true}).selectOption('CSE');
- await page.getByLabel('Branch',{exact:true}).selectOption('AI & ML');
- await page.getByLabel('Year',{exact:true}).selectOption('2');
- await page.getByLabel('Semester',{exact:true}).selectOption('3');
- await page.getByLabel('Curriculum subject').selectOption('CS302PC');
- await page.getByRole('button',{name:'Continue to Syllabus Master'}).click();
- await expect.poll(()=>captured?.institution_name).toBe('JNTUH');
- expect(captured).toMatchObject({education_level:'Undergraduate',batch_name:'2022-23',specialization_name:'AI & ML',branch_code:'CSE',program_code:'BTECH'});
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Question Papers',exact:true}).click();
- await expect(page.getByLabel('Subject',{exact:true})).toHaveValue('');
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Subject Master',exact:true}).click();
- await expect(page.getByLabel('Institution',{exact:true})).toHaveValue('JNTUH');
- await expect(page.getByLabel('Branch',{exact:true})).toHaveValue('AI & ML');
- await page.getByLabel('Institution',{exact:true}).selectOption('Dhanalakshmi Srinivasan CET');
- await expect(page.getByLabel('Education level',{exact:true})).toHaveValue('');
- await expect(page.getByLabel('Batch',{exact:true})).toHaveValue('');
- await expect(page.getByLabel('Degree',{exact:true})).toBeDisabled();
- await expect(page.getByLabel('Department',{exact:true})).toHaveValue('');
- await expect(page.getByLabel('Branch',{exact:true})).toHaveValue('');
-});
-test('legacy subjects stay accessible without invented academic fields',async({page})=>{
- await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
- await page.route(/\/v[13]\//,async route=>{
-  const path=new URL(route.request().url()).pathname;
-  let json:unknown={};
+  const url=new URL(route.request().url()),path=url.pathname;let json:unknown={items:[]};
   if(path.endsWith('/users/me'))json={user_id:'faculty',name:'Faculty'};
-  if(path.endsWith('/college/access'))json={enabled:true,college_name:'Demo College'};
-  if(path.endsWith('/academic-options'))json={programs:[{code:'BTECH',display_name:'B.Tech',duration_years:4,departments:[{code:'CSE',display_name:'Computer Science'}]}],erp_subjects:[],can_setup:true,can_write:true};
-  if(path.endsWith('/curricula'))json={items:[]};
-  if(path.endsWith('/subjects'))json={items:[{id:'old',code:'CN',name:'Computer Networks'}]};
+  else if(path.endsWith('/college/access'))json={enabled:true,college_name:institution};
+  else if(path.endsWith('/academic-options'))json={institution_name:institution,programs:[{code:'BTECH',display_name:'B.Tech',duration_years:4,education_level:'Undergraduate',departments:[{code:'CSE',display_name:'Computer Science'}]}],institution_batches:missing?[]:[{id:'batch24',label:'2024–2028',program_code:'BTECH',entry_year:2024,version:1}],academic_contexts:[academic],erp_subjects:[],can_setup:true,can_write:true};
+  else if(path.endsWith('/curricula'))json={items:[{id:'doc',filename:'JNTUH.pdf',course_count:1}]};
+  else if(path.endsWith('/curricula/doc'))json={id:'doc',filename:'JNTUH.pdf',courses:[{code:'CS302PC',name:'Data Structures',year_number:2,semester_number:3,cos:[],units:[],warnings:[],academic_metadata:{institution_name:{value:'JNTUH',source:'Document heading'},batch_name:{value:'2022-23',source:'Academic year in document'},specialization_name:{value:'AI & ML',source:'Document department'}}}]};
+  else if(path.endsWith('/subjects')){queries.push(url.searchParams);json={items:[subject]};}
+  else if(path.endsWith('/subjects/from-curriculum')){const body=route.request().postDataJSON();writes.push(body);json={...body,id:'new-subject'};}
+  else if(path.endsWith('/questions'))json={items:[],total:0};
   await route.fulfill({json});
  });
- await page.goto('/dashboard/question-papers');
- await page.getByRole('button',{name:'Open existing subjects'}).click();
- await page.getByLabel('Degree',{exact:true}).selectOption('BTECH');
- await page.getByLabel('Department',{exact:true}).selectOption('CSE');
- await page.getByLabel('Year',{exact:true}).selectOption('2');
- await page.getByLabel('Semester',{exact:true}).selectOption('4');
- await page.getByLabel('Subject',{exact:true}).selectOption('old');
- await expect(page.getByLabel('Subject',{exact:true})).toHaveValue('old');
-});
+ return {writes,queries};
+}
+async function selectContext(page:Page){for(const [title,value] of [['Batch year','2024'],['Education level','Undergraduate'],['Programme','BTECH'],['Department','CSE'],['Semester','3']])await page.getByLabel(title,{exact:true}).selectOption(value);}
 
-test('Question Bank and Prepare Paper share an independent full hierarchy across refresh',async({page})=>{
- await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
- const academic={institution_name:'JNTUH',education_level:'Undergraduate',batch_name:'2022-23',specialization_name:'AI & ML',program_code:'BTECH',branch_code:'CSE'};
- const subject={...academic,id:'bank-subject',code:'DS',name:'Data Structures',year_number:2,semester_number:3};
- let requested:URLSearchParams|undefined;
- await page.route(/\/v[13]\//,async route=>{
-  const url=new URL(route.request().url());const path=url.pathname;let json:unknown={items:[]};
-  if(path.endsWith('/users/me'))json={user_id:'faculty',name:'Faculty'};
-  if(path.endsWith('/college/access'))json={enabled:true,college_name:'Demo College'};
-  if(path.endsWith('/academic-options'))json={programs:[{code:'BTECH',display_name:'B.Tech',duration_years:4,departments:[{code:'CSE',display_name:'Computer Science'}]}],academic_contexts:[academic,{...academic,institution_name:'Demo College',batch_name:'2023-24',specialization_name:'Core CSE'}],erp_subjects:[],can_setup:true,can_write:true};
-  if(path.endsWith('/subjects')){requested=url.searchParams;json={items:[subject]};}
-  if(path.endsWith('/questions'))json={items:[],total:0};
-  await route.fulfill({json});
- });
- await page.goto('/dashboard/question-papers?view=bank');
- for(const [title,value] of [['Institution','JNTUH'],['Education level','Undergraduate'],['Batch','2022-23'],['Degree','BTECH'],['Department','CSE'],['Branch','AI & ML'],['Year','2'],['Semester','3'],['Subject','bank-subject']])await page.getByLabel(title,{exact:true}).selectOption(value);
- await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('JNTUH');
- expect(requested?.get('institution_name')).toBe('JNTUH');expect(requested?.get('batch_name')).toBe('2022-23');expect(requested?.get('specialization_name')).toBe('AI & ML');expect(requested?.get('branch_code')).toBe('CSE');
- await page.getByRole('navigation',{name:'Question Papers workspace'}).getByRole('button',{name:'Prepare Paper'}).click();
- await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('AI & ML');
- await page.reload();await page.getByRole('button',{name:'Change Subject',exact:true}).click();
- await expect(page.getByLabel('Institution',{exact:true})).toHaveValue('JNTUH');await expect(page.getByLabel('Batch',{exact:true})).toHaveValue('2022-23');await expect(page.getByLabel('Branch',{exact:true})).toHaveValue('AI & ML');
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Subject Master',exact:true}).click();
- await expect(page.getByLabel('Institution',{exact:true})).toHaveValue('');
- await page.getByRole('navigation',{name:'Question paper sections'}).getByRole('button',{name:'Question Papers',exact:true}).click();
- await page.getByLabel('Institution',{exact:true}).selectOption('Demo College');
- await expect(page.getByLabel('Education level',{exact:true})).toHaveValue('');await expect(page.getByLabel('Degree',{exact:true})).toBeDisabled();await expect(page.getByLabel('Subject',{exact:true})).toHaveValue('');
+test('curriculum review uses institution records and never infers admission year from document labels',async({page})=>{
+ const f=await setup(page);await page.goto('/dashboard/question-papers');await page.getByRole('button',{name:'Saved curricula',exact:true}).click();await page.getByRole('button',{name:'JNTUH.pdf · 1 course',exact:true}).click();
+ await expect(page.getByLabel('Batch year',{exact:true})).toHaveValue('');await expect(page.getByLabel('Education level',{exact:true})).toBeDisabled();await selectContext(page);await page.getByLabel('Curriculum subject').selectOption('CS302PC');await page.getByRole('button',{name:'Continue to Syllabus Master'}).click();
+ await expect.poll(()=>f.writes[0]?.batch_id).toBe('batch24');expect(f.writes[0]).toMatchObject({...academic,year_number:2,semester_number:3});expect(f.writes[0].institution_name).not.toBe('JNTUH');
+ await goWorkspace(page,'Paper Generation');await expect(page.getByLabel('Batch year',{exact:true})).toHaveValue('');await expect(page.getByLabel('Subject',{exact:true})).toHaveValue('');
 });
-
-test('administrator can add a missing degree and department without leaving curriculum review',async({page})=>{
- await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
- const programs=[{code:'BTECH',display_name:'B.Tech',duration_years:4,departments:[] as {code:string;display_name:string}[]}];
- let savedSubject:Record<string,unknown>|undefined;
- await page.route(/\/v[13]\//,async route=>{
-  const path=new URL(route.request().url()).pathname;let json:unknown={items:[]};
-  if(path.endsWith('/users/me'))json={user_id:'faculty',name:'Faculty'};
-  if(path.endsWith('/college/access'))json={enabled:true,college_name:'Local Demo College'};
-  if(path.endsWith('/academic-options'))json={programs,academic_contexts:[],erp_subjects:[],can_setup:true,can_write:true};
-  if(path.endsWith('/curricula'))json={items:[{id:'civil',filename:'Water Supply.pdf',course_count:1}]};
-  if(path.endsWith('/curricula/civil'))json={id:'civil',courses:[{code:'U24CE305',name:'Water Supply Engineering',cos:[],units:[],warnings:[],academic_metadata:{institution_name:{value:'Meenakshi Sundararajan Engineering College',source:'College heading'},department_name:{value:'Civil Engineering',source:'Department: Civil Engineering'}}}]};
-  if(path.endsWith('/academic-catalog/programs')){const body=route.request().postDataJSON();programs.push({...body,departments:[]});json={status:'saved'};}
-  if(path.endsWith('/academic-catalog/departments')){const body=route.request().postDataJSON();programs.find(p=>p.code===body.program_code)!.departments.push({code:body.code,display_name:body.display_name});json={status:'saved'};}
-  if(path.endsWith('/subjects/from-curriculum')){savedSubject=route.request().postDataJSON();json={...savedSubject,id:'civil-subject'};}
-  await route.fulfill({json});
- });
- await page.goto('/dashboard/question-papers');await page.getByLabel('Saved curricula').selectOption('civil');
- await expect(page.getByLabel('Institution',{exact:true})).toHaveValue('Meenakshi Sundararajan Engineering College');
- await page.getByLabel('Education level',{exact:true}).selectOption('Undergraduate');
- await page.getByLabel('Batch',{exact:true}).selectOption('__new__');await page.getByLabel('New batch').fill('2024 admitted batch');
- await page.getByLabel('Degree',{exact:true}).selectOption('__add__');let dialog=page.getByRole('dialog',{name:'Add Degree'});
- await dialog.getByLabel('Degree code',{exact:true}).fill('BE');await dialog.getByLabel('Degree name',{exact:true}).fill('Bachelor of Engineering');await dialog.getByLabel('Duration (years)').fill('4');await dialog.getByRole('button',{name:'Save',exact:true}).click();
- await expect(page.getByLabel('Degree',{exact:true})).toHaveValue('BE');
- await page.getByLabel('Department',{exact:true}).selectOption('__add__');dialog=page.getByRole('dialog',{name:'Add Department'});
- await expect(dialog.getByLabel('Department name',{exact:true})).toHaveValue('Civil Engineering');await dialog.getByLabel('Department code',{exact:true}).fill('CE');await dialog.getByRole('button',{name:'Save',exact:true}).click();
- await expect(page.getByLabel('Department',{exact:true})).toHaveValue('CE');
- await page.getByLabel('Branch',{exact:true}).selectOption('General');await page.getByLabel('Year',{exact:true}).selectOption('2');await page.getByLabel('Semester',{exact:true}).selectOption('3');await page.getByLabel('Curriculum subject').selectOption('U24CE305');
- await page.getByRole('button',{name:'Continue to Syllabus Master'}).click();
- await expect.poll(()=>savedSubject?.branch_code).toBe('CE');expect(savedSubject).toMatchObject({program_code:'BE',batch_name:'2024 admitted batch',specialization_name:'General',institution_name:'Meenakshi Sundararajan Engineering College'});
+test('legacy subjects stay accessible without invented admission years',async({page})=>{
+ await setup(page,{missing:true});await page.goto('/dashboard/question-papers');await page.getByRole('button',{name:'Open existing subjects',exact:true}).click();for(const [title,value] of [['Programme','BTECH'],['Department','CSE'],['Study year','2'],['Semester','3'],['Subject','bank-subject']])await page.getByLabel(title,{exact:true}).selectOption(value);await expect(page.getByLabel('Subject',{exact:true})).toHaveValue('bank-subject');
+});
+test('Question Bank and Prepare Paper share the selected institution subject across refresh',async({page})=>{
+ const f=await setup(page);await page.goto('/dashboard/question-papers/question-bank?view=bank');await selectContext(page);await page.getByLabel('Subject',{exact:true}).selectOption('bank-subject');await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText(institution);expect(f.queries.some(q=>q.get('batch_id')==='batch24'&&q.get('semester_number')==='3')).toBe(true);
+ await goWorkspace(page,'Paper Generation');await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('Batch 2024');await page.reload();await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('Computer Science');await page.getByRole('button',{name:'Change Subject',exact:true}).click();await page.getByRole('button',{name:'Cancel subject change',exact:true}).click();await expect(page.getByRole('region',{name:'Selected academic context'})).toContainText('Data Structures');
+});
+test('missing academic setup directs administrators to Institution Management',async({page})=>{
+ const f=await setup(page,{missing:true});await page.goto('/dashboard/question-papers');await page.getByRole('button',{name:'Saved curricula',exact:true}).click();await page.getByRole('button',{name:'JNTUH.pdf · 1 course',exact:true}).click();await expect(page.getByText('No admission batches are configured yet.')).toBeVisible();await expect(page.getByLabel('Batch year',{exact:true}).locator('option')).toHaveCount(1);await expect(page.getByRole('link',{name:'Manage batches, programmes and subjects ↗'})).toHaveAttribute('href','/dashboard/attendance?tab=academic');expect(f.writes).toEqual([]);
 });

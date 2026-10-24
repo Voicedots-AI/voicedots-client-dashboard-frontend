@@ -1,0 +1,3 @@
+export type DocumentStyle={layout_style?:string;institution_alignment?:string|null;header_alignment?:string|null;section_alignment?:string|null;instruction_alignment?:string|null;body_font_size?:number|null;section_font_size?:number|null;line_spacing?:number|null;question_spacing?:number|null};
+export type DocumentDetails={institution_name?:string;institution_short_name?:string;address?:string;contact?:string;program?:string;branch?:string;year?:string;semester?:string;academic_session?:string};
+export function sameDocumentSettings(a:object={},b:object={}){const normalized=(o:object)=>JSON.stringify(Object.entries(o).filter(([,v])=>v!==''&&v!=null).sort(([a],[b])=>a.localeCompare(b)));return normalized(a)===normalized(b);}

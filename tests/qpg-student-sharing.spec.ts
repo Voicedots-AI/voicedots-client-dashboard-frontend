@@ -19,7 +19,7 @@ for(const status of [200,404,500]){
    if(path.endsWith('/questions'))json={total:1,items:[{id:'q1',subject_id:'s1',question_text:'Explain packet switching.',question_type:'SHORT_ANSWER',marks:2,bloom_level:'K2',difficulty:'EASY',status:'APPROVED',source_type:'MANUAL',version:1,answer:'Answer',options:[],updated_at:'2026-10-14T00:00:00Z'}]};
    await route.fulfill({json});
   });
-  await page.goto('/dashboard/question-papers/question-bank');
+  await page.goto('/dashboard/question-papers/question-bank?view=bank');
   await expect(page.getByRole('button',{name:'Edit',exact:true})).toBeVisible();
   if(status===500)await expect(page.getByRole('alert')).toContainText('Sharing service failed.');
   else await expect(page.getByRole('alert')).toHaveCount(0);

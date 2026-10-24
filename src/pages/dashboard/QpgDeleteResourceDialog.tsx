@@ -1,0 +1,11 @@
+import {useId,useState} from 'react';
+import {Button} from '@/components/ui/button';
+import {apiClient} from '@/api/apiClient';
+import {collegeError} from '@/api/collegeApi';
+import Dialog from './QpgDialog';
+export type DeletableResource={id:string;name:string;revision?:number};
+export default function QpgDeleteResourceDialog({kind,resource,onClose,onDeleted}:{kind:'curricula'|'templates';resource:DeletableResource;onClose:()=>void;onDeleted:()=>void}){
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmation,setConfirmation]=useState('');const inputId=useId();const name=kind==='curricula'?'curriculum':'template';
+ async function remove(){if(busy||confirmation!=='delete')return;setBusy(true);setError('');try{await apiClient.delete(`/v3/college/question-papers/${kind}/${resource.id}`,{data:{confirmation,...(kind==='templates'?{expected_revision:resource.revision}:{})}});onDeleted();}catch(e){setError(collegeError(e));}finally{setBusy(false);}}
+ return <Dialog title={`Delete ${name}?`} onClose={()=>{if(!busy)onClose();}}><p className="my-3 text-sm">Remove “{resource.name}” from saved {kind==='curricula'?'curricula':'templates and formats'}?</p><p className="mb-4 text-sm text-slate-500">{kind==='curricula'?'Existing subjects, syllabuses, bank questions and papers will remain. You can upload the file again later.':'Existing papers and previously exported documents will remain. This template will no longer be available for new selections.'}</p><label htmlFor={inputId} className="mb-4 grid gap-2 text-sm"><span>Type <strong>delete</strong> to confirm</span><input id={inputId} aria-label="Type delete to confirm" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={64} disabled={busy} className="rounded-lg border border-slate-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-red-400 dark:border-slate-700 dark:bg-slate-900" placeholder="delete" value={confirmation} onChange={e=>setConfirmation(e.target.value)}/></label>{error&&<p role="alert" className="my-3 text-sm text-red-600">{error}</p>}<div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={onClose}>Cancel</Button><Button className="bg-red-600 hover:bg-red-700" disabled={busy||confirmation!=='delete'} onClick={()=>void remove()}>{busy?'Deleting…':`Delete ${name}`}</Button></div></Dialog>;
+}

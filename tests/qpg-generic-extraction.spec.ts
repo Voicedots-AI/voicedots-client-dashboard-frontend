@@ -23,11 +23,10 @@ for(const missing of [false,true])test(`background extraction resumes, preselect
   await route.fulfill({json});
  });
  await page.goto('/dashboard/question-papers');
- if(missing)await page.getByLabel('Saved curricula').selectOption('doc');
+ if(missing){await page.getByRole('button',{name:'Saved curricula',exact:true}).click();await page.getByRole('button',{name:'Other layout.pdf · 0 courses',exact:true}).click();}
  else{
-  await page.getByText('Upload a new curriculum',{exact:true}).click();
   await page.getByLabel('Curriculum document').setInputFiles({name:'MBA.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 test upload')});
-  await page.getByRole('button',{name:'Upload & extract courses'}).click();
+  await page.getByRole('button',{name:'Extract courses'}).click();
  }
  await expect(page.getByText('Reading source pages · 1 / 4')).toBeVisible();
  await expect(page.getByLabel('Degree',{exact:true})).toHaveValue('BTECH');
@@ -68,10 +67,10 @@ for(const scenario of [
  });
  await page.goto('/dashboard/question-papers');
  await page.getByLabel('Curriculum document').setInputFiles({name:'MBA.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 test')});
- await page.getByRole('button',{name:'Upload & extract courses'}).click();
+ await page.getByRole('button',{name:'Extract courses'}).click();
  await expect(page.getByRole('alert')).toContainText(scenario.message);
- if(scenario.name==='progress connection failure'){await expect(page.getByLabel('Saved curricula')).toHaveValue('doc');await expect(page.getByText('Reading your curriculum. You can reopen it from Saved curricula.',{exact:true})).toHaveCount(0);}
- await expect(page.getByRole('button',{name:'Upload & extract courses'})).toBeEnabled();
+ if(scenario.name==='progress connection failure'){await expect(page.getByRole('button',{name:'Saved curricula',exact:true})).toContainText('MBA.pdf');await expect(page.getByText('Reading your curriculum. You can reopen it from Saved curricula.',{exact:true})).toHaveCount(0);}
+ await expect(page.getByRole('button',{name:'Extract courses'})).toBeEnabled();
  expect(errors).toEqual([]);
 });
 
@@ -79,7 +78,7 @@ test('confirming a detected academic field preserves dependent curriculum choice
  await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
  const course={extraction_id:'mba-1',code:'MBA101',name:'Management Principles',year_number:1,semester_number:1,cos:[],units:[],warnings:[],academic_metadata:{institution_name:{value:'JNTUH',source:'JNTUH'},education_level:{value:'Postgraduate',source:'MBA'},batch_name:{value:'2025-26 admitted batch',source:'AY 2025-26'},degree_name:{value:'MBA',source:'MBA'}}};
  await page.route(/\/v[13]\//,async route=>{const path=new URL(route.request().url()).pathname;let json:unknown={items:[]};if(path.endsWith('/users/me'))json={user_id:'faculty',name:'Faculty'};if(path.endsWith('/college/access'))json={enabled:true,college_name:'Local College'};if(path.endsWith('/academic-options'))json={programs:[{code:'MBA',display_name:'Master of Business Administration',duration_years:2,departments:[{code:'MGMT',display_name:'Management Studies'}]}],academic_contexts:[],erp_subjects:[],can_setup:true,can_write:true};if(path.endsWith('/curricula'))json={items:[{id:'mba-doc',filename:'MBA.pdf',course_count:1}]};if(path.endsWith('/curricula/mba-doc'))json={id:'mba-doc',courses:[course],extraction_status:'COMPLETED'};await route.fulfill({json});});
- await page.goto('/dashboard/question-papers');await page.getByLabel('Saved curricula').selectOption('mba-doc');
+ await page.goto('/dashboard/question-papers');await page.getByRole('button',{name:'Saved curricula',exact:true}).click();await page.getByRole('button',{name:'MBA.pdf · 1 course',exact:true}).click();
  await expect(page.getByLabel('Education level')).toHaveValue('Postgraduate');await expect(page.getByLabel('Batch')).toHaveValue('2025-26 admitted batch');
  await page.getByLabel('Education level').selectOption('Postgraduate');
  await expect(page.getByLabel('Batch')).toHaveValue('2025-26 admitted batch');

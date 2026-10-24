@@ -9,8 +9,8 @@ const PopoverTrigger = PopoverPrimitive.Trigger;
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentProps<typeof PopoverPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentProps<typeof PopoverPrimitive.Content> & { showArrow?: boolean }
+>(({ className, children, showArrow = true, ...props }, ref) => (
   <PopoverPrimitive.Portal>
     <PopoverPrimitive.Content
       ref={ref}
@@ -22,7 +22,7 @@ const PopoverContent = React.forwardRef<
       {...props}
     >
       {children}
-      <PopoverPrimitive.Arrow className="fill-white dark:fill-slate-900" />
+      {showArrow && <PopoverPrimitive.Arrow className="fill-white dark:fill-slate-900" />}
     </PopoverPrimitive.Content>
   </PopoverPrimitive.Portal>
 ));
