@@ -12,6 +12,9 @@ const LoginPage = () => {
   const { login } = useAuth();
   const [searchParams] = useSearchParams();
   const setupToken = searchParams.get("setup_token");
+  const clientSetupToken = searchParams.get("client_setup_token");
+  const invitationToken = clientSetupToken || setupToken;
+  const isClientInvitation = Boolean(clientSetupToken);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,16 +23,17 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [setupComplete, setSetupComplete] = useState(false);
-  const [setupLinkStatus, setSetupLinkStatus] = useState<"checking" | "valid" | "completed" | "expired" | "invalid">(setupToken ? "checking" : "valid");
+  const [setupLinkStatus, setSetupLinkStatus] = useState<"checking" | "valid" | "completed" | "expired" | "invalid">(invitationToken ? "checking" : "valid");
 
   useEffect(() => {
-    if (!setupToken) return;
+    if (!invitationToken) return;
     let active = true;
-    void apiClient.post<{status: "valid" | "completed" | "expired" | "invalid"}>("/v3/auth/password-setup/status", { token: setupToken })
+    const endpoint = isClientInvitation ? "/v3/auth/client-password-setup/status" : "/v3/auth/password-setup/status";
+    void apiClient.post<{status: "valid" | "completed" | "expired" | "invalid"}>(endpoint, { token: invitationToken })
       .then(({data}) => { if (active) setSetupLinkStatus(data.status || "invalid"); })
       .catch(() => { if (active) setSetupLinkStatus("invalid"); });
     return () => { active = false; };
-  }, [setupToken]);
+  }, [invitationToken, isClientInvitation]);
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -60,16 +64,17 @@ const LoginPage = () => {
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
     e.preventDefault(); setError("");
-    if (!setupToken) return;
+    if (!invitationToken) return;
     if (password.length < 8) { setError("Choose a password with at least 8 characters."); return; }
     if (password !== confirmPassword) { setError("The passwords do not match."); return; }
     setLoading(true);
     try {
-      const {data} = await apiClient.post<{access_token?: string}>("/v3/auth/password-setup/redeem", { token: setupToken, password });
+      const endpoint = isClientInvitation ? "/v3/auth/client-password-setup/redeem" : "/v3/auth/password-setup/redeem";
+      const {data} = await apiClient.post<{access_token?: string}>(endpoint, { token: invitationToken, password });
       if (data.access_token) {
         setAuthHeader(data.access_token);
         await login();
-        navigate("/dashboard/placement-management", { replace: true });
+        navigate(isClientInvitation ? "/dashboard" : "/dashboard/placement-management", { replace: true });
       } else {
         setSetupComplete(true); setPassword(""); setConfirmPassword("");
       }
@@ -99,17 +104,17 @@ const LoginPage = () => {
           </h3>
 
           <h1 className="text-3xl font-medium text-gray-900 dark:text-white">
-            {setupToken ? "Set up your password" : "Client Portal"}
+            {invitationToken ? "Set up your password" : "Client Portal"}
           </h1>
 
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {setupToken ? setupLinkStatus === "checking" ? "Checking your secure invitation…" : setupLinkStatus === "completed" ? "Password already created. Sign in to continue." : setupLinkStatus === "expired" ? "This invitation has expired. Ask your Client administrator to send a new one." : setupLinkStatus === "invalid" ? "This invitation link is invalid. Ask your Client administrator to send a new one." : "Create a secure password for your placement account." : "Secure access for authorized personnel only"}
+            {invitationToken ? setupLinkStatus === "checking" ? "Checking your secure invitation…" : setupLinkStatus === "completed" ? "Password already created. Sign in to continue." : setupLinkStatus === "expired" ? "This invitation has expired. Ask VoiceDots to send a new one." : setupLinkStatus === "invalid" ? "This invitation link is invalid. Ask VoiceDots to send a new one." : isClientInvitation ? "Create a secure password for your VoiceDots client account." : "Create a secure password for your placement account." : "Secure access for authorized personnel only"}
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700 px-6 py-8 sm:px-8">
-          {setupToken ? <>{setupLinkStatus === "valid" && <form className="space-y-6" onSubmit={handlePasswordSetup}>
+          {invitationToken ? <>{setupLinkStatus === "valid" && <form className="space-y-6" onSubmit={handlePasswordSetup}>
             {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
             {setupComplete ? <div role="status" className="space-y-4 text-center"><p className="text-sm text-emerald-700">Password created. You can now sign in.</p><button type="button" className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-normal text-white" onClick={() => window.location.assign("/login")}>Continue to sign in</button></div> : <>
               <label className="block text-sm font-medium">New password<input type="password" required minLength={8} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} className="mt-1 w-full rounded-lg border px-4 py-3 text-sm" autoComplete="new-password" /></label>
