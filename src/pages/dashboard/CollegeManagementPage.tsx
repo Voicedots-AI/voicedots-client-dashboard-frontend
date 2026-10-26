@@ -375,7 +375,7 @@ export default function CollegeManagementPage() {
         </div>
         <a
           className={button}
-          href="https://students.voicedots.io"
+          href="https://students.voicedots.ai/"
           target="_blank"
           rel="noreferrer"
         >
