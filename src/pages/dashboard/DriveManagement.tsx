@@ -1878,10 +1878,6 @@ export default function DriveManagement({
     return () => {controller.abort();window.clearInterval(timer);};
   },[tab,driveId,offset,search,departmentFilter,programFilter,statusFilter,listSort,resultSort,resultView,resultQuickView,resultRules,resultMatchMode,excludeReviewRequired]);
   useEffect(() => {resumeMatchRequests.clear();},[version,driveId]);
-  function openCandidateDetails(candidate: Candidate) {
-    setSelected(candidate); setDetail(candidate);
-    setAttempts(Math.max(Number(candidate.max_attempts || drive?.max_attempts || 1), Number(candidate.attempt_number || 1)));
-  }
   async function exportSelected() {
     setExporting(true);setError('');
     try {
@@ -2431,9 +2427,8 @@ export default function DriveManagement({
               <header className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4">
                 <input type="checkbox" className="h-4 w-4 accent-violet-600" aria-label={`Select ${candidate.full_name}`} checked={checked.includes(candidate.student_id)} onChange={event=>setChecked(current=>event.target.checked ? [...new Set([...current,candidate.student_id])] : current.filter(id=>id!==candidate.student_id))}/>
                 <StudentAvatar student={candidate} size="h-11 w-11"/>
-                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-medium text-slate-900">{candidate.full_name}</h4>{candidate.rank != null && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-700">#{candidate.rank} in drive</span>}<InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></div><p className="mt-1 text-xs text-slate-500">{candidate.roll_number} · {[candidate.program,candidate.department_code].filter(Boolean).join(' · ')} · Attempt {candidate.attempt_number || 1}</p></div>
-                <button className={btn} onClick={()=>openCandidateDetails(candidate)}>Candidate details</button>
-                <button className={`${btn} inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-violet-200 text-violet-700`} disabled={busy || !candidate.report_ready} onClick={()=>void inspect(candidate,'reports')}>{candidate.report_ready?'Open full report':'Report pending'} <ExternalLink size={14}/></button>
+                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-medium text-slate-900">{candidate.full_name}</h4>{candidate.rank != null && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-700">#{candidate.rank} in drive</span>}<InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></div><p className="mt-1 text-xs text-slate-500">{candidate.roll_number} · {[candidate.program,candidate.department_code].filter(Boolean).join(' · ')} · Attempt {candidate.attempt_number || 1}</p><p className="mt-1 break-all text-xs text-slate-600">{candidate.email || "Email unavailable"}</p></div>
+                <button className={`${btn} inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-violet-200 text-violet-700`} disabled={busy || !candidate.report_ready} onClick={()=>void inspect(candidate,'reports')}>{candidate.report_ready?'Scorecard':'Report pending'} <ExternalLink size={14}/></button>
               </header>
               <div className="result-assessment-band flex flex-wrap items-center gap-3 border-b border-violet-100 bg-violet-50/60 px-5 py-3">
                 <span className="text-xs font-medium text-slate-600">AI recommendation</span><StatusBadge value={candidate.recommendation || 'Not assessed'}/>
@@ -2442,7 +2437,6 @@ export default function DriveManagement({
                 <span className="ml-auto text-xs text-slate-500">Attempt {candidate.attempt_number || 1}</span>
               </div>
               <dl className="result-evidence-rows">
-                <div><dt>Candidate & attempts</dt><dd className="flex flex-wrap items-center gap-3"><span className="text-xs text-slate-600">{candidate.email || "Email unavailable"}</span><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/></dd></div>
                 <div><dt>ATS resume fit</dt><dd><ATSMatchInfo driveId={driveId} candidate={candidate} onOpen={()=>setAtsCandidate(candidate)}/></dd></div>
                 <div><dt>Interview assessment</dt><dd className="flex flex-wrap items-center gap-2">{[['Interview',candidate.overall_score],['Readiness / PRI',candidate.ranking_score],['Job fit',candidate.job_fit_score]].map(([label,value])=><span key={String(label)} className={`result-score-chip ${typeof value !== 'number' ? 'score-unavailable' : value >= 75 ? 'score-strong' : value >= 50 ? 'score-developing' : 'score-review'}`}><span>{label}</span><strong>{typeof value === 'number' ? `${value}/100` : 'Not assessed'}</strong></span>)}{candidate.readiness && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-600">{displayName(candidate.readiness)}</span>}</dd></div>
                 <div><dt>Interview rounds</dt><dd className="flex flex-wrap items-center gap-2">{candidate.agent_summary?.length ? candidate.agent_summary.map((round,index)=><span key={index} className="result-round-chip"><span>{String(round.label || displayName(String(round.agent_type || `Round ${index+1}`)))}</span><strong>{round.score==null?'Not assessed':`${round.score}/100`}</strong></span>) : <span className="text-xs text-slate-500">Round scores not available</span>}</dd></div>
@@ -2462,7 +2456,7 @@ export default function DriveManagement({
                 <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
                   <tr>
                     {(tab === "results"
-                      ? ["Candidate", "Status / attempts", "ATS Fit", "Interview / PRI", "Role fit", "Integrity", "AI assessment", "Decision / release", "Actions"]
+                      ? ["Candidate", "Status", "ATS Fit", "Interview / PRI", "Role fit", "Integrity", "AI assessment", "Decision / release", "Actions"]
                       : tab === "ats"
                         ? [
                             "Candidate",
@@ -2521,7 +2515,7 @@ export default function DriveManagement({
                       </td>
                       {tab === "results" ? (
                         <>
-                          <td className="p-3"><InterviewStatusBadge value={candidateInterviewStatus(c)}/><div className="mt-2"><AttemptBadge candidate={c} driveMaxAttempts={drive?.max_attempts}/></div><p className="mt-2 text-xs text-slate-500">{[c.program,c.department_code].filter(Boolean).join(" · ") || "Academic details unavailable"}</p></td>
+                          <td className="p-3"><InterviewStatusBadge value={candidateInterviewStatus(c)}/><p className="mt-2 text-xs text-slate-500">{[c.program,c.department_code].filter(Boolean).join(" · ") || "Academic details unavailable"} · Attempt {c.attempt_number || 1}</p></td>
                           <td className="p-3"><ATSMatchInfo driveId={driveId} candidate={c} compact onOpen={()=>setAtsCandidate(c)}/></td>
                           <td className="p-3"><span className="text-base font-medium">{c.overall_score==null?'—':`${c.overall_score}/100`}</span><p className="mt-1 text-xs text-slate-500">PRI {c.ranking_score==null?'—':`${c.ranking_score}/100`}</p></td>
                           <td className="p-3"><p>{c.job_fit_score==null?'—':`${c.job_fit_score}/100`}</p><p className="mt-1 text-xs text-slate-500">{c.readiness || 'Not assessed'}</p></td>
@@ -2569,12 +2563,12 @@ export default function DriveManagement({
                       )}
                       <td className="whitespace-nowrap px-4 py-3">
                         {tab === "results" ? (
-                          <div className="flex flex-wrap gap-2"><button className={btn} onClick={()=>openCandidateDetails(c)}>Candidate details</button><button
+                          <div className="flex flex-wrap gap-2"><button
                             className={btn}
                             disabled={busy || !c.report_ready}
                             onClick={() => void inspect(c, "reports")}
                           >
-                            {c.report_ready ? "Open report" : "Report pending"}
+                            {c.report_ready ? "Scorecard" : "Report pending"}
                           </button><button className={btn} onClick={()=>setAtsCandidate(c)}>ATS Fit</button></div>
                         ) : (
                           <button

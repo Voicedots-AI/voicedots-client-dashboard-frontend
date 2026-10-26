@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  BarChart3,
   ChevronDown,
   ChevronRight,
+  Code2,
   FileText,
   ChevronLeft,
   Download,
-  Search,
+  Lightbulb,
+  MessageCircle,
+  Settings,
   ShieldCheck,
+  Target,
+  Trophy,
   Volume2,
   X,
 } from "lucide-react";
@@ -28,25 +34,67 @@ type Report = Data & {
   recording?: Data | null;
 };
 const nav = [
-  ["answers", "Answers"], ["skills", "Skills proof"],
+  ["skills", "Skills proof"],
   ["rounds", "Rounds & competencies"], ["proctor", "AI Proctor"],
   ["feedback", "Student feedback"],
 ] as const;
-const reportPanel = "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
-const reportField = "mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100";
+const reportPanel = "rounded-2xl border border-sky-100 bg-white p-5 shadow-[0_10px_30px_rgba(15,42,82,0.06)]";
+const competencyColors = ["#0dafa0", "#f2b313", "#11b39b", "#f4ad16", "#42b7ec"];
+const reportField = "mt-1 w-full rounded-xl border border-sky-200 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
+
+// Extract a short topic from saved evidence; the complete assessment stays in the deep dive.
+function evidenceTopic(value: unknown) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  if (!text) return "—";
+  if (text.split(/\s+/).length <= 3) return text;
+  if (/\breporting a bug\b/i.test(text)) return "Reporting a bug";
+  const topic = text.match(/\b(?:bug[- ]report(?: fields| explanation)?|regression (?:testing|checks|ordering)|personal (?:task|example|positioning)|automation tools|fillers and self-corrections|boundary[- ]value (?:inputs|analysis)|boundary values|defect[- ]tracking|reporting defects|testing knowledge|testing serves quality|software testing|supporting evidence|quality assurance|testing steps|project architecture|SQL (?:query|optimisation|optimization)|teamwork examples?|expected (?:versus|vs\.?) actual|role awareness|failed inputs?)\b/i)?.[0];
+  if (topic) return topic.charAt(0).toUpperCase() + topic.slice(1);
+  const words = text.replace(/[.,;:!?]/g, "").split(/\s+/).filter(word => !/^(the|a|an|candidate|answers?|is|are|was|were|has|have|had|some|there|this|that|of|to|in|on|and|or|but|for|with|by|as|it|their|they|gives?|shows?|demonstrates?|provides?|appears?|generally|how|did|do|you|your|what|would|can|could)$/i.test(word));
+  return words.slice(0, 3).join(" ") || text.split(/\s+/).slice(0, 3).join(" ");
+}
+
+function CompetencyIcon({ label, index }: { label: string; index: number }) {
+  const normalized = label.toLowerCase();
+  const Icon = normalized.includes("communication")
+    ? MessageCircle
+    : normalized.includes("analytic") || normalized.includes("reason") || normalized.includes("thinking")
+      ? BarChart3
+      : normalized.includes("practical") || normalized.includes("applied") || normalized.includes("code")
+        ? Code2
+        : normalized.includes("problem") || normalized.includes("confidence")
+          ? Lightbulb
+          : Settings;
+  const tones = ["text-blue-600", "text-teal-600", "text-sky-600", "text-amber-500"];
+  return <Icon aria-hidden="true" className={`shrink-0 ${tones[index % tones.length]}`} size={18} strokeWidth={2.5}/>;
+}
+
+function highlightTopic(question: string) {
+  const topics: Array<[RegExp, string]> = [
+    [/edge detection/i, "Edge detection inputs / outputs"],
+    [/regression.*(?:first|order|decide)|(?:first|order|decide).*regression/i, "Regression test priorities"],
+    [/(?:bug|defect).*(?:details|fields)|(?:details|fields).*(?:bug|defect)/i, "Bug report details"],
+    [/(?:bug|defect).*(?:report|developer)|report.*(?:bug|defect)/i, "Defect reporting"],
+    [/(?:why|what made|motivat).*(?:role|testing)|(?:role|testing).*(?:why|what made)/i, "Motivation for testing"],
+    [/check first.*order/i, "Test execution order"],
+  ];
+  return topics.find(([pattern]) => pattern.test(question))?.[1] || question;
+}
+
+function observedStrengths(dimensions: Data[]) {
+  // These describe positive observations explicitly present in the saved rationale,
+  // including developing-level skills; they do not imply mastery or a higher score.
+  const rules: Array<[string, RegExp, string]> = [
+    ["domain_knowledge", /demonstrates basic testing knowledge/i, "Basic testing knowledge"],
+    ["applied_evidence", /concrete actions for reporting defects.*(?:images|video)/i, "Defect reporting with evidence"],
+    ["structured_thinking", /some method.*regression ordering/i, "Ordered regression checks"],
+  ];
+  return rules.filter(([dimension, pattern]) => dimensions.some(item => item.dimension === dimension && Number(item.percentage) >= 50 && pattern.test(String(item.rationale || item.reason || item.evidence || "")))).map(([, , label]) => label);
+}
 function PreviewToggle({ shown, total, onClick, noun = "items" }: { shown: number; total: number; onClick: () => void; noun?: string }) {
   if (total <= 4) return null;
   const expanded = shown >= total;
   return <button type="button" onClick={onClick} className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500">{expanded ? "Show less" : `Show all ${total} ${noun}`}<ChevronDown size={14} className={`transition-transform ${expanded ? "rotate-180" : ""}`}/></button>;
-}
-function EvidenceBrief({ title, items, tone }: { title: string; items: string[]; tone: "strength" | "concern" }) {
-  const [expanded, setExpanded] = useState(false);
-  const color = tone === "strength" ? "text-emerald-700" : "text-amber-700";
-  return <article className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
-    <h3 className={`text-sm font-medium ${color}`}>{title}<span className="ml-2 text-xs text-slate-400">{items.length}</span></h3>
-    {items.length ? <ul className="mt-3 space-y-3">{(expanded ? items : items.slice(0, 2)).map((item, index) => <li key={index} className="flex gap-2 text-sm leading-6 text-slate-600"><span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${tone === "strength" ? "bg-emerald-500" : "bg-amber-500"}`}/><span>{expanded ? item : item.length > 130 ? `${item.slice(0, 127).trimEnd()}…` : item}</span></li>)}</ul> : <p className="mt-3 text-sm text-slate-500">{tone === "strength" ? "No supporting statements were supplied." : "No concern signals were supplied."}</p>}
-    {(items.length > 2 || items.some(item => item.length > 130)) && <button type="button" className="mt-3 text-xs font-medium text-violet-700" onClick={() => setExpanded(value => !value)}>{expanded ? "Collapse evidence" : `Read all ${items.length} ${tone === "strength" ? "strengths" : "concerns"}`}</button>}
-  </article>;
 }
 const show = (value: unknown, fallback = "Not available") =>
   value === null || value === undefined || value === ""
@@ -235,6 +283,12 @@ export default function CandidateReport({
   const [recording, setRecording] = useState<Data | null>(null),
     [recordingLoading, setRecordingLoading] = useState(false),
     [recordingError, setRecordingError] = useState("");
+  const [candidatePhoto, setCandidatePhoto] = useState({ studentId: "", url: "" });
+  useEffect(() => {
+    if (!bundle) return;
+    const frame = requestAnimationFrame(() => document.getElementById("glance")?.scrollIntoView({ block: "start" }));
+    return () => cancelAnimationFrame(frame);
+  }, [bundle, studentId]);
   const [focusGroup, setFocusGroup] = useState<"strengths" | "growth" | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggleExpanded = (key: string) => setExpanded(current => ({ ...current, [key]: !current[key] }));
@@ -244,10 +298,8 @@ export default function CandidateReport({
     [transcriptError, setTranscriptError] = useState(""),
     [integrityError, setIntegrityError] = useState(""),
     [activeEvent, setActiveEvent] = useState(0);
-  const [activeTab, setActiveTab] = useState<(typeof nav)[number][0]>("answers");
-  const [answerFilter, setAnswerFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState<(typeof nav)[number][0]>("skills");
   const [skillFilter, setSkillFilter] = useState("all");
-  const [answerSearch, setAnswerSearch] = useState("");
   const [bookmarkFilter, setBookmarkFilter] = useState("all");
   const [resumeSkillFilter, setResumeSkillFilter] = useState("all");
   const [bookmarkNote, setBookmarkNote] = useState("");
@@ -323,6 +375,13 @@ export default function CandidateReport({
     void load();
     return () => { loadRequest.current += 1; };
   }, [driveId, studentId]);
+  useEffect(() => {
+    let active = true;
+    collegeApi.get<{ photo?: string }>(`attendance/photos/students/${studentId}`)
+      .then(result => { if (active) setCandidatePhoto({ studentId, url: result.photo || "" }); })
+      .catch(() => { if (active) setCandidatePhoto({ studentId, url: "" }); });
+    return () => { active = false; };
+  }, [studentId]);
   const report = useMemo(
     () =>
       ((bundle?.reports || []) as Report[]).find(
@@ -331,8 +390,8 @@ export default function CandidateReport({
     [bundle, driveId],
   );
   function openAnswer(index: number) {
-    setActiveTab("answers"); setAnswerFilter("all"); setAnswerSearch(""); setExpanded(current => ({...current, answers:true}));
-    window.setTimeout(() => {const item=document.getElementById(`answer-${index}`) as HTMLDetailsElement|null;if(item){item.open=true;item.scrollIntoView({behavior:"smooth",block:"center"});}},0);
+    setBookmarkFilter("question");
+    window.setTimeout(() => { const item = document.getElementById(`answer-${index}`) as HTMLDetailsElement | null; if (item) { item.open = true; item.scrollIntoView({ behavior: "smooth", block: "nearest" }); } }, 0);
   }
   const recordingRequest = useRef(0);
   const refreshedPlayback = useRef(false);
@@ -534,7 +593,6 @@ export default function CandidateReport({
     if (!Number.isFinite(bTime)) return -1;
     return bTime - aTime;
   });
-  const interviewEnded = Boolean(report.completed_at) || ["released", "held_for_review", "incomplete"].includes(String(detail.status || ""));
   const comparable = pri.comparable !== false && typeof pri.score === "number";
   const recordingStatus = recording?.status || report.recording?.status || "unavailable";
   const recordingDuration = recording?.duration_seconds ?? report.recording?.duration_seconds;
@@ -546,16 +604,7 @@ export default function CandidateReport({
   const preparationSteps = Array.isArray(placement.recommended_preparation) ? placement.recommended_preparation : Array.isArray(placement.needs_improvement_before) ? placement.needs_improvement_before : [];
   const nextRoundQuestions = Array.isArray(detail.next_round_questions) ? detail.next_round_questions : Array.isArray(placement.next_round_questions) ? placement.next_round_questions : [];
   const feedbackSummary = detail.student_feedback_summary || detail.student_summary || executiveSummary;
-  const unansweredReviews = reviews.filter(review => turns.some(turn => String(turn.turn_id) === String(review.turn_id) && !String(turn.transcript || "").trim()) || ["explicit_dont_know", "no_response", "capture_unavailable", "system_interrupted", "irrelevant_answer"].includes(String(review.answer_state || review.evidence_status || "").toLowerCase()));
-  const followUpReviews = reviews.filter(review => String(review.kind || review.turn_kind || "").toLowerCase().includes("follow"));
   const filteredRequirements = requirements.filter(item => skillFilter === "all" || (skillFilter === "gaps" && item.requirement_was_asked === true && item.candidate_mentioned !== true) || (skillFilter === "demonstrated" && item.candidate_mentioned === true) || (skillFilter === "not_asked" && item.requirement_was_asked !== true));
-  const filteredReviews = reviews.filter(review => {
-    const savedTurn = turns.find(turn => String(turn.turn_id) === String(review.turn_id));
-    const answer = String((savedTurn ? savedTurn.transcript : review.answer || review.transcript) || "");
-    const search = answerSearch.trim().toLowerCase();
-    const matchesFilter = answerFilter === "all" || (answerFilter === "unanswered" && unansweredReviews.includes(review)) || (answerFilter === "strong" && (String(review.evidence_strength || "").toLowerCase() === "strong" || Array.isArray(review.strength_feedback) && review.strength_feedback.length > 0)) || (answerFilter === "feedback" && (Array.isArray(review.strength_feedback) && review.strength_feedback.length > 0 || Array.isArray(review.improvement_feedback) && review.improvement_feedback.length > 0)) || (answerFilter === "followups" && followUpReviews.includes(review));
-    return matchesFilter && (!search || `${String(review.question || review.question_text || "")} ${answer}`.toLowerCase().includes(search));
-  });
   const videoReady = typeof recording?.playback_url === "string" && recording.playback_url.trim().length > 0;
   const currentDecisionNote = String((decisionData?.decision as Data | undefined)?.note || "");
   const timeLabel = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
@@ -583,19 +632,8 @@ export default function CandidateReport({
   const notTestedResumeSkills = resumeSkills.filter(item => String(item.evidence_level || "").toLowerCase() === "not_assessed");
   const filteredResumeSkills = resumeSkills.filter(item => resumeSkillFilter === "all" || (resumeSkillFilter === "gaps" && String(item.evidence_level || "").toLowerCase() === "not_demonstrated") || (resumeSkillFilter === "verified" && String(item.evidence_level || "").toLowerCase() === "verified") || (resumeSkillFilter === "not_tested" && String(item.evidence_level || "").toLowerCase() === "not_assessed"));
   const dontKnowCount = reviews.filter(review => String(review.answer_state || review.evidence_status || "").toLowerCase() === "explicit_dont_know").length;
-  const weakestRound = rounds.filter(round => typeof round.sub_score === "number").sort((a, b) => Number(a.sub_score) - Number(b.sub_score))[0];
-  const lowCompetencies = dimensions.filter(item => typeof item.percentage === "number" && Number(item.percentage) < 40);
   const proctorViolations = events.filter(event => String(event.severity || "").toLowerCase() === "violation");
-  const completionPct = reviews.length ? Math.round(unansweredReviews.length / reviews.length * 100) : null;
-  const metricTone = (value: unknown) => typeof value !== "number" ? "bg-slate-400" : value >= 75 ? "bg-emerald-600" : value >= 50 ? "bg-amber-500" : "bg-rose-600";
   const proctorScore = typeof proctor.overall_score === "number" ? proctor.overall_score : typeof proctor.score === "number" ? proctor.score : null;
-  const reportMetrics = [
-    { label: "Interview score", score: typeof report.overall_score === "number" ? report.overall_score : null, value: report.overall_score == null ? "—" : `${report.overall_score}`, unit: "/100", note: rounds.length ? `Across ${rounds.length} AI rounds` : "Round breakdown unavailable" },
-    { label: "Job fit", score: typeof jobFit.score === "number" ? jobFit.score : null, value: typeof jobFit.score === "number" ? String(jobFit.score) : "—", unit: "/100", note: typeof jobFit.score === "number" ? "Role requirements vs interview evidence" : "Job fit not assessed" },
-    { label: "Resume evidence", score: testedResumeSkills.length ? verifiedResumeSkills.length / testedResumeSkills.length * 100 : null, value: testedResumeSkills.length ? String(verifiedResumeSkills.length) : "—", unit: testedResumeSkills.length ? ` / ${testedResumeSkills.length}` : "", note: testedResumeSkills.length ? `${verifiedResumeSkills.length} verified from assessed resume skills` : "No resume-claim assessment saved" },
-    { label: "Responses to review", score: completionPct, value: reviews.length ? String(unansweredReviews.length) : "—", unit: reviews.length ? ` / ${reviews.length}` : "", note: reviews.length ? unansweredReviews.length ? "Missing or unusable response evidence" : "Response evidence captured for every question" : "Answer review unavailable" },
-    { label: "Integrity", score: proctorScore, value: proctorScore == null ? "—" : String(proctorScore), unit: "/100", note: proctorScore != null ? `${Number(proctor.total_events ?? events.length)} recorded events · ${displayName(show(proctor.status, "Scored"))}` : "Proctor score not assessed" },
-  ];
   const feedback = (detail.student_feedback || detail.learning_plan || {}) as Data;
   const feedbackAreas = Array.isArray(feedback.growth_areas) ? feedback.growth_areas : growthAreas;
   const savedNoteBookmarks = [currentDecisionNote, ...orderedHistory.map(item => String(item.note || ""))]
@@ -629,24 +667,72 @@ export default function CandidateReport({
     ...(dontKnowCount ? [`${dontKnowCount} answers marked “I don’t know”`] : []),
     ...(proctorViolations.length ? [`${proctorViolations.length} proctor violations to review`] : []),
   ];
-  const strengthBriefs = strengths.map(item => typeof item === "string" ? item : show((item as Data).label || (item as Data).summary || (item as Data).evidence || (item as Data).text));
-  const concernBriefs = [
-    ...advisoryFlags,
-    ...(weakestRound && Number(weakestRound.sub_score) < 50 ? [`Lowest scored round: ${roundRole(weakestRound.agent_type || weakestRound.track, weakestRound.interviewer_role)} (${weakestRound.sub_score}/100).`] : []),
-    ...lowCompetencies.map(item => `${show(item.label || displayName(show(item.dimension)))}: ${item.percentage}/100.`),
-  ];
+  const strengthText = (item: unknown) => typeof item === "string" ? item.trim() : item && typeof item === "object" ? String((item as Data).text || (item as Data).label || (item as Data).summary || (item as Data).evidence || "").trim() : "";
+  const savedStrengths = strengths.map(strengthText).filter(Boolean);
+  const answerStrengths = reviews.flatMap(review => Array.isArray(review.strength_feedback) ? review.strength_feedback.map(strengthText) : []).filter(Boolean);
+  const verifiedStrengths = resumeSkills.filter(item => item.evidence_level === "verified").map(item => `${show(item.skill, "Resume skill")} · verified in interview`);
+  const strengthBriefs = [...new Set([...savedStrengths, ...answerStrengths, ...verifiedStrengths, ...observedStrengths(dimensions)])].slice(0, 3);
+  const growthBriefs = growthAreas.map(item => typeof item === "string" ? item : show((item as Data).label || (item as Data).focus || (item as Data).summary || (item as Data).evidence || (item as Data).text));
+  const followUpBriefs = nextRoundQuestions.map(item => typeof item === "string" ? item : show((item as Data).question || (item as Data).text || (item as Data).prompt));
   const candidateProfile = (bundle?.candidate_info || {}) as Data;
   const studentInitials = String(student.full_name || "Candidate").trim().split(/\s+/).slice(0, 2).map(part => part[0] || "").join("").toUpperCase();
-  const studentDetailRows = [
-    ["Student ID", student.roll_number], ["Email", student.email], ["Program", student.program],
-    ["Department", student.department_code], ["Year of study", student.year_of_study ?? candidateProfile.year_of_study],
-    ["Graduation year", student.graduation_year ?? candidateProfile.graduation_year],
-  ].filter(([, value]) => value !== null && value !== undefined && value !== "");
+  const readinessScore = comparable ? Number(pri.score) : null;
+  const readinessLabel = report.readiness ? displayName(String(report.readiness)) : "—";
+  const scoreWidth = (value: unknown) => `${Math.max(0, Math.min(100, typeof value === "number" ? value : 0))}%`;
+  const competencyRows = dimensions.map(item => ({
+    label: show(item.label || (item.dimension ? displayName(String(item.dimension)) : null), "—"),
+    score: typeof item.percentage === "number" ? item.percentage : typeof item.score === "number" ? item.score : null,
+    target: typeof item.role_target === "number" ? item.role_target : typeof item.target_score === "number" ? item.target_score : typeof item.rubric_target === "number" ? item.rubric_target : null,
+    evidence: evidenceTopic(item.evidence_label || item.evidence || item.reason || item.rationale || item.summary),
+  }));
+  const evidenceHighlights = reviews.map((review, index) => {
+    const turn = turns.find(item => review.turn_id != null && item.turn_id != null && String(item.turn_id) === String(review.turn_id))
+      || turns.find(item => review.answer_id != null && item.answer_id != null && String(item.answer_id) === String(review.answer_id));
+    const askedAt = turn?.asked_at || review.asked_at || review.answer_started_at;
+    const offset = recordingOffset(askedAt);
+    const questionScore = [review.score, review.percentage, review.question_score].find(value => typeof value === "number") as number | undefined;
+    return {
+      key: String(review.answer_id || review.turn_id || index),
+      offset,
+      timestamp: offset == null ? "—" : timeLabel(offset),
+      question: highlightTopic(show(review.topic || review.question || review.question_text || turn?.question_text, "—")),
+      score: questionScore == null ? "—" : `${questionScore}/100`,
+    };
+  }).filter(item => item.offset != null).sort((a, b) => a.offset! - b.offset!).slice(0, 3);
 
   return (
     <section className="candidate-review mx-auto max-w-[1440px] space-y-5 pb-12 text-slate-900">
       <ReportKeyboardShortcuts videoRef={videoRef} onNextFlag={() => jumpToAdjacentFlag(1)} />
-      <style>{"@media print{.report-nav,.report-back,.report-actions,.candidate-pager,.no-print{display:none!important}.candidate-report-content .hidden{display:block!important}details:not([open])>*:not(summary){display:block!important}article,details{break-inside:avoid}body{color:#111!important;background:#fff!important}}"}</style>
+      <style>{`
+        @media (min-width: 1280px) {
+          .candidate-review { gap: 0; }
+          .candidate-review #glance { padding: 14px; }
+          .candidate-review #glance { scroll-margin-top: 76px; }
+          .candidate-review #glance > * + * { margin-top: 8px; }
+          .candidate-review #glance > article { padding: 8px 14px; }
+          .candidate-review #glance .report-candidate-header > article { padding: 12px; min-height: 144px; }
+          .candidate-review #glance .report-candidate-header h1 { font-size: 26px; }
+          .candidate-review #glance .report-candidate-header dl { margin-top: 6px; line-height: 16px; }
+          .candidate-review #glance .report-candidate-header dl > * + * { margin-top: 0; }
+          .candidate-review #glance .report-candidate-header img, .candidate-review #glance .report-candidate-header [aria-label$="initials"] { height: 112px; width: 88px; }
+          .candidate-review #glance h2 { font-size: 19px; line-height: 24px; font-weight: 800; }
+          .candidate-review #glance table { table-layout: fixed; }
+          .candidate-review #glance th, .candidate-review #glance td { padding: 5px 12px; font-size: 13px; line-height: 20px; }
+          .candidate-review #glance > section table th:nth-child(1) { width: 24%; }
+          .candidate-review #glance > section table th:nth-child(2) { width: 27%; }
+          .candidate-review #glance > section table th:nth-child(3) { width: 13%; }
+          .candidate-review #glance > div > article, .candidate-review #glance > div > section { padding: 8px 12px; }
+          .candidate-review #glance > div > article > div > span { width: 26px; height: 26px; }
+          .candidate-review #glance > div > article ul { margin-top: 4px; }
+          .candidate-review #glance > div > article ul > * + * { margin-top: 0; }
+          .candidate-review #glance > div > section > div { margin-top: 8px; }
+          .candidate-review #glance > div > section table { min-width: 0; }
+          .candidate-review #glance > div > section table th, .candidate-review #glance > div > section table td { padding-top: 3px; padding-bottom: 3px; }
+          .candidate-review #glance > div > section table th:first-child { width: 22%; }
+          .candidate-review #glance > div > section table th:last-child { width: 16%; }
+        }
+      `}</style>
+      <style>{".candidate-review .text-indigo-700{color:#146fc7!important}.candidate-review .bg-indigo-600{background-color:#1e7be6!important}.candidate-review .border-indigo-600{border-color:#1e7be6!important}.candidate-review .border-indigo-300{border-color:#7cc4f5!important}.candidate-review .focus\\:border-violet-400:focus{border-color:#38a7e8!important}.candidate-report-content>section>div:first-child h2{color:#092653;font-weight:800}.candidate-review aside>article,.candidate-review aside form{border-color:#e0f2fe;border-radius:1rem}@media print{.report-nav,.report-back,.report-actions,.candidate-pager,.no-print{display:none!important}.candidate-report-content .hidden{display:block!important}details:not([open])>*:not(summary){display:block!important}article,details{break-inside:avoid}body{color:#111!important;background:#fff!important}}"}</style>
       <div className="candidate-pager no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
         <div className="flex min-w-0 items-center gap-2 text-sm text-slate-500">
           <button type="button" className="report-back inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-indigo-700" onClick={onBack}><ArrowLeft size={15}/> Interview results</button>
@@ -660,61 +746,95 @@ export default function CandidateReport({
         </div>
       </div>
 
-      <header className="flex flex-wrap items-center gap-4 report-candidate-header rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-800 text-lg font-medium text-white">{studentInitials || "C"}</div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-medium tracking-tight text-slate-900">{show(student.full_name, "Candidate")}</h1>
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-            {student.roll_number != null && student.roll_number !== "" && <span>{String(student.roll_number)}</span>}
-            {[student.program, student.department_code, student.graduation_year ?? candidateProfile.graduation_year].some(value => value != null && value !== "") && <span>{[student.program, student.department_code, student.graduation_year ?? candidateProfile.graduation_year].filter(value => value != null && value !== "").map(String).join(" · ")}</span>}
-            <span>{show(drive?.company_name, "Placement drive")} — {show(drive?.role_title, "Role")}</span>
-            {report.attempt_number != null && <span>Attempt {report.attempt_number}</span>}
-            <span>{report.completed_at ? `Completed ${stamp(report.completed_at)}` : interviewEnded ? "Interview ended" : "Interview in progress"}</span>
-          </div>
-          <details className="mt-1 text-xs text-slate-500"><summary className="inline-flex cursor-pointer items-center gap-1 font-semibold text-slate-600">Candidate details <ChevronDown size={13}/></summary><dl className="mt-2 grid max-w-3xl gap-x-8 gap-y-2 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2">{studentDetailRows.map(([label, value]) => <div key={String(label)} className="flex justify-between gap-4"><dt>{String(label)}</dt><dd className="text-right font-medium text-slate-800">{String(value)}</dd></div>)}</dl></details>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-800">{report.completed_at ? "Interview completed" : interviewEnded ? "Interview ended" : "Interview in progress"}</span>
-          <span className={`rounded-full px-2.5 py-1 ${publication.state === "released" ? "bg-indigo-50 text-indigo-800" : "bg-slate-100 text-slate-700"}`}>Result {displayName(show(publication.state, "hidden")).toLowerCase()}</span>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1">{decision ? `Officer: ${decisionLabel(decision)}` : "Decision pending"}</span>
-          {driveError && <span role="alert" className="text-rose-700">Drive details: {driveError} <button className="underline" onClick={() => void load()}>Retry</button></span>}
-        </div>
-      </header>
-
       {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}<button className={`${btn} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap`} onClick={() => void load()}>Retry report</button></div>}
       {notice && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
 
+      <section id="glance" className="scroll-mt-4 space-y-3.5 rounded-[1.75rem] border border-sky-100 bg-white p-4 shadow-[0_18px_55px_rgba(15,42,82,0.08)] sm:p-5">
+        <header className="report-candidate-header grid items-stretch gap-3 xl:grid-cols-[minmax(30rem,2.7fr)_repeat(3,minmax(9rem,1fr))]">
+          <article className="min-w-0 rounded-2xl border border-sky-100 bg-white p-4">
+            <div className="flex min-w-0 gap-4">
+              {candidatePhoto.studentId === studentId && candidatePhoto.url ? <img src={candidatePhoto.url} alt={`${show(student.full_name, "Candidate")} profile`} className="h-[118px] w-[104px] shrink-0 rounded-xl border border-slate-100 object-cover object-top shadow-sm"/> : <div aria-label={`${show(student.full_name, "Candidate")} initials`} className="grid h-[118px] w-[104px] shrink-0 place-items-center rounded-xl bg-[#123765] text-2xl font-extrabold tracking-wide text-white shadow-sm">{studentInitials || "C"}</div>}
+              <div className="min-w-0 flex-1">
+                <h1 className="text-[1.75rem] font-extrabold leading-none tracking-[-0.035em] text-[#092653]">{show(student.full_name, "Candidate")}</h1>
+                <p className="mt-1.5 text-[13px] font-medium leading-5 text-slate-600">{[student.program, student.department_code, (student.graduation_year ?? candidateProfile.graduation_year) ? `Class of ${String(student.graduation_year ?? candidateProfile.graduation_year)}` : null].filter(Boolean).join(" · ") || "—"}</p>
+                <dl className="mt-2.5 space-y-0.5 text-[13px] leading-[1.15rem] text-slate-600">
+                  <div className="min-w-0"><dt className="inline font-bold text-[#0b2b59]">Target Role: </dt><dd className="inline">{show(drive?.role_title, "—")}</dd></div>
+                  <div className="min-w-0"><dt className="inline font-bold text-[#0b2b59]">Scorecard ID: </dt><dd className="inline break-all">{show(report.session_id, "—")}</dd></div>
+                  <div className="min-w-0"><dt className="inline font-bold text-[#0b2b59]">Assessment Date: </dt><dd className="inline">{report.completed_at ? stamp(report.completed_at) : "—"}</dd></div>
+                  <div className="min-w-0"><dt className="inline font-bold text-[#0b2b59]">Interview: </dt><dd className="inline">{recordingDuration == null ? "—" : durationLabel(recordingDuration)} · {reviews.length} questions</dd></div>
+                </dl>
+                {driveError && <p role="alert" className="mt-1 text-xs text-rose-700">Drive details: {driveError} <button className="underline" onClick={() => void load()}>Retry</button></p>}
+              </div>
+            </div>
+          </article>
+          <article className="flex min-h-[152px] flex-col rounded-2xl border border-sky-100 bg-[#eef8ff] p-4">
+            <p className="text-[13px] font-bold text-[#0b2b59]">Overall Score</p>
+            <p className="mt-3 flex items-baseline gap-1 tabular-nums text-[#0b2b59]"><span className="text-[32px] font-extrabold leading-none">{report.overall_score == null ? "—" : report.overall_score}</span>{report.overall_score != null && <span className="text-sm font-semibold">/100</span>}</p>
+            <div className="mt-auto pt-4"><div className="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-[#1e7be6]" style={{ width: scoreWidth(report.overall_score) }}/></div></div>
+          </article>
+          <article className="flex min-h-[152px] flex-col rounded-2xl border border-amber-100 bg-[#fff8e8] p-4">
+            <p className="text-[13px] font-bold text-[#0b2b59]">Readiness</p>
+            <p className="mt-3 flex items-baseline gap-1 tabular-nums text-[#0b2b59]"><span className="text-[32px] font-extrabold leading-none">{readinessScore == null ? "—" : readinessScore}</span>{readinessScore != null && <span className="text-sm font-semibold">/100</span>}</p>
+            <span className="mt-2 self-start rounded-full bg-amber-200/80 px-2.5 py-0.5 text-xs font-bold text-amber-800">{readinessLabel}</span>
+            <div className="mt-auto pt-3"><div className="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-amber-400" style={{ width: scoreWidth(readinessScore) }}/></div></div>
+          </article>
+          <article className="flex min-h-[152px] flex-col items-center rounded-2xl border border-teal-100 bg-[#eafaf8] p-4 text-center">
+            <p className="text-[13px] font-bold text-[#0b2b59]">Assessment Scope</p>
+            <p className="mt-3 text-[32px] font-extrabold leading-none text-[#0b2b59]">{competencyRows.length}</p>
+            <p className="mt-1 text-[13px] font-medium text-[#0b2b59]">Competencies</p>
+            <div className="mt-auto flex h-8 items-end gap-1" aria-hidden="true"><span className="h-2.5 w-2 rounded-sm bg-teal-300"/><span className="h-5 w-2 rounded-sm bg-teal-400"/><span className="h-8 w-2 rounded-sm bg-teal-600"/></div>
+          </article>
+        </header>
+
+        <article className="flex items-center gap-4 rounded-2xl border border-sky-100 bg-[#eaf6fd] p-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-sky-200/70 text-[#0b4d86]"><FileText aria-hidden="true" size={25} strokeWidth={2.4}/></span>
+          <div className="min-w-0 border-l border-sky-300 pl-4"><h2 className="text-[20px] font-extrabold leading-tight text-[#092653]">Executive Assessment Summary</h2><p className="mt-1 text-sm leading-5 text-slate-700">{show(executiveSummary, "—")}</p></div>
+        </article>
+
+        <section>
+          <div className="mb-2 flex flex-wrap items-end justify-between gap-2"><h2 className="text-[20px] font-extrabold text-[#092653]">Competency Results</h2><span className="text-xs text-slate-500">Saved assessment evidence</span></div>
+          <div className="overflow-x-auto rounded-2xl border border-sky-100">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="bg-[#e7f4fc] text-[#092653]"><tr><th className="px-4 py-3 font-extrabold">Competency</th><th className="px-4 py-3 font-extrabold">Score</th><th className="px-4 py-3 font-extrabold">Role Target</th><th className="px-4 py-3 font-extrabold">Evidence</th></tr></thead>
+              <tbody>{competencyRows.length ? competencyRows.map((item, index) => <tr key={`${item.label}-${index}`} className="border-t border-sky-100">
+                <th className="px-4 py-2.5 font-bold text-[#0b2b59]"><span className="flex items-center gap-2.5"><CompetencyIcon label={item.label} index={index}/><span>{item.label}</span></span></th>
+                <td className="px-4 py-2.5"><div className="flex items-center gap-3"><strong className="w-14 tabular-nums" style={{ color: competencyColors[index % competencyColors.length] }}>{item.score == null ? "—" : `${item.score}/100`}</strong><div className="h-2 min-w-24 flex-1 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full" style={{ width: scoreWidth(item.score), backgroundColor: competencyColors[index % competencyColors.length] }}/></div></div></td>
+                <td className="px-4 py-3 text-slate-700">{item.target == null ? "—" : `${item.target}/100`}</td>
+                <td className="max-w-[28rem] px-4 py-2.5 text-[13px] leading-5 text-slate-600">{item.evidence}</td>
+              </tr>) : <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">No competency results are available in this report.</td></tr>}</tbody>
+            </table>
+          </div>
+        </section>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <article className="rounded-2xl border border-teal-100 bg-[#eafaf6] p-4"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-teal-100 text-teal-700"><Trophy aria-hidden="true" size={21}/></span><h2 className="text-lg font-extrabold text-[#092653]">Demonstrated Strengths</h2></div>{strengthBriefs.length ? <ul className="mt-3 space-y-1.5">{strengthBriefs.map((item, index) => <li key={index} className="flex gap-3 text-sm leading-5 text-slate-700"><span aria-hidden="true" className="mt-1.5 grid h-2.5 w-2.5 shrink-0 place-items-center rounded-full bg-teal-600 text-[7px] font-bold leading-none text-white">✓</span><span>{item}</span></li>)}</ul> : <p className="mt-3 text-sm text-slate-500">No strengths are available in this report.</p>}</article>
+          <article className="rounded-2xl border border-amber-100 bg-[#fff8e8] p-4"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-100 text-rose-600"><Target aria-hidden="true" size={21}/></span><h2 className="text-lg font-extrabold text-[#092653]">Areas to Explore</h2></div>{growthBriefs.length ? <ul className="mt-3 space-y-1.5">{growthBriefs.map((item, index) => <li key={index} className="flex gap-3 text-sm leading-5 text-slate-700"><span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500"/><span>{item}</span></li>)}</ul> : <p className="mt-3 text-sm text-slate-500">No areas to explore are available in this report.</p>}</article>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section className="rounded-2xl border border-sky-100 bg-white p-4">
+            <h2 className="text-lg font-extrabold text-[#092653]">Interview Evidence Highlights</h2>
+            <div className="mt-3 overflow-x-auto rounded-xl border border-sky-100">
+              <table className="w-full min-w-[500px] text-left text-sm">
+                <thead className="bg-[#e7f4fc] text-[#092653]"><tr><th className="px-3 py-2 font-bold">Timestamp</th><th className="px-3 py-2 font-bold">Question / Topic</th><th className="px-3 py-2 font-bold">Score</th></tr></thead>
+                <tbody>{evidenceHighlights.length ? evidenceHighlights.map(item => <tr key={item.key} className="border-t border-sky-100">
+                  <td className="whitespace-nowrap px-3 py-2 text-slate-600">{item.offset == null ? "—" : <button type="button" disabled={!videoReady} aria-label={`Play interview at ${item.timestamp}`} className="font-semibold text-blue-700 underline decoration-blue-200 underline-offset-2 hover:decoration-blue-700 disabled:cursor-not-allowed disabled:text-slate-400" onClick={() => seekToOffset(item.offset!)}>{item.timestamp}</button>}</td>
+                  <td className="px-3 py-2 text-slate-700"><p className="line-clamp-2 leading-4" title={item.question}>{item.question}</p></td>
+                  <td className="whitespace-nowrap px-3 py-2 font-bold text-[#0b2b59]">{item.score}</td>
+                </tr>) : <tr><td colSpan={3} className="px-3 py-6 text-center text-slate-500">No timestamped question evidence is available.</td></tr>}</tbody>
+              </table>
+            </div>
+          </section>
+          <section className="rounded-2xl border border-sky-100 bg-white p-4"><h2 className="text-lg font-extrabold text-[#092653]">Recommended Employer Follow-Up</h2>{followUpBriefs.length ? <ol className="mt-4 space-y-3">{followUpBriefs.map((item, index) => <li key={index} className="flex items-start gap-3 text-sm leading-6 text-slate-700"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#147fdf] text-xs font-extrabold text-white">{index + 1}</span><span>{item}</span></li>)}</ol> : <p className="mt-3 text-sm text-slate-500">No employer follow-up is available in this report.</p>}</section>
+        </div>
+      </section>
+
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <main className="candidate-report-content min-w-0 space-y-5">
-          <section id="glance" className={`${reportPanel} scroll-mt-4`}>
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Decision summary</p>
-                <h2 className="mt-1 text-base font-bold">Decision brief</h2>
-                <p className="mt-1 text-xs text-slate-500">Assessed evidence, confidence and open questions for your hiring decision.</p>
-              </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${!comparable ? "bg-slate-100 text-slate-600" : Number(pri.score) >= 75 ? "bg-emerald-50 text-emerald-800" : Number(pri.score) >= 50 ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-800"}`}>{comparable ? (Number(pri.score) >= 75 ? "Ready" : Number(pri.score) >= 50 ? "Developing" : "Not Ready") : "Needs evidence review"}</span>
-            </div>
-            <div className="report-score-grid">
-              {reportMetrics.map((metric) => <article key={metric.label} className="report-score-card">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{metric.label}</p>
-                <p className="mt-2 text-2xl font-medium tracking-tight tabular-nums">{metric.value}<small className="ml-1 text-xs font-semibold text-slate-500">{metric.unit}</small></p>
-                {metric.score != null && <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200"><div className={`h-full rounded-full ${metric.label === "Responses to review" ? "bg-rose-600" : metricTone(metric.score)}`} style={{ width: `${Math.max(0, Math.min(100, metric.score))}%` }}/></div>}
-                <p className="mt-1.5 text-[10px] leading-4 text-slate-500">{metric.note}</p>
-              </article>)}
-            </div>
-            <div className="mt-4 grid items-stretch gap-3 md:grid-cols-2">
-              <EvidenceBrief title="Supporting evidence" items={strengthBriefs} tone="strength"/>
-              <EvidenceBrief title="Review priorities" items={concernBriefs} tone="concern"/>
-            </div>
-            {nextRoundQuestions.length > 0 && <details className="mt-3 rounded-xl border border-slate-200 p-4 text-sm"><summary className="cursor-pointer font-medium">Next-round questions · {nextRoundQuestions.length}</summary><ul className="mt-3 list-disc space-y-2 pl-4 text-slate-600">{nextRoundQuestions.map((item, index) => <li key={index}>{typeof item === "string" ? item : show((item as Data).question || (item as Data).text || (item as Data).prompt)}</li>)}</ul></details>}
-
-          </section>
-
           <section id="recording" className={`${reportPanel} scroll-mt-4`}>
             <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Evidence</p><h2 className="mt-1 text-lg font-bold">Interview recording</h2><p className="mt-1 text-xs text-slate-500">{recordingStatus === "ready" ? `Secure recording · ${durationLabel(recordingDuration)}${recording?.started_at || report.recording?.started_at ? ` · ${stamp(recording?.started_at ?? report.recording?.started_at)}` : ""}` : recordingStatus === "expired" ? "Recording retention period ended" : recordingStatus === "failed" ? "Video upload failed" : recordingStatus === "unavailable" || recordingStatus === "not_configured" ? "No recording is available for this attempt" : `Recording ${displayName(show(recordingStatus))}`}</p></div><details className="text-xs text-slate-500"><summary className="cursor-pointer">Session details</summary><p className="mt-1 break-all">{report.session_id || "Session ID unavailable"}</p></details></div>
             {!videoReady ? <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4"><div><p className="text-sm text-slate-700">{recordingLoading ? "Checking recording availability…" : recordingStatus === "processing" || recordingStatus === "recording" ? "Recording is being prepared" : "Video is unavailable for this attempt"}</p><p className="mt-1 text-xs text-slate-500">{show(recording?.message, "The saved answers and feedback remain available.")}</p>{recordingError && <p role="alert" className="mt-2 text-xs text-rose-700">{recordingError}</p>}</div>{report.session_id && recordingStatus !== "expired" && <button type="button" className={`${btn} inline-flex items-center gap-2 whitespace-nowrap`} disabled={recordingLoading} onClick={() => void loadRecording()}>Refresh recording</button>}</div> : <>
-            <div className="mt-4 grid gap-4 2xl:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)]">
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)]">
               <div className="min-w-0">
                 <div className={`relative overflow-hidden rounded-xl ${videoReady ? "aspect-video bg-slate-950 text-white" : "min-h-36 border border-slate-200 bg-slate-50 text-slate-700"}`}>
                   {videoReady ? <video ref={videoRef} className="h-full w-full object-contain" src={recording.playback_url as string} controls playsInline preload="metadata" onError={recoverPlayback} aria-label="Interview recording" onTimeUpdate={event => setPlaybackTime(event.currentTarget.currentTime)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} /> : <div className="absolute inset-0 grid place-items-center px-5 text-center"><div><p className="text-sm font-semibold">{recordingLoading ? "Loading private recording…" : recordingStatus === "expired" ? "Recording is no longer available" : recordingStatus === "failed" ? "Recording could not be saved" : "No recording is available"}</p><p className="mt-1 text-xs text-slate-500">{recordingStatus === "expired" || recordingStatus === "failed" ? "Transcript and assessment evidence remain available below." : recordingLoading ? "Requesting secure playback." : "Review the saved answers and assessment below."}</p></div></div>}
@@ -743,7 +863,13 @@ export default function CandidateReport({
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2" role="tablist" aria-label="Recording bookmarks">{[["all", "All"], ["question", "Questions"], ["proctor", "AI Proctor"], ["note", "My notes"]].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={bookmarkFilter === value} className={`rounded-md px-2.5 py-1.5 text-xs font-semibold ${bookmarkFilter === value ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100"}`} onClick={() => setBookmarkFilter(value)}>{label}</button>)}</div>
-                <div className="mt-2 max-h-60 space-y-1 overflow-auto">{visibleBookmarks.length ? visibleBookmarks.map(item => <button key={item.id} type="button" className="flex w-full items-start gap-2 rounded-md border border-slate-200 p-2 text-left text-xs hover:bg-slate-50" onClick={() => { if(item.questionIndex != null){openAnswer(item.questionIndex);if(item.seconds!=null) seekToOffset(item.seconds);} else if (item.event) { setActiveEvent(events.indexOf(item.event)); seekToEvent(item.event); } else if (item.seconds != null) seekToOffset(item.seconds); }}><span className="min-w-10 font-bold tabular-nums text-slate-700">{item.seconds == null ? "—" : timeLabel(item.seconds)}</span><span className="min-w-0"><strong className="block">{item.text}</strong>{"detail" in item && <span className="mt-0.5 block text-slate-500">{item.detail}</span>}{"saved" in item && !item.saved && <span className="mt-0.5 block text-indigo-700">Draft · not saved</span>}</span></button>) : <p className="py-3 text-xs text-slate-500">{bookmarkFilter === "note" ? "No timestamped notes have been added." : bookmarkFilter === "proctor" ? "No proctor bookmarks are available." : "No recording bookmarks are available."}</p>}</div>
+                <div id="evidence" className="mt-2 max-h-[28rem] space-y-1 overflow-auto pr-1">{visibleBookmarks.length ? visibleBookmarks.map(item => {
+                  if (item.questionIndex != null) {
+                    const index = item.questionIndex, review = reviews[index], turnId = String(review?.turn_id || ""), persistedTurn = turns.find(turn => String(turn.turn_id) === turnId), responseText = String((persistedTurn ? persistedTurn.transcript : review?.answer || review?.transcript) || ""), responseReview = persistedTurn && !responseText.trim() ? { ...review, answer_state: "no_response", evidence_status: "no_response" } : review, state = answerState(responseReview), feedbackMatchesResponse = !persistedTurn || responseText.trim() === String(review?.answer || review?.transcript || "").trim(), feedbackItems = [...(Array.isArray(review?.strength_feedback) ? review.strength_feedback : []), ...(Array.isArray(review?.improvement_feedback) ? review.improvement_feedback : [])], answerTimestamp = persistedTurn?.answer_started_at || persistedTurn?.asked_at || review?.answer_started_at || review?.asked_at;
+                    return <details id={`answer-${index}`} key={item.id} className="group rounded-md border border-slate-200 bg-white open:border-indigo-300 open:shadow-sm"><summary className="flex cursor-pointer list-none items-start gap-2 p-2 text-left text-xs hover:bg-slate-50" onClick={() => { if (item.seconds != null) seekToOffset(item.seconds); }}><span className="min-w-10 font-bold tabular-nums text-slate-700">{item.seconds == null ? "—" : timeLabel(item.seconds)}</span><span className="min-w-0 flex-1"><strong className="block font-semibold leading-5">{item.text}</strong><span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${answerIsMissing(responseReview) ? "bg-rose-50 text-rose-800" : state === "answered" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>{answerLabel(responseReview)}</span></span><ChevronDown size={14} className="mt-1 shrink-0 text-slate-400 transition group-open:rotate-180"/></summary><div className="border-t border-slate-100 p-3"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Saved candidate transcript</p><p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-700">{show(responseText, "No response text was captured.")}</p>{Boolean(persistedTurn?.transcript_review_note) && <p className="mt-2 text-xs text-amber-800">{String(persistedTurn?.transcript_review_note)}</p>}{!feedbackMatchesResponse && <p className="mt-2 text-xs text-amber-800">The saved response differs from the evaluated version. Feedback needs a fresh evaluation.</p>}{feedbackMatchesResponse && feedbackItems.length > 0 && <div className="mt-3 space-y-2">{Array.isArray(review?.strength_feedback) && review.strength_feedback.length > 0 && <div className="rounded-md bg-emerald-50 p-2 text-xs text-emerald-900"><strong>Strengths noted</strong><ul className="mt-1 list-disc pl-4">{review.strength_feedback.map((feedback, feedbackIndex) => <li key={feedbackIndex}>{show(feedback)}</li>)}</ul></div>}{Array.isArray(review?.improvement_feedback) && review.improvement_feedback.length > 0 && <div className="rounded-md bg-amber-50 p-2 text-xs text-amber-950"><strong>Improvement feedback</strong><ul className="mt-1 list-disc pl-4">{review.improvement_feedback.map((feedback, feedbackIndex) => <li key={feedbackIndex}>{show(feedback)}</li>)}</ul></div>}</div>}{answerTimestamp != null && videoReady && recordingOffset(answerTimestamp) != null && <button type="button" className={`${btn} mt-3 px-2 py-1 text-xs`} onClick={() => seekToQuestion(answerTimestamp)}>Play this answer</button>}{turnId && report.session_id && (persistedTurn?.has_audio ?? review?.has_audio) !== false && responseText.trim() && <Audio path={`students/${studentId}/reports/${report.session_id}/turns/${turnId}/audio`}/>}<p className="mt-3 border-t border-slate-100 pt-2 text-[10px] text-slate-500">Words: <strong>{responseText.trim().split(/\s+/).filter(Boolean).length}</strong></p></div></details>;
+                  }
+                  return <button key={item.id} type="button" className="flex w-full items-start gap-2 rounded-md border border-slate-200 p-2 text-left text-xs hover:bg-slate-50" onClick={() => { if (item.event) { setActiveEvent(events.indexOf(item.event)); seekToEvent(item.event); } else if (item.seconds != null) seekToOffset(item.seconds); }}><span className="min-w-10 font-bold tabular-nums text-slate-700">{item.seconds == null ? "—" : timeLabel(item.seconds)}</span><span className="min-w-0"><strong className="block">{item.text}</strong>{"detail" in item && <span className="mt-0.5 block text-slate-500">{item.detail}</span>}{"saved" in item && !item.saved && <span className="mt-0.5 block text-indigo-700">Draft · not saved</span>}</span></button>;
+                }) : <p className="py-3 text-xs text-slate-500">{bookmarkFilter === "note" ? "No timestamped notes have been added." : bookmarkFilter === "proctor" ? "No proctor bookmarks are available." : "No recording bookmarks are available."}</p>}</div>
                 <form className="mt-3 rounded-lg border border-slate-200 p-3" onSubmit={event => { event.preventDefault(); addBookmarkNote(); }}><label htmlFor="bookmark-note" className="text-xs font-semibold">Add note at current time</label><div className="mt-2 flex gap-2"><input id="bookmark-note" className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-xs" maxLength={120} placeholder={videoReady ? "Add a review note…" : "Load recording to timestamp a note"} value={bookmarkNote} onChange={event => setBookmarkNote(event.target.value)} disabled={!videoReady}/><button type="submit" className={`${btn} px-2 py-1 text-xs`} disabled={!videoReady || !bookmarkNote.trim()}>Add</button></div><p className="mt-1 text-[10px] leading-4 text-slate-500">Notes are draft-only until copied into the officer note and saved with a decision.</p><p className="mt-2 text-[10px] text-slate-400"><kbd>Space</kbd> play · <kbd>←</kbd>/<kbd>→</kbd> seek · <kbd>N</kbd> next flag · <kbd>B</kbd> note</p></form>
               </div>
             </div>
@@ -751,18 +877,8 @@ export default function CandidateReport({
           </section>
 
           <section id="deep-dive" className={`${reportPanel} scroll-mt-4 p-0`}>
-            <div className="border-b border-slate-200 px-4 pt-4 sm:px-5"><p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Assessment details</p><h2 className="mt-1 text-lg font-bold">Interview deep dive</h2><nav className="report-nav mt-3 flex flex-wrap gap-1" role="tablist" aria-label="Candidate report sections">{nav.map(([item, label]) => <button key={item} type="button" role="tab" aria-selected={activeTab === item} className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${activeTab === item ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-800"}`} onClick={() => setActiveTab(item)}>{label}{item === "answers" && <span className="ml-1.5 text-xs text-slate-400">{reviews.length}</span>}{item === "skills" && <span className="ml-1.5 text-xs text-slate-400">{claimGaps.length} gaps</span>}{item === "rounds" && rounds.length > 0 && <span className="ml-1.5 text-xs text-slate-400">{rounds.length}</span>}{item === "proctor" && events.length > 0 && <span className="ml-1.5 text-xs text-slate-400">{events.length}</span>}</button>)}</nav></div>
+            <div className="border-b border-slate-200 px-4 pt-4 sm:px-5"><p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Assessment details</p><h2 className="mt-1 text-lg font-bold">Interview deep dive</h2><nav className="report-nav mt-3 flex flex-wrap gap-1" role="tablist" aria-label="Candidate report sections">{nav.map(([item, label]) => <button key={item} type="button" role="tab" aria-selected={activeTab === item} className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${activeTab === item ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-800"}`} onClick={() => setActiveTab(item)}>{label}{item === "skills" && <span className="ml-1.5 text-xs text-slate-400">{claimGaps.length} gaps</span>}{item === "rounds" && rounds.length > 0 && <span className="ml-1.5 text-xs text-slate-400">{rounds.length}</span>}{item === "proctor" && events.length > 0 && <span className="ml-1.5 text-xs text-slate-400">{events.length}</span>}</button>)}</nav></div>
             <div className="report-tab-content p-4 sm:p-5" role="tabpanel" aria-label={nav.find(([key])=>key===activeTab)?.[1]}>
-              {activeTab === "answers" && <section id="evidence" className="space-y-4">
-                <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-base font-bold">Interview answers</h3><p className="mt-1 text-xs text-slate-500">Review each response and its feedback. Expand a question to see the evidence.</p></div><button className={`${btn} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap`} disabled={transcriptLoading || !report.session_id} onClick={() => void evidence("transcript")}><FileText size={15}/>{transcriptLoading ? "Loading transcript…" : transcript ? "Refresh transcript" : "Load transcript"}</button></div>
-                {transcriptError && <p role="alert" className="rounded-md bg-rose-50 p-2 text-xs text-rose-700">{transcriptError}<button className="ml-2 underline" onClick={() => void evidence("transcript")}>Retry</button></p>}
-                <div className="flex flex-wrap items-center gap-2"><div className="flex flex-wrap gap-1">{[["all", "All"], ["unanswered", "Needs review"], ["strong", "Strong"], ["feedback", "With feedback"], ...(followUpReviews.length ? [["followups", "Follow-ups"]] : [])].map(([value, label]) => <button key={value} type="button" aria-pressed={answerFilter === value} className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold ${answerFilter === value ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-200 text-slate-600"}`} onClick={() => setAnswerFilter(value)}>{label}</button>)}</div><label className="relative ml-auto"><Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400"/><input type="search" aria-label="Search questions and answers" className="w-full rounded-md border border-slate-300 py-2 pl-7 pr-3 text-xs sm:w-56" placeholder="Search questions or answers" value={answerSearch} onChange={event => setAnswerSearch(event.target.value)}/></label></div>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500"><span>Answer status:</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-800">Answered</span><span className="rounded-full bg-amber-50 px-2 py-1 text-amber-800">Limited evidence</span><span className="rounded-full bg-rose-50 px-2 py-1 text-rose-800">Needs review</span></div>
-                <div className="flex flex-wrap gap-1">{filteredReviews.map(review => { const index = reviews.indexOf(review), state = answerState(review); const tone = answerIsMissing(review) ? "bg-rose-600" : state === "answered" ? "bg-emerald-600" : "bg-amber-500"; return <button key={String(review.turn_id || index)} type="button" className={`h-6 min-w-6 rounded px-1 text-[10px] font-bold text-white ${tone}`} title={`Question ${index + 1}: ${displayName(show(state))}`} aria-label={`Go to question ${index + 1}`} onClick={() => { setExpanded(current => ({ ...current, answers: true })); requestAnimationFrame(() => { const answer = document.getElementById(`answer-${index}`) as HTMLDetailsElement | null; if (answer) { answer.open = true; answer.scrollIntoView({ behavior: "smooth", block: "center" }); } }); }}>{index + 1}</button>; })}</div>
-                {filteredReviews.length ? (expanded.answers ? filteredReviews : filteredReviews.slice(0, 4)).map((review, index) => { const absoluteIndex = reviews.indexOf(review), turnId = String(review.turn_id || ""), persistedTurn = turns.find(turn => String(turn.turn_id) === turnId), responseText = String((persistedTurn ? persistedTurn.transcript : review.answer || review.transcript) || ""), responseReview = persistedTurn && !responseText.trim() ? { ...review, answer_state: "no_response", evidence_status: "no_response" } : review, state = answerState(responseReview), feedbackMatchesResponse = !persistedTurn || responseText.trim() === String(review.answer || review.transcript || "").trim(); const feedbackItems = [...(Array.isArray(review.strength_feedback) ? review.strength_feedback : []), ...(Array.isArray(review.improvement_feedback) ? review.improvement_feedback : [])]; return <details id={`answer-${absoluteIndex}`} key={turnId || index} className="group rounded-lg border border-slate-200 p-3 open:border-indigo-300"><summary className="cursor-pointer list-none"><div className="flex flex-wrap items-center justify-between gap-2"><span className="min-w-0 flex-1 text-xs font-medium text-slate-500">Question {absoluteIndex + 1} · {roundRole(review.agent_type || review.track || review.round)}</span><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${answerIsMissing(responseReview) ? "bg-rose-50 text-rose-800" : state === "answered" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>{answerLabel(responseReview)}</span><ChevronDown size={14} className="text-slate-400 transition group-open:rotate-180"/></div><h4 className="mt-2 text-sm font-medium leading-6">{show(review.question || review.question_text, `Question ${absoluteIndex + 1}`)}</h4></summary><div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Saved candidate transcript</p><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">{show(responseText, "No response text was captured.")}</p></div>{Boolean(persistedTurn?.transcript_review_note) && <p className="mt-2 text-xs text-amber-800">{String(persistedTurn?.transcript_review_note)}</p>}{!feedbackMatchesResponse && <p className="mt-2 text-xs text-amber-800">The saved response differs from the evaluated version. Feedback needs a fresh evaluation.</p>}{feedbackMatchesResponse && feedbackItems.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2">{Array.isArray(review.strength_feedback) && review.strength_feedback.length > 0 && <div className="rounded-md bg-emerald-50 p-3 text-xs text-emerald-900"><strong>Strengths noted</strong><ul className="mt-1 list-disc pl-4">{review.strength_feedback.map((item, i) => <li key={i}>{show(item)}</li>)}</ul></div>}{Array.isArray(review.improvement_feedback) && review.improvement_feedback.length > 0 && <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-950"><strong>Improvement feedback</strong><ul className="mt-1 list-disc pl-4">{review.improvement_feedback.map((item, i) => <li key={i}>{show(item)}</li>)}</ul></div>}</div>}{(persistedTurn?.answer_started_at || persistedTurn?.asked_at || review.answer_started_at || review.asked_at) != null && videoReady && recordingOffset(persistedTurn?.answer_started_at || persistedTurn?.asked_at || review.answer_started_at || review.asked_at) != null && <button type="button" className={`${btn} mt-3`} onClick={() => seekToQuestion(persistedTurn?.answer_started_at || persistedTurn?.asked_at || review.answer_started_at || review.asked_at)}>Play this answer · {new Date(String(persistedTurn?.answer_started_at || persistedTurn?.asked_at || review.answer_started_at || review.asked_at)).toLocaleTimeString()}</button>}{turnId && report.session_id && (persistedTurn?.has_audio ?? review.has_audio) !== false && responseText.trim() && <Audio path={`students/${studentId}/reports/${report.session_id}/turns/${turnId}/audio`}/>}<dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-100 pt-2 text-[10px] text-slate-500"><div><dt className="inline">Words: </dt><dd className="inline font-semibold">{responseText.trim().split(/\s+/).filter(Boolean).length}</dd></div></dl></details>; }) : <p className="rounded-lg border border-slate-200 p-4 text-sm text-slate-500">{reviews.length ? "No answers match these filters." : "No question review was generated."}</p>}
-                <PreviewToggle shown={expanded.answers ? filteredReviews.length : Math.min(4, filteredReviews.length)} total={filteredReviews.length} onClick={() => toggleExpanded("answers")} noun="answers"/>
-                {transcript && <details className="rounded-lg border border-slate-200 p-3"><summary className="cursor-pointer font-semibold">Full transcript · {turns.length} turns</summary><div className="mt-3 space-y-3 border-t border-slate-100 pt-3">{(expanded.transcript ? turns : turns.slice(0, 4)).map((turn, index) => <article key={String(turn.turn_id || index)} className="border-l-2 border-indigo-200 pl-3"><p className="text-[10px] font-semibold uppercase text-slate-500">Turn {show(turn.turn_index, String(index + 1))} · {roundRole(turn.agent_type)} · {displayName(show(turn.kind, "Question"))}</p><p className="mt-1 text-sm font-semibold">{show(turn.question_text)}</p><p className="mt-1 whitespace-pre-wrap text-sm">{show(turn.transcript, "No response text captured.")}</p>{turn.has_audio === true && Boolean(turn.turn_id) && report.session_id && <Audio path={`students/${studentId}/reports/${report.session_id}/turns/${String(turn.turn_id)}/audio`}/>}</article>)}<PreviewToggle shown={expanded.transcript ? turns.length : Math.min(4, turns.length)} total={turns.length} onClick={() => toggleExpanded("transcript")} noun="turns"/></div></details>}
-              </section>}
 
               {activeTab === "skills" && <section id="role-fit" className="space-y-4">
                 <div><h3 className="text-base font-bold">Skills proof</h3><p className="mt-1 text-xs text-slate-500">Resume claims are compared with evidence recorded in the interview.</p></div>
