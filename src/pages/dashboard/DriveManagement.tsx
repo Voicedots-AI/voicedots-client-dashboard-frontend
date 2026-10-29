@@ -1,3 +1,4 @@
+import {loadCandidateAssessment,peekAssessment,studentAssessmentPath,mergeResumeEvidence,invalidateStudentAssessment,type FullBundle} from './assessmentClient';
 import { createPortal } from 'react-dom';
 import EvidenceText from './EvidenceText';
 import { useEffect, useRef, useState } from "react";
@@ -25,6 +26,7 @@ import CandidateReport from "./CandidateReport";
 import ResultCohortBuilder, {type ResultFilterOptions,type ResultRule} from "./ResultCohortBuilder";
 import DriveQuestionBank from "./DriveQuestionBank";
 import CreateDriveWizard from "./CreateDriveWizard";
+import ATSFitAssessment from "./ATSFitAssessment";
 
 type Data = Record<string, unknown>;
 type Candidate = Data & {
@@ -280,12 +282,12 @@ function InterviewProgressChart({assigned, progress}:{assigned:number;progress:D
 }
 
 const resumeMatchRequests = new Map<string, {expires:number; request:Promise<Data>}>();
-function loadResumeMatch(driveId:string,studentId:string) {
+function loadResumeMatch(driveId:string,studentId:string,fresh=false) {
   const key=`${localStorage.getItem("access_token")||"anonymous"}:${driveId}:${studentId}`;
   const cached=resumeMatchRequests.get(key);
-  if(cached && cached.expires>Date.now()) return cached.request;
+  if(!fresh && cached && cached.expires>Date.now()) return cached.request;
   if(resumeMatchRequests.size>100) resumeMatchRequests.clear();
-  const request=collegeApi.get<Data>(`drives/${encodeURIComponent(driveId)}/dashboard/ats-fit?student_id=${encodeURIComponent(studentId)}&limit=1`);
+  const request=loadCandidateAssessment(studentId,driveId).then(row=>({candidates:[row],job_description:row.job_description}));
   resumeMatchRequests.set(key,{expires:Date.now()+10000,request});
   request.catch(()=>resumeMatchRequests.delete(key));
   return request;
@@ -314,7 +316,7 @@ function ResumeMatchSummary({ driveId, candidate, onOpen }: { driveId: string; c
   useEffect(()=>()=>{summaryRequest.current+=1;if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current)},[]);
   useEffect(()=>{if(!open)return;const dismiss=(event:Event)=>{const target=event.target as Node|null;if(!button.current?.parentElement?.contains(target)&&!document.getElementById(`resume-match-${candidate.student_id}`)?.contains(target))setOpen(false)};const key=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current);setOpen(false);skipFocus.current=true;button.current?.focus({preventScroll:true})}};document.addEventListener('pointerdown',dismiss);document.addEventListener('keydown',key);window.addEventListener('resize',closePopup);function closePopup(){setOpen(false)}return()=>{document.removeEventListener('pointerdown',dismiss);document.removeEventListener('keydown',key);window.removeEventListener('resize',closePopup)}},[open,candidate.student_id]);
   useEffect(()=>{if(Array.isArray(candidate.skills)||!button.current||typeof IntersectionObserver==='undefined')return;let cancelWarm:(()=>void)|undefined;const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){cancelWarm=warmResumeMatch(driveId,candidate.student_id);observer.disconnect()}},{rootMargin:'0px'});observer.observe(button.current);return()=>{observer.disconnect();cancelWarm?.()}},[driveId,candidate.student_id,candidate.assignment_status,candidate.skills]);
-  const load=async()=>{setOpen(true);if(loaded.current||loading)return;const request=++summaryRequest.current;loaded.current=true;setLoading(true);setError("");try{const result=Array.isArray(candidate.skills) ? {candidates:[candidate]} : await loadResumeMatch(driveId,candidate.student_id);if(request===summaryRequest.current)setSummary(((result.candidates||[]) as Data[]).find(item=>String(item.student_id)===candidate.student_id)||null)}catch{if(request===summaryRequest.current){setError("Resume match could not be loaded. Try again.");loaded.current=false}}finally{if(request===summaryRequest.current)setLoading(false)}};
+  const load=async()=>{setOpen(true);if(loaded.current||loading)return;const request=++summaryRequest.current;loaded.current=true;setLoading(true);setError("");try{const result=await loadResumeMatch(driveId,candidate.student_id);if(request===summaryRequest.current)setSummary(((result.candidates||[]) as Data[]).find(item=>String(item.student_id)===candidate.student_id)||null)}catch{if(request===summaryRequest.current){setError("Resume match could not be loaded. Try again.");loaded.current=false}}finally{if(request===summaryRequest.current)setLoading(false)}};
   const show=()=>{if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current);const rect=button.current?.getBoundingClientRect();if(rect)setPosition({top:Math.max(16,Math.min(rect.bottom+8,window.innerHeight-Math.min(512,window.innerHeight-32)-16)),left:Math.max(16,Math.min(rect.left,window.innerWidth-Math.min(384,window.innerWidth-32)-16))});void load()};
   const close=()=>{if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current);closeTimer.current=setTimeout(()=>setOpen(false),160)};
   const rows=Array.isArray(summary?.skills)?summary!.skills as Data[]:[];
@@ -331,17 +333,24 @@ function ResumeMatchSummary({ driveId, candidate, onOpen }: { driveId: string; c
         <span className="mt-3 block text-xs font-bold uppercase tracking-wide text-amber-700">Resume gaps</span>
         {gaps.length?gaps.map((row,index)=><span key={`g-${index}`} className="mt-1 block break-words text-xs leading-5 text-slate-700 dark:text-slate-200"><b className="text-amber-700">! {String(row.skill||row.requirement)}</b><span className="text-slate-500"> · {row.match_status==="NO_EVIDENCE"?"No matching resume evidence":"Evidence is limited"}</span></span>):<span className="mt-1 block text-xs text-slate-500">No gaps identified in the matched requirements.</span>}
       </>}
-      {onOpen && <span className="mt-3 block border-t border-slate-100 pt-3"><button type="button" className={`${btn} text-xs`} onClick={()=>{setOpen(false);onOpen();}}>View full ATS analysis</button></span>}
+      {onOpen && <span className="mt-3 block border-t border-slate-100 pt-3"><button type="button" className={`${btn} text-xs`} onClick={()=>{setOpen(false);onOpen();}}>ATS Fit</button></span>}
     </span>,document.body)}
   </span>;
 }
 
-function ATSFitDetails({driveId,candidate,onClose}:{driveId:string;candidate:Candidate;onClose:()=>void}) {
-  const [result,setResult]=useState<Data|null>(null),[error,setError]=useState(''),[version,setVersion]=useState(0);
-  useEffect(()=>{if(result?.ats_status!=='processing')return;const timer=setInterval(()=>{resumeMatchRequests.clear();setVersion(v=>v+1)},10000);return()=>clearInterval(timer)},[result?.ats_status]);
-  useEffect(()=>{let active=true;setResult(null);setError('');loadResumeMatch(driveId,candidate.student_id).then(data=>{if(active)setResult(((data.candidates||[]) as Data[]).find(item=>String(item.student_id)===candidate.student_id)||{})}).catch(e=>{if(active)setError(collegeError(e))});return()=>{active=false}},[driveId,candidate.student_id,version]);
-  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose()};document.addEventListener('keydown',key);return()=>document.removeEventListener('keydown',key)},[onClose]);
-  return <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/40" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="h-full w-full max-w-5xl overflow-y-auto bg-white p-6 dark:bg-slate-950"><header className="mb-5 flex items-center justify-between gap-4"><div><h2 className="text-lg font-bold">ATS fit · {candidate.full_name}</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>setVersion(v=>v+1)}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<CandidateDetails candidate={{...candidate,...result} as Candidate} data={result} mode="ats" driveId={driveId}/>}</section></div>;
+export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequirements,initialAssessment,onOpenCoach}:{driveId:string;candidate:Candidate;drive:Drive|null;onClose:()=>void;onReviewRequirements:()=>void;initialAssessment?:Data;onOpenCoach?:()=>void}) {
+  const requestKey=`${driveId}:${candidate.student_id}`;
+  const cached=peekAssessment<FullBundle>(studentAssessmentPath(candidate.student_id));
+  const cachedRow=cached?.assessment_contract==='student-ats-v1'?cached.assessments?.[driveId]:undefined;
+  const supplied=initialAssessment?.student_id===candidate.student_id&&initialAssessment?.drive_id===driveId?initialAssessment:cached&&cachedRow?mergeResumeEvidence(cached,cachedRow):null;
+  const [resolved,setResolved]=useState<{key:string;data:Data}|null>(()=>supplied?{key:requestKey,data:supplied}:null),[error,setError]=useState(''),[version,setVersion]=useState(0);
+  const result=resolved?.key===requestKey?resolved.data:supplied;
+  useEffect(()=>{const previous=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=previous}},[]);
+  useEffect(()=>{let active=true;setError('');void loadCandidateAssessment(candidate.student_id,driveId).then(match=>{if(active)setResolved({key:requestKey,data:match})}).catch(reason=>{if(active)setError(collegeError(reason))});return()=>{active=false}},[driveId,candidate.student_id,version,requestKey]);
+  useEffect(()=>{const key=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose()};document.addEventListener('keydown',key);return()=>document.removeEventListener('keydown',key)},[onClose]);
+  const merged={...candidate,...result} as Candidate;
+  const assessmentData={...result,job_description:result?.job_description||null,current_drive_job_description:drive?.id===driveId?drive.jd_raw_text:null};
+  return createPortal(<div style={{margin:0}} className="ats-assessment-page fixed inset-0 z-50 overflow-y-auto bg-slate-950/40" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="h-full w-full max-w-6xl overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950"><header className="mb-4 flex items-center justify-between gap-4"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
 }
 
 function attemptValue(value: unknown, fallback: number): number {
@@ -625,12 +634,38 @@ function atsStatusLabel(status:string) {
 }
 
 function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;candidate:Candidate;compact?:boolean;onOpen:()=>void}) {
-  const rows=candidate.skills||[];
+  const scope = `${driveId}:${candidate.student_id}`;
+  const [assessment, setAssessment] = useState<{scope:string; row:Candidate|null; failed:boolean}>();
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    setAssessment(undefined);
+    const load = async () => {
+      try {
+        const result = await loadResumeMatch(driveId, candidate.student_id);
+        if (!active) return;
+        const row = ((result.candidates || []) as Candidate[]).find(item => item.student_id === candidate.student_id) || null;
+        setAssessment({scope, row, failed:false});
+        if (row?.ats_status === "processing") timer = setTimeout(load, 10000);
+      } catch {
+        if (active) setAssessment({scope, row:null, failed:true});
+      }
+    };
+    void load();
+    return () => {active = false; clearTimeout(timer);};
+  }, [driveId, candidate.student_id, candidate.input_fingerprint, scope, retry]);
+  const current = assessment?.scope === scope ? assessment : undefined;
+  const row = current?.row;
+  const score = row?.ats_status === "evaluated" && typeof row.ats_fit_score === "number" && Number.isFinite(row.ats_fit_score) && row.ats_fit_score >= 0 && row.ats_fit_score <= 100 ? row.ats_fit_score : null;
+  // Presentation only: 50 is the requested tint threshold, never an eligibility rule.
+  const tone = score === null ? "neutral" : score >= 50 ? "green" : "red";
+  const rows=row?.skills||[];
   const matched=rows.filter(row=>['FULL_MATCH','RELATED_EVIDENCE'].includes(String(row.match_status)));
   const missing=rows.filter(row=>row.priority==='mandatory'&&['NO_EVIDENCE','WEAK_OR_INFERRED'].includes(String(row.match_status)));
   const skillGroup=(items:Data[],limit:number,kind:'matching'|'missing')=><span className={`compact-ats-skills ${kind} flex min-w-0 flex-wrap items-center gap-1.5`} aria-label={kind==='matching'?'Matching skills':'Missing required skills'}>{items.slice(0,limit).map((row,index)=><span className={`compact-skill block max-w-44 overflow-hidden text-ellipsis whitespace-nowrap rounded px-1.5 ${kind==='matching'?'bg-emerald-50 text-emerald-700':'bg-rose-50 text-rose-700'}`} key={`${String(row.skill)}-${index}`} title={`${kind==='missing'?'Missing required: ':'Matching: '}${String(row.skill)}`}>{kind==='missing'?'Missing: ':''}{String(row.skill)}</span>)}{items.length>limit&&<button type="button" className="compact-more whitespace-nowrap font-semibold text-violet-600 hover:underline" onClick={onOpen} aria-label={`View ${items.length-limit} more ${kind} skills`}>+{items.length-limit} more</button>}</span>;
   return <div className={`compact-ats grid min-w-0 gap-1.5 text-xs ${compact?'table-ats':''}`} aria-label={`ATS resume fit for ${candidate.full_name}`}>
-    <div className="compact-ats-heading flex min-w-0 flex-wrap items-center gap-1.5">{candidate.ats_status==='resume_not_available'?<span className="text-slate-500">Resume Not Available</span>:<><strong className="tabular-nums text-violet-700">ATS {candidate.ats_fit_score==null?'—':`${candidate.ats_fit_score}/100`}</strong><span className="compact-ats-status max-w-36 overflow-hidden text-ellipsis whitespace-nowrap text-slate-500" title={atsStatusLabel(candidate.ats_status||'')}>{atsStatusLabel(candidate.ats_status||'')}</span></>}<ResumeMatchSummary driveId={driveId} candidate={candidate} onOpen={onOpen}/></div>
+    <div className="compact-ats-heading flex min-w-0 flex-wrap items-center gap-1.5"><strong className="tabular-nums" data-ats-tone={tone}>{score === null ? 'ATS Not assessed' : `ATS ${score}/100`}</strong>{current?.failed && <button type="button" className="font-semibold underline" aria-label={`Retry ATS for ${candidate.full_name}`} onClick={()=>setRetry(value=>value+1)}>Retry</button>}<ResumeMatchSummary driveId={driveId} candidate={row || candidate} onOpen={onOpen}/></div>
     {candidate.ats_status!=='resume_not_available'&&(matched.length>0||missing.length>0)&&<div className="compact-ats-keywords flex min-w-0 flex-wrap items-center gap-1.5">{skillGroup(matched,2,'matching')}{skillGroup(missing,compact?1:2,'missing')}</div>}
   </div>;
 }
@@ -2423,23 +2458,25 @@ export default function DriveManagement({
           </div>}
           {!loading && !error && !candidates.length && <p className={`${panel} border-dashed p-8 text-center text-sm text-slate-500`}>No candidates found for this view. Adjust the filters or choose another result view.</p>}
           {!!candidates.length && tab === "results" && resultsLayout === "cards" && <div id="result-candidate-cards" className="result-workspace grid gap-4">
-            {candidates.map(candidate=> <article key={candidate.student_id} className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <header className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4">
+            {candidates.map(candidate=> <article key={candidate.student_id} className="ats-result-card overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <header className="result-candidate-header flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4">
                 <input type="checkbox" className="h-4 w-4 accent-violet-600" aria-label={`Select ${candidate.full_name}`} checked={checked.includes(candidate.student_id)} onChange={event=>setChecked(current=>event.target.checked ? [...new Set([...current,candidate.student_id])] : current.filter(id=>id!==candidate.student_id))}/>
                 <StudentAvatar student={candidate} size="h-11 w-11"/>
                 <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-medium text-slate-900">{candidate.full_name}</h4>{candidate.rank != null && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-700">#{candidate.rank} in drive</span>}<InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></div><p className="mt-1 text-xs text-slate-500">{candidate.roll_number} · {[candidate.program,candidate.department_code].filter(Boolean).join(' · ')} · Attempt {candidate.attempt_number || 1}</p><p className="mt-1 break-all text-xs text-slate-600">{candidate.email || "Email unavailable"}</p></div>
+                <dl className="result-header-metrics">
+                <div><dt>Interview assessment</dt><dd className="flex flex-wrap items-center gap-2">{[['Interview',candidate.overall_score],['Readiness / PRI',candidate.ranking_score],['Job fit',candidate.job_fit_score]].map(([label,value])=><span key={String(label)} className={`result-score-chip ${typeof value !== 'number' ? 'score-unavailable' : value >= 75 ? 'score-strong' : value >= 50 ? 'score-developing' : 'score-review'}`}><span>{label}</span><strong>{typeof value === 'number' ? `${value}/100` : 'Not assessed'}</strong></span>)}{candidate.readiness && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-600">{displayName(candidate.readiness)}</span>}</dd></div>
+                <div><dt>Interview rounds</dt><dd className="flex flex-wrap items-center gap-2">{candidate.agent_summary?.length ? candidate.agent_summary.map((round,index)=><span key={index} className="result-round-chip"><span>{String(round.label || displayName(String(round.agent_type || `Round ${index+1}`)))}</span><strong>{round.score==null?'Not assessed':`${round.score}/100`}</strong></span>) : <span className="text-xs text-slate-500">Round scores not available</span>}</dd></div>
+                </dl>
                 <button className={`${btn} inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-violet-200 text-violet-700`} disabled={busy || !candidate.report_ready} onClick={()=>void inspect(candidate,'reports')}>{candidate.report_ready?'Scorecard':'Report pending'} <ExternalLink size={14}/></button>
               </header>
               <div className="result-assessment-band flex flex-wrap items-center gap-3 border-b border-violet-100 bg-violet-50/60 px-5 py-3">
                 <span className="text-xs font-medium text-slate-600">AI recommendation</span><StatusBadge value={candidate.recommendation || 'Not assessed'}/>
                 {candidate.report_ready && <CandidateStrengthGap driveId={driveId} candidate={candidate} onOpenReport={()=>void inspect(candidate,'reports')}/>}
-                <button className={btn} onClick={()=>setAtsCandidate(candidate)}>ATS fit</button>
+                <button className={btn} onClick={()=>setAtsCandidate(candidate)}>ATS Fit</button>
                 <span className="ml-auto text-xs text-slate-500">Attempt {candidate.attempt_number || 1}</span>
               </div>
               <dl className="result-evidence-rows">
                 <div><dt>ATS resume fit</dt><dd><ATSMatchInfo driveId={driveId} candidate={candidate} onOpen={()=>setAtsCandidate(candidate)}/></dd></div>
-                <div><dt>Interview assessment</dt><dd className="flex flex-wrap items-center gap-2">{[['Interview',candidate.overall_score],['Readiness / PRI',candidate.ranking_score],['Job fit',candidate.job_fit_score]].map(([label,value])=><span key={String(label)} className={`result-score-chip ${typeof value !== 'number' ? 'score-unavailable' : value >= 75 ? 'score-strong' : value >= 50 ? 'score-developing' : 'score-review'}`}><span>{label}</span><strong>{typeof value === 'number' ? `${value}/100` : 'Not assessed'}</strong></span>)}{candidate.readiness && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-600">{displayName(candidate.readiness)}</span>}</dd></div>
-                <div><dt>Interview rounds</dt><dd className="flex flex-wrap items-center gap-2">{candidate.agent_summary?.length ? candidate.agent_summary.map((round,index)=><span key={index} className="result-round-chip"><span>{String(round.label || displayName(String(round.agent_type || `Round ${index+1}`)))}</span><strong>{round.score==null?'Not assessed':`${round.score}/100`}</strong></span>) : <span className="text-xs text-slate-500">Round scores not available</span>}</dd></div>
                 <div><dt>AI Proctor</dt><dd className="flex flex-wrap items-center gap-3"><span className={`result-score-chip ${candidate.proctoring_score == null ? 'score-unavailable' : candidate.proctoring_score >= 75 ? 'score-strong' : candidate.proctoring_score >= 50 ? 'score-developing' : 'score-review'}`}><span>Integrity</span><strong>{candidate.proctoring_score==null?'Not assessed':`${candidate.proctoring_score}/100`}</strong></span><span className={`text-xs ${candidate.integrity_review_status === 'review_required' ? 'text-amber-700' : 'text-slate-500'}`}>{candidate.integrity_review_status === 'not_available' && candidate.proctoring_score != null ? 'Recorded integrity score' : candidate.integrity_review_label || displayName(candidate.integrity_review_status || 'not assessed')}</span>{candidate.assessment_coverage != null && <span className="ml-auto text-xs text-slate-500">Evidence coverage {candidate.assessment_coverage}%</span>}</dd></div>
                 <div><dt>Student result</dt><dd className="flex flex-wrap items-center gap-3"><StatusBadge value={candidate.publication?.state || 'hidden'}/>{candidate.publication?.released_at && <span className="text-xs text-slate-500">Released {formatPlacementDateTime(candidate.publication.released_at,collegeTimezone)}</span>}</dd></div>
               </dl>
@@ -2649,7 +2686,7 @@ export default function DriveManagement({
           }}
         />}</div>
       )}
-      {atsCandidate && <ATSFitDetails driveId={driveId} candidate={atsCandidate} onClose={()=>setAtsCandidate(null)}/>}
+      {atsCandidate && <ATSFitDetails driveId={driveId} drive={drive} candidate={atsCandidate} onClose={()=>setAtsCandidate(null)} onReviewRequirements={()=>{setAtsCandidate(null);setParams(current=>{current.set("section","settings");return current})}}/>}
       {selected && (
         <div
           className="fixed inset-0 z-50 bg-slate-950/40"

@@ -22,6 +22,7 @@ import {
 } from "@/api/collegeApi";
 import { useCollegeAccess } from "@/hooks/useCollegeAccess";
 import PlacementDashboard from "./PlacementDashboard";
+import AssessmentIntelligence from "./AssessmentIntelligence";
 import CandidateDirectory from "./CandidateDirectory";
 import FeedbackDashboard from "./FeedbackDashboard";
 import CreateDriveWizard from "./CreateDriveWizard";
@@ -146,6 +147,7 @@ export default function CollegeManagementPage() {
   } = useCollegeAccess();
   const [params, setParams] = useSearchParams();
   const requestedTab = (params.get("view") || "placements") as
+      | "assessment-intelligence"
       | "dashboard"
       | "feedback"
       | "placements"
@@ -320,6 +322,7 @@ export default function CollegeManagementPage() {
       p.delete("section");
       return p;
     });
+  if (tab === "assessment-intelligence") return <AssessmentIntelligence/>;
   if (tab === "dashboard") return <PlacementDashboard />;
   if (tab === "feedback") return <FeedbackDashboard/>;
   if (creating)

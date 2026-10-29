@@ -1,0 +1,182 @@
+/* Scoped to the ATS drawer; placement lists and dashboard navigation are unaffected. */
+.result-header-metrics{display:grid;gap:8px;min-width:0;margin:0}.result-header-metrics>div{display:grid;grid-template-columns:112px minmax(0,1fr);align-items:center;gap:10px}.result-header-metrics dt{font-size:11px;color:#69778f}.result-header-metrics dd{margin:0}.result-header-metrics .result-score-chip,.result-header-metrics .result-round-chip{font-size:11px;padding:4px 8px;gap:5px}
+@media(min-width:1280px){#result-candidate-cards .result-candidate-header{display:grid;grid-template-columns:16px 44px minmax(230px,320px) minmax(430px,1fr) auto;gap:12px}.result-header-metrics{border-left:1px solid #e5e7f3;padding-left:18px}}
+@media(max-width:1279px){.result-header-metrics{width:100%;flex-basis:100%;order:2;border-top:1px solid #edf0f7;padding-top:12px}#result-candidate-cards .result-candidate-header>.result-header-metrics{grid-column:1/-1}.result-header-metrics>div{grid-template-columns:105px minmax(0,1fr)}}
+[role="dialog"]:has(> .ats-fit-assessment) {
+  width: min(100vw, max(1180px, 74.5vw));
+  max-width: none;
+  height: 100dvh;
+  padding: 20px 28px 0;
+  border: 1px solid #e2e8f4;
+  border-radius: 14px 0 0 14px;
+  background: linear-gradient(135deg, #fff 65%, #fafbff);
+  color: #101747;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+[role="dialog"]:has(> .ats-fit-assessment) > header h2 {
+  color: #111443;
+  font-size: 27px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+.ats-fit-assessment { font-size: 14px; }
+.ats-fit-assessment section { border-color: #e0e7f5; border-radius: 10px; box-shadow: none; }
+.ats-fit-assessment table { min-width: 0; }
+.ats-fit-assessment > .grid > div { min-width: 0; }
+.ats-fit-assessment table { table-layout: fixed; width: 100%; }
+.ats-fit-assessment th:nth-child(1) { width: 5%; }
+.ats-fit-assessment th:nth-child(2) { width: 20%; }
+.ats-fit-assessment th:nth-child(3) { width: 14%; }
+.ats-fit-assessment th:nth-child(4) { width: 31%; }
+.ats-fit-assessment th:nth-child(5) { width: 30%; }
+.ats-evidence-snippet { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; line-height: 16px; }
+.ats-fit-assessment td:last-child > div { gap: 7px; }
+.ats-fit-assessment td:last-child > div > span { flex-shrink: 0; }
+@media (min-width: 1000px) {
+  .ats-fit-assessment > div.grid { grid-template-columns: minmax(0, 1.78fr) minmax(0, 1fr); }
+  .ats-fit-assessment > section:nth-of-type(2) { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+.ats-fit-assessment th, .ats-fit-assessment td { padding: 10px 9px; }
+.ats-fit-assessment td:last-child > div > span { width: 64px; }
+.ats-fit-assessment summary { padding: 6px 10px; }
+.ats-fit-assessment summary > b { width: 105px; flex-shrink: 0; }
+.ats-fit-assessment footer {
+  width: min(100vw, max(1180px, 74.5vw));
+  max-width: none;
+  min-height: 74px;
+  align-items: center;
+  padding: 12px 28px;
+}
+.ats-fit-assessment footer button { min-height: 42px; font-weight: 600; }
+.ats-fit-assessment footer button:last-child { min-width: 220px; }
+.client-dashboard .ats-fit-assessment :is(h3,h4,h5,strong,b)[class],
+.client-dashboard .ats-fit-assessment :is(h3,h4,h5,strong,b) {
+  font-weight: 700 !important;
+}
+.ats-fit-assessment h4 { font-size: 16px; line-height: 1.4; }
+.ats-fit-assessment h5 { font-size: 14px; }
+.ats-fit-assessment :is(button,a[download]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  white-space: nowrap;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #11154c;
+}
+.ats-fit-assessment footer button:last-child { color: #fff; background: #4b2ff2; }
+.ats-fit-assessment > section:first-of-type { padding-block: 14px; }
+.ats-fit-assessment > section:nth-of-type(2) > article { border-radius: 9px; box-shadow: none; }
+.ats-fit-assessment > section:nth-of-type(2) > article p:last-child { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; line-height: 18px; }
+.ats-fit-assessment > section:nth-of-type(2) > article { min-height: 132px; }
+.ats-fit-assessment > .grid > div:nth-child(2) small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.ats-fit-assessment > .grid > div:first-child > section:first-child { min-height: 294px; }
+.ats-fit-assessment > div.grid > div:first-child > section:first-child > div:first-child { padding: 8px 14px; }
+.ats-fit-assessment > .grid > div:first-child > section:nth-child(2) { min-height: 238px; }
+.ats-fit-assessment > .grid > div:nth-child(2) > section:first-child { min-height: 382px; }
+.ats-fit-assessment > .grid > div:nth-child(2) > section:nth-child(2) { min-height: 150px; }
+.ats-fit-assessment summary > span:nth-last-child(2) { font-size: 12px; }
+.ats-fit-assessment > p { padding-block: 9px; }
+/* Same compact assessment proportions as the student ATS screen. */
+.ats-fit-assessment{font-family:Manrope,sans-serif;font-size:12px;color:#141744}
+.ats-fit-assessment > section:first-of-type{padding:10px 12px;gap:12px}
+.ats-fit-assessment > section:first-of-type img,.ats-fit-assessment > section:first-of-type > span{width:44px;height:44px}
+.ats-fit-assessment > section:first-of-type h3{font-size:14px}
+.ats-fit-assessment > section:first-of-type :is(p,dt){font-size:11px}
+.ats-fit-assessment > section:first-of-type dd{font-size:12px}
+.ats-fit-assessment > section:nth-of-type(2) > article{min-height:108px;padding:12px;gap:12px}
+.ats-fit-assessment > section:nth-of-type(2) > article > span{height:48px;width:48px}
+.ats-fit-assessment > section:nth-of-type(2) > article:first-child > div:first-child{height:72px;width:72px}
+.ats-fit-assessment > section:nth-of-type(2) > article:first-child > div:first-child > div{height:56px;width:56px}
+.ats-fit-assessment h4{font-size:13px;margin-bottom:5px}
+.ats-fit-assessment h5{font-size:12px}
+.ats-fit-assessment > section:nth-of-type(2) > article p:last-child{display:block;overflow:visible;font-size:11px;line-height:1.45}
+.ats-fit-assessment > .grid > div:first-child > section:first-child,.ats-fit-assessment > .grid > div:first-child > section:nth-child(2),.ats-fit-assessment > .grid > div:nth-child(2) > section:first-child,.ats-fit-assessment > .grid > div:nth-child(2) > section:nth-child(2){min-height:0}
+.ats-fit-assessment th,.ats-fit-assessment td{padding:7px 5px;font-size:11px;overflow-wrap:anywhere}
+.ats-fit-assessment .ats-evidence-snippet,.ats-fit-assessment > .grid > div:nth-child(2) small{display:block;overflow:visible;-webkit-line-clamp:unset;white-space:normal}
+.ats-fit-assessment summary{padding:7px 8px}
+.ats-fit-assessment table{min-width:0!important}
+.ats-fit-assessment td:last-child > div{flex-wrap:wrap}
+@media(min-width:1000px){
+ [role="dialog"]:has(> .ats-fit-assessment){display:flex;flex-direction:column;height:100dvh;max-height:100dvh;padding:12px 18px;overflow:hidden}
+ [role="dialog"]:has(> .ats-fit-assessment)>header{flex-shrink:0;margin-bottom:10px;gap:8px}
+ [role="dialog"]:has(> .ats-fit-assessment)>header h2{font-size:20px;line-height:1.2}
+ [role="dialog"]:has(> .ats-fit-assessment)>header p{font-size:11px}
+ .ats-fit-assessment{display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto;gap:8px;flex:1;min-height:0;padding-bottom:0;overflow:hidden}
+ .ats-fit-assessment>*{margin:0;min-width:0}
+ .ats-fit-assessment>section:first-of-type{padding:8px 12px;gap:10px}
+ .ats-fit-assessment>section:first-of-type img,.ats-fit-assessment>section:first-of-type>span{height:38px;width:38px}
+ .ats-fit-assessment>section:first-of-type h3{font-size:13px}
+ .ats-fit-assessment>section:nth-of-type(2)>article{min-height:88px;padding:10px;gap:10px}
+ .ats-fit-assessment>section:nth-of-type(2)>article:first-child>div:first-child{height:64px;width:64px}
+ .ats-fit-assessment>section:nth-of-type(2)>article:first-child>div:first-child>div{height:50px;width:50px}
+ .ats-fit-assessment>section:nth-of-type(2)>article p{margin-top:4px;font-size:10px;line-height:1.4}
+ .ats-fit-assessment>section:nth-of-type(2)>article>span{height:40px;width:40px}
+ .ats-fit-assessment>section:nth-of-type(2)>article h4{font-size:12px}
+ .ats-fit-assessment>p{padding:5px 8px;font-size:10px}
+ .ats-fit-assessment>.ats-layout{min-height:0;overflow:hidden;align-items:stretch;gap:12px}
+ .ats-layout>.ats-left{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;gap:8px}
+ .ats-layout>.ats-right{display:grid;grid-template-rows:minmax(0,1fr) minmax(90px,.35fr);min-height:0;gap:8px}
+ .ats-layout>div>section{margin:0;min-height:0!important}
+ .ats-fit-assessment .ats-requirements{display:flex;flex-direction:column;min-height:0}
+ .ats-fit-assessment .ats-requirements>div:first-child{padding:8px 10px;flex-shrink:0}
+ .ats-fit-assessment .ats-requirement-scroll{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+ .ats-fit-assessment .ats-requirement-scroll thead{position:sticky;top:0;z-index:1;background:#eef4ff}
+ .ats-fit-assessment .ats-evidence-snippet{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .ats-fit-assessment .ats-resume{max-height:188px;overflow:auto;padding:8px;overscroll-behavior:contain}
+ .ats-fit-assessment .ats-resume summary{padding:4px 5px}
+ .ats-fit-assessment .ats-resume summary>span:first-child{height:22px;width:22px}
+ .ats-fit-assessment .ats-resume>div:first-child{margin-bottom:4px}
+ .ats-fit-assessment .ats-insights,.ats-fit-assessment .ats-review-notes{overflow:auto;overscroll-behavior:contain;padding:10px}
+ .ats-fit-assessment .ats-insights>div{margin-top:6px}
+ .ats-fit-assessment .ats-insights h5{padding:5px 8px;font-size:12px}
+ .ats-fit-assessment .ats-insights h5+div{padding:7px 9px}
+ .ats-fit-assessment .ats-insights p{margin-bottom:7px;font-size:12px}
+ .ats-fit-assessment .ats-insights small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+ .ats-fit-assessment .ats-existing-details{padding:0;max-height:150px;overflow:auto}
+ .ats-existing-details>summary{cursor:pointer;list-style:none;padding:7px 10px;font-size:12px}
+ .ats-existing-details[open]{padding:0 10px 10px}
+ .ats-fit-assessment footer{position:static;width:auto;max-width:none;min-height:0;padding:7px 0 0;box-shadow:none;backdrop-filter:none;gap:8px}
+ .ats-fit-assessment footer button{min-height:32px;font-size:11px;padding:6px 10px}
+ .ats-fit-assessment footer button:last-child{min-width:0}
+}
+@media (max-width: 767px) {
+  [role="dialog"]:has(> .ats-fit-assessment) { padding: 16px 12px 0; border-radius: 0; }
+  .ats-fit-assessment footer { padding: 10px 12px; flex-wrap: wrap; gap: 6px; }
+  .ats-fit-assessment footer button { font-size: 11px; min-width: 0 !important; }
+  .ats-fit-assessment { padding-bottom: 120px; }
+  .ats-fit-assessment summary > b { width: 90px; }
+}
+
+
+/* One page scroll, centered to the same 1440px maximum as the student assessment. */
+.ats-assessment-page{z-index:1000;padding:10px 16px;overscroll-behavior:contain}
+.ats-assessment-page>[role="dialog"]{display:block;width:100%;max-width:1440px;height:auto;max-height:none;min-height:0;margin:0 auto;padding:12px 18px;overflow:visible;border-radius:14px;scrollbar-gutter:auto}
+.ats-assessment-page .ats-fit-assessment{display:grid;grid-template-rows:none;gap:8px;height:auto;max-height:none;min-height:0;padding-bottom:0;overflow:visible}
+.ats-assessment-page .ats-layout{height:auto;max-height:none;overflow:visible;align-items:start}
+.ats-assessment-page .ats-layout>.ats-left,.ats-assessment-page .ats-layout>.ats-right{display:grid;grid-template-rows:none;align-content:start;gap:8px;height:auto;max-height:none;overflow:visible}
+.ats-assessment-page .ats-fit-assessment :is(.ats-requirements,.ats-requirement-scroll,.ats-resume,.ats-insights,.ats-review-notes,.ats-existing-details){height:auto;max-height:none;min-height:0;overflow:visible;flex:none;overscroll-behavior:auto;scrollbar-gutter:auto}
+.ats-assessment-page .ats-requirement-scroll thead{position:static}
+.ats-assessment-page .ats-fit-assessment .ats-evidence-snippet,.ats-assessment-page .ats-insights small{white-space:normal;overflow:visible;text-overflow:clip}
+.ats-assessment-page .ats-fit-assessment footer{position:static;width:100%;max-width:100%;height:auto;margin:0;padding:8px 0 0;flex-wrap:wrap}
+@media(max-width:767px){.ats-assessment-page{padding:8px}.ats-assessment-page>[role="dialog"]{padding:12px}}
+
+/* Keep table content inside its column, including long resume evidence. */
+.ats-assessment-page .ats-layout{grid-template-columns:minmax(0,1fr);min-width:0}
+.ats-assessment-page .ats-layout>:is(.ats-left,.ats-right){grid-template-columns:minmax(0,1fr);min-width:0;width:100%;max-width:100%}
+.ats-assessment-page .ats-layout :is(section,.ats-requirement-scroll,table){min-width:0;width:100%;max-width:100%;box-sizing:border-box}
+.ats-assessment-page .ats-fit-assessment td:last-child>div{flex-wrap:wrap;row-gap:3px}
+.ats-assessment-page .ats-fit-assessment td:last-child>div>b{white-space:normal}
+.ats-assessment-page .ats-evidence-snippet{overflow-wrap:anywhere}
+@media(min-width:1000px){.ats-assessment-page .ats-fit-assessment>.ats-layout{grid-template-columns:minmax(0,1.78fr) minmax(0,1fr)}}
+
+/* Keep the compact insights beside the currently visible requirements. */
+@media(min-width:1000px){
+ .ats-assessment-page .ats-layout>.ats-right{position:sticky;top:16px;align-self:start}
+ /* Expanded evidence stays in the page flow so every item remains reachable. */
+ .ats-assessment-page .ats-layout>.ats-right:has(.ats-insights button[aria-expanded="true"]){position:static}
+}
+/* Match the student's section-based assessment; no nested vertical scrollers. */
+.ats-assessment-page .ats-fit-assessment .ats-detail-tabs{display:flex;flex-wrap:wrap;gap:5px;padding:5px;background:#eef4fb;border:1px solid #dae4f1;border-radius:9px}.ats-detail-tabs button{flex:1;min-width:125px;padding:9px 12px;border:0;border-radius:6px;background:transparent;color:#60758f;font:inherit;font-size:12px;text-align:center;cursor:pointer}.ats-detail-tabs button[aria-pressed=true]{background:#fff;color:#0969cd;box-shadow:0 1px 4px #14233812}.ats-detail-tabs small{display:block;font-size:9px;line-height:1.5;margin-top:3px}.ats-assessment-page .ats-fit-assessment>.ats-layout{display:block}.ats-assessment-page .ats-layout>.ats-left,.ats-assessment-page .ats-layout>.ats-right{display:contents;position:static}.ats-assessment-page .ats-fit-assessment [hidden]{display:none}.ats-assessment-page .ats-fit-assessment .ats-existing-details{position:static;max-height:none;overflow:visible}.ats-assessment-page .ats-existing-details>summary{pointer-events:none}.ats-detail-pagination{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;border-top:1px solid #e0e7ef;color:#718095;font-size:11px}.ats-detail-pagination>div{display:flex;gap:8px}.ats-detail-pagination button{padding:6px 10px;border:1px solid #d5deea;border-radius:6px;color:#1767b6;background:#fff;font:inherit;cursor:pointer}.ats-detail-pagination button:disabled{opacity:.4;cursor:default}.ats-assessment-page .ats-resume details[open] summary>span:nth-last-child(2){display:none}.ats-assessment-page .ats-resume h4{font-size:15px}.ats-assessment-page .ats-resume details summary b{width:190px;max-width:50%}.ats-assessment-page .ats-insights{margin-bottom:12px}.ats-assessment-page .ats-detail-tabs button:focus-visible,.ats-detail-pagination button:focus-visible{outline:2px solid #0969cd;outline-offset:3px}@media(max-width:640px){.ats-detail-tabs button{flex:1 1 40%;min-width:0}.ats-detail-pagination{gap:10px;flex-wrap:wrap}}
