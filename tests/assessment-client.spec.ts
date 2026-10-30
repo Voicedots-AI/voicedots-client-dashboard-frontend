@@ -18,13 +18,11 @@ const bundle={student:{id:'student',full_name:'Actual Student'},drives:[],report
 const httpError=(status:number)=>new AxiosError('Request failed',undefined,undefined,undefined,{status,data:{},headers:{},config:{} as never,statusText:'Error'});
 test.beforeEach(()=>{Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:()=> 'test-session'}});clearAssessmentCache()});
 test.afterEach(()=>{collegeApi.get=original});
-test('older production API retains its real ATS values and never selects another student',async()=>{
+test('an unavailable shared API never silently substitutes the admin ranking model',async()=>{
  const paths:string[]=[];
- collegeApi.get=async<T,>(path:string):Promise<T>=>{paths.push(path);if(path.includes('/reports?'))return bundle as T;if(path.includes('/drives/'))throw httpError(404);return {candidates:[{student_id:'other',ats_fit_score:100},{student_id:'student',ats_status:'evaluated',ats_fit_score:24.1,skills:[{skill:'Actual requirement'}]}],job_description:'Actual JD'} as T};
- const value=await loadCandidateAssessment('student','drive');
- expect(value.ats_fit_score).toBe(24.1);expect(value.resume_sections).toBeUndefined();expect(value.job_description).toBe('Actual JD');
- await loadCandidateAssessment('student','another-drive');
- expect(paths.filter(path=>path.startsWith('students/student/drives/'))).toHaveLength(1);
+ collegeApi.get=async<T,>(path:string):Promise<T>=>{paths.push(path);if(path.includes('/reports?'))return bundle as T;throw httpError(404)};
+ await expect(loadCandidateAssessment('student','drive')).rejects.toThrow('shared assessment API');
+ expect(paths.some(path=>path.startsWith('drives/'))).toBe(false);
 });
 test('shared student payload takes precedence as soon as the server supports it',async()=>{
  const assessment={drive_id:'drive',ats_status:'evaluated',ats_fit_score:62,resume_sections:{education:['Actual degree'],certifications:['Actual certificate']}};

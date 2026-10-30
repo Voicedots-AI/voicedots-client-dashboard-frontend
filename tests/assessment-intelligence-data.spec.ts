@@ -28,3 +28,9 @@ test('data lookup keys keep different candidates and drives separate',()=>{
  expect(atsKey('student-1','drive-1')).not.toBe(atsKey('student-2','drive-1'));
  expect(assessmentSummary({...bundle,student:{...bundle.student,id:'student-2'}},ats).averageATS).toBeNull();
 });
+
+test('eligible drive counts use the same evaluated ATS threshold as the student portal',()=>{
+ expect(assessmentSummary(bundle,ats).eligible).toBe(1);
+ const below={...ats,[atsKey('student-1','drive-1')]:{row:{student_id:'student-1',ats_status:'evaluated',ats_fit_score:49.9}}};
+ expect(assessmentSummary(bundle,below).eligible).toBe(0);
+});

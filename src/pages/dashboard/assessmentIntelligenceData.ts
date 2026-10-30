@@ -28,7 +28,7 @@ export function assessmentSummary(bundle:AssessmentBundle,ats:Record<string,ATSS
  const scores=rows.map(({drive})=>currentATSScore(ats[atsKey(bundle.student.id,drive.drive_id)]?.row)).filter((score):score is number=>score!==null);
  const interview=rows.map(row=>row.report?.overall_score).filter(validScore);
  return {drives:rows.length,participated:rows.filter(row=>row.drive.started_at||row.drive.completed_at||['in_progress','completed'].includes(row.drive.assignment_status||'')).length,
-  eligible:rows.filter(({drive})=>ats[atsKey(bundle.student.id,drive.drive_id)]?.row?.eligible===true).length,
+  eligible:rows.filter(({drive})=>(currentATSScore(ats[atsKey(bundle.student.id,drive.drive_id)]?.row)??-1)>=50).length,
   assessed:scores.length,averageATS:scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:null,bestScore:interview.length?Math.max(...interview):null,
   pending:rows.some(({drive})=>!ats[atsKey(bundle.student.id,drive.drive_id)]||ats[atsKey(bundle.student.id,drive.drive_id)]?.row?.ats_status==='processing'),
   failed:rows.some(({drive})=>Boolean(ats[atsKey(bundle.student.id,drive.drive_id)]?.error))};

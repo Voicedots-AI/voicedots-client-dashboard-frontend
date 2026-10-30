@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "playwright test",
+    "prebuild": "node scripts/check-shared-assessment.mjs"
   },
   "dependencies": {
     "@heroui/react": "^2.8.7",

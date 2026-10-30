@@ -1,3 +1,5 @@
+import {invalidateStudentScorecard} from "./assessmentClient";
+import StudentScorecard from "./StudentScorecard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -274,6 +276,7 @@ export default function CandidateReport({
   canNext?: boolean;
   onNavigate?: (direction: -1 | 1) => void;
 }) {
+  const [reviewerMode,setReviewerMode]=useState(false);
   const [bundle, setBundle] = useState<Data | null>(null),
     [drive, setDrive] = useState<Drive | null>(null),
     [decisionData, setDecisionData] = useState<Data | null>(null),
@@ -358,6 +361,7 @@ export default function CandidateReport({
     }
   }
   useEffect(() => {
+    setReviewerMode(false);
     setBundle(null);
     setDrive(null);
     setDecision(""); setNote(""); setSchedule(""); setNotice(""); setConfirm(null);
@@ -535,6 +539,7 @@ export default function CandidateReport({
           ? "Officer decision saved."
           : "Student result publication updated.",
       );
+      if(report?.session_id)invalidateStudentScorecard(studentId,report.session_id);
       await load();
     } catch (e) {
       if (identity === currentIdentity.current) setError(collegeError(e));
@@ -700,8 +705,11 @@ export default function CandidateReport({
     };
   }).filter(item => item.offset != null).sort((a, b) => a.offset! - b.offset!).slice(0, 3);
 
+  if(!reviewerMode)return <section className="candidate-review mx-auto max-w-[1440px] space-y-5 pb-12 text-slate-900"><header className="flex flex-wrap items-center justify-between gap-3"><div><button className={btn} onClick={onBack}><ArrowLeft size={16}/>Back</button><h1 className="mt-4 text-2xl font-bold">{String(student.full_name||"Student")} · Scorecard</h1><p>{drive?.company_name} · {drive?.role_title}</p></div><button className={btn} onClick={()=>setReviewerMode(true)}>Reviewer details &amp; release controls</button></header>{report.session_id?<StudentScorecard key={`${studentId}:${report.session_id}`} studentId={studentId} sessionId={report.session_id}/>:<p>No completed interview session was recorded.</p>}</section>;
+
   return (
     <section className="candidate-review mx-auto max-w-[1440px] space-y-5 pb-12 text-slate-900">
+      <button className={btn} onClick={()=>setReviewerMode(false)}>View student scorecard</button>
       <ReportKeyboardShortcuts videoRef={videoRef} onNextFlag={() => jumpToAdjacentFlag(1)} />
       <style>{`
         @media (min-width: 1280px) {
