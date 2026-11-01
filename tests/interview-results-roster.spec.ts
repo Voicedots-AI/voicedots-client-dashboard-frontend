@@ -9,7 +9,8 @@ test.afterAll(async()=>{await server?.close()});
 const base={driveId:'drive',drive:{id:'drive',company_name:'Recorded Company',role_title:'Recorded Role',status:'active',window_start_at:'2026-10-30T10:00:00Z',window_end_at:'2026-10-31T10:00:00Z'},collegeTimezone:'Asia/Kolkata',checked:false,onSelect:()=>{},onReport:()=>{},onATS:()=>{},onSaved:()=>{},busy:false};
 test('compact roster preserves actual identity, academics, score and review actions',()=>{
  const html=renderToStaticMarkup(createElement(Card,{...base,candidate:{student_id:'student',full_name:'Actual Student',roll_number:'R1',email:'actual@example.test',program:'B.Tech',department_code:'CSE',cgpa:8.4,graduation_year:2027,overall_score:72,assignment_status:'completed',report_ready:true}}));
- for(const value of ['Actual Student','actual@example.test','B.Tech','CSE','8.4','2027','72%','72/100','Recorded Company','Recorded Role','AI Coach','View full assessment','Review details'])expect(html).toContain(value);
+ for(const value of ['Actual Student','actual@example.test','B.Tech','CSE','8.4','2027','72%','72/100','Recorded Company','Recorded Role','View full assessment','Review details'])expect(html).toContain(value);
+ expect(html).not.toContain('AI Coach');
  expect(html).toContain('aria-label="Select Actual Student"');expect(html).toContain('aria-expanded="false"');
 });
 test('a real zero is retained, while absent scores remain not assessed',()=>{

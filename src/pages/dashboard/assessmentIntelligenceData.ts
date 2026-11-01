@@ -1,7 +1,7 @@
 import type {CollegeStudent} from '@/api/collegeApi';
 
-export type Assignment={drive_id:string;company_name?:string;role_title?:string;assignment_status?:string;drive_status?:string;assigned_at?:string;started_at?:string;completed_at?:string;campaign_opens_at?:string;campaign_deadline_at?:string;attempt_number?:number};
-export type AssessmentReport={drive_id?:string;session_id?:string;company_name?:string;role_title?:string;overall_score?:number|null;readiness?:string;completed_at?:string;interview_completed_at?:string;attempt_number?:number;assignment_status?:string;detail?:{strengths?:unknown[];priority_improvement_areas?:unknown[]}};
+export type Assignment={placement_decision?:string|null;criteria_interview_score?:number|null;drive_id:string;company_name?:string;role_title?:string;assignment_status?:string;drive_status?:string;assigned_at?:string;started_at?:string;completed_at?:string;campaign_opens_at?:string;campaign_deadline_at?:string;attempt_number?:number};
+export type AssessmentReport={placement_decision?:string|null;drive_id?:string;session_id?:string;company_name?:string;role_title?:string;overall_score?:number|null;readiness?:string;completed_at?:string;interview_completed_at?:string;attempt_number?:number;assignment_status?:string;detail?:{strengths?:unknown[];priority_improvement_areas?:unknown[]}};
 export type AssessmentBundle={student:CollegeStudent;drives:Assignment[];reports:AssessmentReport[]};
 export type AssessmentSkill={skill?:string;requirement?:string;match_status?:string};
 export type AssessmentATS={student_id:string;ats_status?:string;ats_fit_score?:number|null;eligible?:boolean;resume_version?:string;input_fingerprint?:string;evaluated_at?:string;skills?:AssessmentSkill[]};

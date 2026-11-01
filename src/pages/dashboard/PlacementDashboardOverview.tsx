@@ -29,7 +29,7 @@ export default function PlacementDashboardOverview({ data, driveId, onTab }: { d
  const feedbackLink = `/dashboard/placement-management?${driveId ? `drive=${encodeURIComponent(driveId)}&section=feedback` : 'view=feedback'}`;
  const assessed = data.readiness.reduce((sum, row) => sum + row.count, 0);
  const ready = data.readiness.filter(row => /^ready$|industry ready/i.test(row.name)).reduce((sum, row) => sum + row.count, 0);
- const competencyRows = data.competencies.filter(row => row.score != null);
+ const competencyRows = data.competencies.filter((row,index,all) => row.score != null && all.findIndex(other=>other.key===row.key||other.name.trim().toLowerCase()===row.name.trim().toLowerCase())===index);
  const denseCompetencies = competencyRows.length > 6 || (performanceWidth > 0 && (performanceWidth - 40) / Math.max(1,competencyRows.length) < 70);
  const categories = data.by_category.map(row => ({ ...row, name: row.name.replaceAll('_', ' ') }));
  return <div className="pdo-overview">

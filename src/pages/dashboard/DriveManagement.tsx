@@ -1,9 +1,10 @@
-import {loadCandidateAssessment,loadStudentAssessment,peekAssessment,studentAssessmentPath,mergeResumeEvidence,invalidateStudentAssessment,type FullBundle} from './assessmentClient';
+import {RosterExpandControl} from '@/shared-assessment/RosterExpandControl';
+import {loadCandidateAssessment,peekAssessment,studentAssessmentPath,mergeResumeEvidence,invalidateStudentAssessment,type FullBundle} from './assessmentClient';
 import { createPortal } from 'react-dom';
 import EvidenceText from './EvidenceText';
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ExternalLink, Download, Users, CheckCircle2, CircleDashed, Clock, UserCheck, Send, ChevronDown, Filter, Sparkles } from "lucide-react";
+import { ExternalLink, Download, Users, CheckCircle2, CircleDashed, Clock, UserCheck, Send, ChevronDown, Filter } from "lucide-react";
 import {
   collegeApi,
   collegeError,
@@ -27,7 +28,6 @@ import ResultCohortBuilder, {type ResultFilterOptions,type ResultRule} from "./R
 import DriveQuestionBank from "./DriveQuestionBank";
 import CreateDriveWizard from "./CreateDriveWizard";
 import ATSFitAssessment from "./ATSFitAssessment";
-import AssessmentCoach from "./AssessmentCoach";
 import "./interviewResults.css";
 
 type Data = Record<string, unknown>;
@@ -371,19 +371,20 @@ export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequireme
   return createPortal(<div style={{margin:0}} className="ats-assessment-page" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="ats-assessment-dialog"><header className="ats-assessment-dialog-header"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
 }
 
-export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezone,checked,onSelect,onReport,onATS,onSaved,busy}:{candidate:Candidate;drive:Drive|null;driveId:string;collegeTimezone:string;checked:boolean;onSelect:(selected:boolean)=>void;onReport:()=>void;onATS:()=>void;onSaved:()=>void;busy:boolean}){
-  const [expanded,setExpanded]=useState(false),[coach,setCoach]=useState<FullBundle|null>(null),[coachBusy,setCoachBusy]=useState(false),[coachError,setCoachError]=useState('');
+export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezone,checked,onSelect,onReport,onATS,onSaved,busy,expandAll}:{candidate:Candidate;drive:Drive|null;driveId:string;collegeTimezone:string;checked:boolean;onSelect:(selected:boolean)=>void;onReport:()=>void;onATS:()=>void;onSaved:()=>void;busy:boolean;expandAll?:boolean}){
+  const [expanded,setExpanded]=useState(false);
+  useEffect(()=>{if(expandAll!==undefined)setExpanded(expandAll)},[expandAll]);
   const score=typeof candidate.overall_score==='number'&&Number.isFinite(candidate.overall_score)&&candidate.overall_score>=0&&candidate.overall_score<=100?candidate.overall_score:null;
-  async function openCoach(){setCoachBusy(true);setCoachError('');try{setCoach(await loadStudentAssessment(candidate.student_id))}catch(reason){setCoachError(collegeError(reason))}finally{setCoachBusy(false)}}
+
   const detailId=`result-review-${candidate.student_id}`;
   return <article className="placement-result-row">
     <div className="placement-result-summary">
       <div className="placement-result-person"><input type="checkbox" aria-label={`Select ${candidate.full_name}`} checked={checked} onChange={event=>onSelect(event.target.checked)}/><StudentAvatar student={candidate} size="h-11 w-11"/><div><h4>{candidate.full_name}</h4><p>{candidate.email||candidate.roll_number||'Email unavailable'}</p>{candidate.rank!=null&&<span className="placement-result-rank">#{candidate.rank} in this drive</span>}</div></div>
       <dl className="placement-result-academics">{[['Degree',candidate.program],['Branch',candidate.department_code],['Year',candidate.graduation_year],['CGPA',candidate.cgpa]].map(([label,value])=><div key={String(label)}><dt>{label}</dt><dd>{value==null||value===''?'—':String(value)}</dd></div>)}</dl>
       <div className="placement-result-ats"><span>ATS Fit</span><ATSMatchInfo driveId={driveId} candidate={candidate} compact onOpen={onATS}/></div>
-      <div className="placement-result-assessment"><div><span>Overall assessment</span><strong>{score==null?'Not assessed':`${score}%`}</strong></div><progress max={100} value={score??0} aria-label={score==null?'Interview not assessed':`Overall interview assessment ${score}%`}/><p>{candidate.readiness||candidate.recommendation||'Complete the interview to view assessment feedback.'}</p><div className="placement-result-primary-actions"><button type="button" className="placement-result-coach" disabled={coachBusy} onClick={()=>void openCoach()}><Sparkles size={15}/>{coachBusy?'Loading…':'AI Coach'}</button><button type="button" className="placement-result-report-link" disabled={busy||!candidate.report_ready} onClick={onReport}>View full assessment <ExternalLink size={12}/></button></div></div>
+      <div className="placement-result-assessment"><div><span>Overall assessment</span><strong>{score==null?'Not assessed':`${score}%`}</strong></div><progress max={100} value={score??0} aria-label={score==null?'Interview not assessed':`Overall interview assessment ${score}%`}/><p>{candidate.readiness||candidate.recommendation||'Complete the interview to view assessment feedback.'}</p><div className="placement-result-primary-actions"><button type="button" className="placement-result-report-link" disabled={busy||!candidate.report_ready} onClick={onReport}>View full assessment <ExternalLink size={12}/></button></div></div>
     </div>
-    {coachError&&<p className="placement-result-inline-error" role="alert">{coachError}<button onClick={()=>void openCoach()}>Retry AI Coach</button></p>}
+
     <div className="placement-result-timeline"><table><thead><tr><th>Drive / company</th><th>Interview window</th><th>Scorecard</th><th>Interview status</th><th>Attempt</th><th>Review</th></tr></thead><tbody><tr><th scope="row">{drive?.company_name||'Placement drive'}<small>{drive?.role_title||'Role not supplied'}</small></th><td>{drive?.window_start_at?formatPlacementDateTime(drive.window_start_at,collegeTimezone):'Not scheduled'}{drive?.window_end_at&&<> – {formatPlacementDateTime(drive.window_end_at,collegeTimezone)}</>}</td><td><button className="placement-result-score" disabled={busy||!candidate.report_ready} onClick={onReport}>{score==null?'Not assessed':`${score}/100`}</button></td><td><InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></td><td><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/></td><td><button type="button" className="placement-result-expand" aria-expanded={expanded} aria-controls={detailId} onClick={()=>setExpanded(value=>!value)}>{expanded?'Collapse':'Review details'}<ChevronDown size={14} className={expanded?'is-open':''}/></button></td></tr></tbody></table></div>
     {expanded&&<section className="placement-result-review" id={detailId} aria-label={`Review details for ${candidate.full_name}`}>
       <div className="placement-result-review-metrics"><div><h5>Interview assessment</h5><div className="placement-result-score-chips">{[['Interview',candidate.overall_score],['Readiness / PRI',candidate.ranking_score],['Job fit',candidate.job_fit_score]].map(([label,value])=><span key={String(label)} className={`result-score-chip ${typeof value!=='number'?'score-unavailable':value>=75?'score-strong':value>=50?'score-developing':'score-review'}`}><span>{label}</span><strong>{typeof value==='number'?`${value}/100`:'Not assessed'}</strong></span>)}</div></div><div><h5>Interview rounds</h5><div className="placement-result-score-chips">{candidate.agent_summary?.length?candidate.agent_summary.map((round,index)=><span className="result-round-chip" key={index}><span>{String(round.label||displayName(String(round.agent_type||`Round ${index+1}`)))}</span><strong>{round.score==null?'Not assessed':`${round.score}/100`}</strong></span>):<p>Round scores not available.</p>}</div></div></div>
@@ -392,7 +393,6 @@ export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezo
       <div className="placement-result-review-line"><b>Student result</b><StatusBadge value={candidate.publication?.state||'hidden'}/>{candidate.publication?.released_at&&<span>Released {formatPlacementDateTime(candidate.publication.released_at,collegeTimezone)}</span>}<b>Placement decision</b><StatusBadge value={candidate.officer_decision||'pending'}/></div>
       {candidate.report_ready?<CandidateOfficerActions driveId={driveId} candidate={candidate} onSaved={onSaved}/>:<p>Decision actions become available when the report is ready.</p>}
     </section>}
-    {coach&&<AssessmentCoach bundle={coach} driveId={driveId} onClose={()=>setCoach(null)}/>}
   </article>;
 }
 
@@ -713,7 +713,7 @@ function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;c
   </div>;
 }
 
-function ATSResumeFile({ driveId, studentId }: { driveId: string; studentId: string }) {
+export function ATSResumeFile({ driveId, studentId }: { driveId: string; studentId: string }) {
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [url, setUrl] = useState("");
   const [mime, setMime] = useState("");
@@ -991,6 +991,8 @@ function DriveSettings({
     window_start: wallTimeFromInstant(drive.window_start_at, collegeTimezone),
     window_end: wallTimeFromInstant(drive.window_end_at, collegeTimezone),
     min_cgpa: drive.criteria_min_cgpa ?? "",
+    criteria_ats_fit: drive.criteria_ats_fit ?? "",
+    criteria_interview_score: drive.criteria_interview_score ?? "",
     eligible_programs: (drive.criteria_programs || []).join(", "),
     eligible_departments: (drive.criteria_department_codes || []).join(", "),
     eligible_graduation_years: (drive.criteria_graduation_years || []).join(
@@ -1021,6 +1023,8 @@ function DriveSettings({
       window_start: wallTimeFromInstant(drive.window_start_at, collegeTimezone),
       window_end: wallTimeFromInstant(drive.window_end_at, collegeTimezone),
       min_cgpa: drive.criteria_min_cgpa ?? "",
+    criteria_ats_fit: drive.criteria_ats_fit ?? "",
+    criteria_interview_score: drive.criteria_interview_score ?? "",
       eligible_programs: (drive.criteria_programs || []).join(", "),
       eligible_departments: (drive.criteria_department_codes || []).join(", "),
       eligible_graduation_years: (drive.criteria_graduation_years || []).join(", "),
@@ -1096,6 +1100,8 @@ function DriveSettings({
       "Eligibility",
       [
         ["Minimum CGPA", drive.criteria_min_cgpa ?? "Not restricted"],
+        ["Minimum ATS Fit",drive.criteria_ats_fit==null?"Default (50%)":`${drive.criteria_ats_fit}%`],
+        ["Minimum interview score",drive.criteria_interview_score==null?"Not restricted":`${drive.criteria_interview_score}%`],
         ["Programs", drive.criteria_programs?.join(", ") || "All programs"],
         [
           "Departments",
@@ -1191,10 +1197,10 @@ function DriveSettings({
       const start=wallTimeToInstant(String(form.window_start||""),collegeTimezone);
       const end=wallTimeToInstant(String(form.window_end||""),collegeTimezone);
       const errors:Record<string,string>={};
-      if(!Number.isFinite(start))errors.window_start="Choose a valid local interview start time.";
-      else if(start<=Date.now()&&String(form.window_start)!==wallTimeFromInstant(drive.window_start_at,collegeTimezone))errors.window_start="Interview start must be in the future.";
-      if(!Number.isFinite(end))errors.window_end="Choose a valid local interview end time.";
-      else if(Number.isFinite(start)&&end<=start)errors.window_end="Interview end must be later than interview start.";
+      if(form.window_start&&!Number.isFinite(start))errors.window_start="Choose a valid local interview start time.";
+      else if(form.window_start&&start<=Date.now()&&String(form.window_start)!==wallTimeFromInstant(drive.window_start_at,collegeTimezone))errors.window_start="Interview start must be in the future.";
+      if(form.window_end&&!Number.isFinite(end))errors.window_end="Choose a valid local interview end time.";
+      else if(form.window_start&&form.window_end&&Number.isFinite(start)&&end<=start)errors.window_end="Interview end must be later than interview start.";
       if(Object.keys(errors).length){setFieldErrors(errors);document.getElementById(Object.keys(errors)[0])?.focus();
         setWarning("");
         return;
@@ -1204,12 +1210,14 @@ function DriveSettings({
         max_attempts: Number(form.max_attempts),
         score_attempt_rules: form.score_attempt_rules || [],
         difficulty_tier: form.difficulty_tier,
-        window_start: new Date(start).toISOString(),
-        window_end: new Date(end).toISOString(),
+        window_start: form.window_start?new Date(start).toISOString():null,
+        window_end: form.window_end?new Date(end).toISOString():null,
       };
     } else if (title === "Eligibility")
       body = {
         min_cgpa: form.min_cgpa === "" ? 0 : Number(form.min_cgpa),
+        criteria_ats_fit:form.criteria_ats_fit===""?null:Number(form.criteria_ats_fit),
+        criteria_interview_score:form.criteria_interview_score===""?null:Number(form.criteria_interview_score),
         eligible_programs: String(form.eligible_programs || "")
           .split(",")
           .map((v) => v.trim())
@@ -1430,6 +1438,8 @@ function DriveSettings({
     ) : title === "Eligibility" ? (
       <>
       {input("min_cgpa", "Minimum CGPA", "number")}
+      {input("criteria_ats_fit", "Minimum ATS Fit (%)", "number")}
+      {input("criteria_interview_score", "Minimum interview score (%)", "number")}
         <EligibilityCheckboxPicker
           label="Programs"
           options={catalogPrograms}
@@ -1755,6 +1765,7 @@ export default function DriveManagement({
   collegeTimezone?: string;
   back: () => void;
 }) {
+  const [expandAllResults,setExpandAllResults]=useState(false);
   const [params, setParams] = useSearchParams();
   const [atsCandidate,setAtsCandidate]=useState<Candidate|null>(null);
   const reportStudentId = params.get("candidate");
@@ -2493,12 +2504,12 @@ export default function DriveManagement({
             </div>
           )}
           {tab === "results" && <div className="result-reference-roster-heading">
-            <div className="flex flex-wrap items-center gap-4"><h3>Student roster</h3><label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" className="h-4 w-4 rounded accent-violet-600" checked={allVisibleResultsSelected} disabled={!visibleResultIds.length || loading} onChange={event=>setChecked(current=>event.target.checked ? [...new Set([...current,...visibleResultIds])] : current.filter(id=>!visibleResultIds.includes(id)))}/>Select visible</label><span className="text-sm text-slate-500">{loading ? "Loading candidates…" : `Showing ${candidates.length ? offset + 1 : 0}–${offset + candidates.length} of ${total} candidates`}</span></div>
+            <div className="flex flex-wrap items-center gap-4"><h3>Student roster</h3><RosterExpandControl expanded={expandAllResults} onChange={setExpandAllResults} disabled={!candidates.length}/><label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" className="h-4 w-4 rounded accent-violet-600" checked={allVisibleResultsSelected} disabled={!visibleResultIds.length || loading} onChange={event=>setChecked(current=>event.target.checked ? [...new Set([...current,...visibleResultIds])] : current.filter(id=>!visibleResultIds.includes(id)))}/>Select visible</label><span className="text-sm text-slate-500">{loading ? "Loading candidates…" : `Showing ${candidates.length ? offset + 1 : 0}–${offset + candidates.length} of ${total} candidates`}</span></div>
             <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1" role="group" aria-label="Results layout"><button type="button" aria-pressed={resultsLayout === "cards"} onClick={()=>setResultsLayout("cards")} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${resultsLayout === "cards" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>Cards</button><button type="button" aria-pressed={resultsLayout === "table"} onClick={()=>setResultsLayout("table")} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${resultsLayout === "table" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>Table</button></div>
           </div>}
           {!loading && !error && !candidates.length && <p className={`${panel} border-dashed p-8 text-center text-sm text-slate-500`}>No candidates found for this view. Adjust the filters or choose another result view.</p>}
           {!!candidates.length && tab === "results" && resultsLayout === "cards" && <div id="result-candidate-cards" className="placement-result-roster">
-            {candidates.map(candidate=><ResultCandidateRosterCard key={`${driveId}:${candidate.student_id}`} candidate={candidate} drive={drive} driveId={driveId} collegeTimezone={collegeTimezone} checked={checked.includes(candidate.student_id)} onSelect={selected=>setChecked(current=>selected?[...new Set([...current,candidate.student_id])]:current.filter(id=>id!==candidate.student_id))} onReport={()=>void inspect(candidate,'reports')} onATS={()=>setAtsCandidate(candidate)} onSaved={()=>setVersion(value=>value+1)} busy={busy}/>)}
+            {candidates.map(candidate=><ResultCandidateRosterCard expandAll={expandAllResults} key={`${driveId}:${candidate.student_id}`} candidate={candidate} drive={drive} driveId={driveId} collegeTimezone={collegeTimezone} checked={checked.includes(candidate.student_id)} onSelect={selected=>setChecked(current=>selected?[...new Set([...current,candidate.student_id])]:current.filter(id=>id!==candidate.student_id))} onReport={()=>void inspect(candidate,'reports')} onATS={()=>setAtsCandidate(candidate)} onSaved={()=>setVersion(value=>value+1)} busy={busy}/>)}
           </div>}
           {!!candidates.length && (tab !== "results" || resultsLayout === "table") && (
             <div id="result-candidate-table" className={`${panel} result-workspace overflow-x-auto p-0`}>
