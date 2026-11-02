@@ -519,7 +519,7 @@ export default function CallingOverviewTab({
   };
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
     if (isPlaying && !audioUrl) {
       timer = setInterval(() => {
         setProgressSec((prev) => {
@@ -581,7 +581,6 @@ export default function CallingOverviewTab({
 
   const activePhoneNumber =
     selectedDetails?.lead?.phone ||
-    selectedDetails?.lead?.caller_phone ||
     selectedCall.phoneNumber;
 
   return (

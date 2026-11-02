@@ -235,6 +235,7 @@ export const whatsappApi = {
       name: string;
       template_id: string;
       mapping: Record<string, Binding>;
+      scheduled_at?: string;
     },
     id?: string,
   ) =>
