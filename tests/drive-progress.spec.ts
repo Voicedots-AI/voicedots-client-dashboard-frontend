@@ -48,52 +48,40 @@ async function progressRoster(page:Page){
  return card;
 }
 
-test('drive Progress shows canonical saved lessons and evidence, refreshes and stays read-only',async({page},testInfo)=>{
- const card=await progressRoster(page);
- let refreshed=false,requests=0,writes=0;
- const progress=()=>({student_id:'student-history',drive_id:'drive-one',plans:[{id:'plan-one',drive_id:'drive-one',company_name:'First Company',role_title:'Engineer',goal:'Saved student goal',summary:'Saved student summary',lessons:[{session_id:'lesson',day:1,title:'Recorded Python lesson',objective:'Explain the actual API',activities:['Implement a handler'],stage:refreshed?'completed':'practice',teaching_completed:true,validation_status:refreshed?'validated':'needs_review'}],skills_progress:{score:refreshed?70:35,skills:[{skill:'Recorded Python evidence',state:refreshed?'validated':'learning',training_stage:refreshed?'completed':'practice',evidence_note:'Evidence from the student portal',objectives:[{task_id:'task',question:'Saved diagnostic task',answer:'Saved student answer',status:'needs_improvement',feedback:{feedback:'Recorded assessor feedback'}}]}]}}],cycles:[]});
- await page.route('**/v3/college/students/student-history/coach?drive_id=drive-one',r=>{requests++;if(r.request().method()!=='GET')writes++;return r.fulfill({json:progress()})});
- const open=card.getByRole('button',{name:'Progress for First Company Engineer',exact:true});
- await expect(card.getByRole('button',{name:'AI Coach',exact:true})).toHaveCount(0);
- await open.click();const dialog=page.getByRole('dialog',{name:'Progress · History Student'});
- await expect(dialog).toContainText('First Company · Engineer');
- await expect(dialog).toContainText('Saved student goal');await expect(dialog).toContainText('Recorded Python lesson');
- await expect(dialog).toContainText('35% readiness from recorded evidence');await expect(dialog).toContainText('Needs Review');
- await dialog.getByText('Assessment details · 1 tasks',{exact:true}).click();
- await expect(dialog).toContainText('Saved student answer');await expect(dialog).toContainText('Recorded assessor feedback');
- await expect(dialog.getByRole('combobox')).toHaveCount(0);
- refreshed=true;await dialog.getByRole('button',{name:'Refresh progress',exact:true}).click();
- await expect(dialog).toContainText('70% readiness from recorded evidence');await expect(dialog).toContainText('1 / 1');
+
+const recorded=(drive_id:string,overall:number,attempt_number=1)=>({drive_id,status:'released',attempt_number,completed_at:`2026-11-0${attempt_number}T04:00:00Z`,report:{overall_score:overall,score_breakdown:{technical:overall-2,communication:overall+2}}});
+test('client Progress uses the student chart and metrics, refreshes and stays drive scoped',async({page},testInfo)=>{
+ const card=await progressRoster(page);let refreshed=false,requests=0;
+ await page.route('**/v3/college/students/student-history/coach?drive_id=drive-one',r=>{requests++;expect(r.request().method()).toBe('GET');return r.fulfill({json:{student_id:'student-history',drive_id:'drive-one',plans:[],cycles:[],progress_reports:[recorded('drive-one',42),recorded('drive-two',99),...(refreshed?[recorded('drive-one',68,2)]:[])],journey:{drive_id:'drive-one',progress_tracking:{modules_completed:3,questions_completed:4,questions_total:10,mock_interviews_completed:1,mock_interviews_total:3}}}})});
+ const open=card.getByRole('button',{name:'Progress for First Company Engineer',exact:true});await open.click();const dialog=page.getByRole('dialog');
+ await expect(dialog.getByRole('heading',{name:'My Improvement Journey'})).toBeVisible();
+ for(const label of ['Learning Modules Completed','Practice Questions Completed','Mock Interviews Completed'])await expect(dialog).toContainText(label);
+ await expect(dialog.locator('.s8-metric-value').nth(0)).toHaveText('3');await expect(dialog.locator('.s8-metric-value').nth(1)).toHaveText('4 / 10');
+ await expect(dialog).toContainText('1 recorded attempt');await expect(dialog).not.toContainText('99');
+ await expect(dialog.locator('.improvement-chart-scroll svg path')).toHaveCount(0);
+ refreshed=true;await dialog.getByRole('button',{name:'Refresh progress',exact:true}).click();await expect(dialog).toContainText('2 recorded attempts');
+ await expect(dialog.getByRole('button',{name:/Overall score/})).toContainText('68');
+ await dialog.getByRole('button',{name:'View detailed report'}).click();await expect(dialog.getByRole('region',{name:'Recorded interview scores'})).toContainText('Attempt 2');
  await page.screenshot({path:testInfo.outputPath('progress-desktop.png'),fullPage:true});
- await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(open).toBeFocused();
- await open.click();await expect(page.getByRole('dialog')).toContainText('70% readiness from recorded evidence');
- await page.setViewportSize({width:390,height:844});
- await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
- await page.screenshot({path:testInfo.outputPath('progress-mobile.png'),fullPage:true});
- expect(requests).toBe(3);expect(writes).toBe(0);
+ await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(open).toBeFocused();await open.click();await expect(page.getByRole('dialog')).toContainText('2 recorded attempts');
+ await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:testInfo.outputPath('progress-mobile.png'),fullPage:true});expect(requests).toBe(3);
 });
 
-test('Progress for an unassessed drive shows an honest empty state and can retry a failure',async({page})=>{
+test('client Progress shows the same empty chart and retries failed reads',async({page})=>{
  const card=await progressRoster(page);let failed=true;
- await page.route('**/v3/college/students/student-history/coach?drive_id=drive-two',r=>failed?r.fulfill({status:503,json:{detail:'Progress temporarily unavailable'}}):r.fulfill({json:{student_id:'student-history',drive_id:'drive-two',plans:[],cycles:[]}}));
- await card.getByRole('button',{name:'Progress for Second Company Analyst',exact:true}).click();
- const dialog=page.getByRole('dialog');await expect(dialog.getByRole('alert')).toBeVisible();
- failed=false;await dialog.getByRole('button',{name:'Retry progress',exact:true}).click();
- await expect(dialog).toContainText('No progress recorded for this drive');await expect(dialog).not.toContainText('Saved student goal');
+ await page.route('**/v3/college/students/student-history/coach?drive_id=drive-two',r=>failed?r.fulfill({status:503,json:{detail:'Progress temporarily unavailable'}}):r.fulfill({json:{student_id:'student-history',drive_id:'drive-two',plans:[],cycles:[],progress_reports:[],journey:null}}));
+ await card.getByRole('button',{name:'Progress for Second Company Analyst'}).click();const dialog=page.getByRole('dialog');await expect(dialog.getByRole('alert')).toBeVisible();failed=false;await dialog.getByRole('button',{name:'Retry progress'}).click();await expect(dialog).toContainText('Your first released interview score will appear here');
 });
 
-test('Progress refuses data belonging to another drive or student',async({page})=>{
- const card=await progressRoster(page);
- await page.route('**/v3/college/students/student-history/coach?drive_id=drive-one',r=>r.fulfill({json:{student_id:'other-student',drive_id:'drive-two',plans:[{id:'private',drive_id:'drive-two',summary:'Other student private progress',lessons:[]}],cycles:[]}}));
- await card.getByRole('button',{name:'Progress for First Company Engineer',exact:true}).click();
- const dialog=page.getByRole('dialog');await expect(dialog.getByRole('alert')).toContainText('does not match');
- await expect(dialog).not.toContainText('Other student private progress');
+test('client Progress refuses another student or drive response',async({page})=>{
+ const card=await progressRoster(page);await page.route('**/v3/college/students/student-history/coach?drive_id=drive-one',r=>r.fulfill({json:{student_id:'other',drive_id:'drive-two',plans:[],cycles:[],progress_reports:[recorded('drive-two',99)]}}));await card.getByRole('button',{name:'Progress for First Company Engineer'}).click();const dialog=page.getByRole('dialog');await expect(dialog.getByRole('alert')).toContainText('does not match');await expect(dialog).not.toContainText('99');
+});
+
+test('saved journey points use the same student fallback without generated attempts',async({page})=>{
+ const card=await progressRoster(page);await page.route('**/v3/college/students/student-history/coach?drive_id=drive-one',r=>r.fulfill({json:{student_id:'student-history',drive_id:'drive-one',plans:[],cycles:[],progress_reports:[],journey:{drive_id:'drive-one',progress_tracking:{modules_completed:2,trajectory_points:[{milestone:'Attempt 1',date:'2026-11-01',overall:45,technical:43,communication:47}]}}}}));await card.getByRole('button',{name:'Progress for First Company Engineer'}).click();const dialog=page.getByRole('dialog');await expect(dialog).toContainText('1 recorded attempt');await expect(dialog.getByRole('button',{name:/Overall score/})).toContainText('45');await expect(dialog.locator('.s8-metric-value').first()).toHaveText('2');
 });
 
 
-test('Progress includes the saved improvement journey without requiring an old coaching plan',async({page})=>{
- const card=await progressRoster(page);
- await page.route('**/v3/college/students/student-history/coach?drive_id=drive-one',r=>r.fulfill({json:{student_id:'student-history',drive_id:'drive-one',plans:[],cycles:[],journey:{drive_id:'drive-one',progress_tracking:{modules_completed:2,modules_total:5,plan_completed_percent:40,recorded_feedback:'Saved journey feedback'},daily_schedule:[{id:'task-1',title:'Review API validation',status:'Completed'}]}}}));
- await card.getByRole('button',{name:'Progress for First Company Engineer',exact:true}).click();
- const dialog=page.getByRole('dialog');await expect(dialog).toContainText('Progress tracking');await expect(dialog).toContainText('Saved journey feedback');await expect(dialog).toContainText('Review API validation');await expect(dialog).not.toContainText('No progress recorded');
+test('client Progress shows the student completion gate for an unfinished drive',async({page})=>{
+ const card=await progressRoster(page);await page.route('**/v3/college/students/student-history/coach?drive_id=drive-two',r=>r.fulfill({json:{student_id:'student-history',drive_id:'drive-two',journey_unlocked:false,plans:[],cycles:[],progress_reports:[],journey:null}}));await card.getByRole('button',{name:'Progress for Second Company Analyst'}).click();const dialog=page.getByRole('dialog');await expect(dialog).toContainText('Your improvement journey starts with an interview');await expect(dialog.getByRole('heading',{name:'My Improvement Journey'})).toHaveCount(0);
 });

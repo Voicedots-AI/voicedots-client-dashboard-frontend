@@ -28,6 +28,3 @@
 
 /* Reference placement: solid blue Coach action at the far right. */
 .ai-coach-placeholder,.ai-coach-placeholder:disabled{background:#0969cd;border-color:#0969cd;color:#fff;opacity:1;box-shadow:0 1px 2px #12376518}.assessment-intelligence .ai-student-actions>.ai-coach-placeholder{order:10;min-width:96px;margin-left:3px}.assessment-intelligence .ai-drive-actions>.ai-coach-placeholder{justify-self:end;background:#0969cd;border-color:#0969cd;color:#fff}
-.ai-progress-skill{padding:14px 0;border-top:1px solid #dce6f2}.ai-progress-skill h5{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-weight:600}.ai-progress-skill details{margin-top:8px}.ai-progress-skill summary{cursor:pointer}.ai-progress-skill details>div{padding:10px;background:#f5f8fc;margin-top:8px;border-radius:6px;overflow-wrap:anywhere}.ai-coach-content>button{margin-bottom:14px}
-
-.ai-progress-facts>div{padding:7px 0;border-bottom:1px solid #edf0f5}.ai-progress-facts dt{font-size:12px;font-weight:600;color:#283b51}.ai-progress-facts dd{margin:3px 0;color:#617084;font-size:12px;overflow-wrap:anywhere}.ai-progress-facts dd>div{margin-top:5px}

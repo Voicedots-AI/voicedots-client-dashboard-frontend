@@ -1,23 +1,17 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {BookOpen,CheckCircle2,RefreshCw,TrendingUp,X} from 'lucide-react';
+import {RefreshCw,TrendingUp,X} from 'lucide-react';
 import {UserFacingError} from '@/lib/userFacingError';
 import {collegeApi,collegeError} from '@/api/collegeApi';
 import {endpointMissing,type FullBundle} from './assessmentClient';
-import {displayName,formatPlacementDateTime} from './placementDisplay';
+import {DriveProgress,selectDriveTrajectory,type ProgressReport,type ProgressMetrics} from '@/shared-assessment/DriveProgress';
 import {driveHistory} from './assessmentIntelligenceData';
 
 type Lesson={session_id?:string;day?:number;title?:string;focus?:string;objective?:string;activities?:string[];scheduled_at?:string;schedule_status?:string;stage?:string;teaching_completed?:boolean;lesson_completed_at?:string;validation_status?:string;weak_sub_skills?:string[];validated_at?:string};
 type Skill={skill:string;state:string;training_stage:string;evidence_note?:string;source?:string;resume_evidence?:string;last_assessed_at?:string;drive_ready?:boolean;strong_evidence_count?:number;independent_context_count?:number;objectives?:{task_id:string;question?:string;answer?:string;status:string;feedback?:{feedback?:string;gaps?:string[]}}[]};
 type Plan={id:string;drive_id?:string;company_name?:string;role_title?:string;target_date?:string;goal?:string;summary?:string;lessons:Lesson[];skills_progress?:{score?:number;skills:Skill[]}};
-type Journey={drive_id:string;progress_tracking:Record<string,unknown>;weekly_metrics?:Record<string,unknown>;daily_schedule?:Record<string,unknown>[]};
-type ProgressData={journey?:Journey|null;student_id:string;drive_id?:string;plans:Plan[];cycles:{id:string;drive_id?:string;status?:string;call_completed_at?:string;validation_completed_at?:string}[]};
-function ProgressFacts({values}:{values:Record<string,unknown>}){
- return <dl className="ai-progress-facts">{Object.entries(values).filter(([key,value])=>value!=null&&key!=="id"&&!key.endsWith("_id")).map(([key,value])=><div key={key}><dt>{displayName(key)}</dt><dd>{Array.isArray(value)?value.length?value.map((item,index)=><div key={index}>{item&&typeof item==='object'?<ProgressFacts values={item as Record<string,unknown>}/>:String(item)}</div>):'No records yet':typeof value==='object'?<ProgressFacts values={value as Record<string,unknown>}/>:typeof value==='boolean'?value?'Yes':'No':String(value)}</dd></div>)}</dl>;
-}
-const label=(value?:string)=>value?displayName(value.replaceAll('_',' ')):'Not started';
-const skillLabel=(value:string)=>({unassessed:'Needs evaluation',strong_evidence:'Demonstrated in diagnostic',some_evidence:'Partly demonstrated',weak_evidence:'Needs improvement',validated:'Validated',drive_ready:'Drive Ready',stale_evidence:'Needs review'} as Record<string,string>)[value]||label(value);
-
+type Journey={drive_id:string;progress_tracking:ProgressMetrics&{trajectory_points?:unknown};weekly_metrics?:Record<string,unknown>;daily_schedule?:Record<string,unknown>[]};
+type ProgressData={journey_unlocked?:boolean;progress_reports?:ProgressReport[];journey?:Journey|null;student_id:string;drive_id?:string;plans:Plan[];cycles:{id:string;drive_id?:string;status?:string;call_completed_at?:string;validation_completed_at?:string}[]};
 export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBundle;driveId:string;onClose:()=>void}){
  const [result,setResult]=useState<{key:string;data?:ProgressData;error?:string}>(),[version,setVersion]=useState(0);
  const dialog=useRef<HTMLElement>(null),restoreFocus=useRef(document.activeElement as HTMLElement|null);
@@ -48,21 +42,18 @@ export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBun
   window.addEventListener('keydown',keydown,true);
   return()=>{window.removeEventListener('keydown',keydown,true);document.body.style.overflow=previous;focus?.focus()};
  },[onClose]);
- const lessons=data?.plans.flatMap(plan=>plan.lessons)||[],completed=lessons.filter(lesson=>lesson.stage==='completed').length;
+ const points=selectDriveTrajectory(data?.progress_reports||[],driveId,data?.journey?.progress_tracking?.trajectory_points);
+ const [showReports,setShowReports]=useState(false);
  return createPortal(<div className="ai-coach-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}>
   <section ref={dialog} className="ai-coach-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-progress-title">
    <header><div><span className="ai-eyebrow">STUDENT PROGRESS</span><h2 id="ai-progress-title"><TrendingUp size={21}/>Progress · {bundle.student.full_name}</h2><p>{drive?.company_name} · {drive?.role_title}</p><p>Saved learning progress and evidence from this student’s portal.</p></div><button autoFocus className="ai-button" onClick={onClose} aria-label="Close progress"><X size={18}/></button></header>
    <div className="ai-coach-content">
     <button className="ai-button" disabled={loading} onClick={()=>setVersion(value=>value+1)}><RefreshCw size={15}/>Refresh progress</button>
     {error?<div className="ai-empty ai-error" role="alert"><p>{error}</p><button className="ai-button" onClick={()=>setVersion(value=>value+1)}>Retry progress</button></div>:loading?<p role="status" className="ai-inline-loading">Loading progress…</p>:data&&<>
-     {!!data.plans.length&&<div className="ai-coach-summary"><span><BookOpen size={18}/><strong>{data.plans.length}</strong> saved plans</span><span><CheckCircle2 size={18}/><strong>{completed} / {lessons.length}</strong> lessons completed</span></div>}
-     {data.journey&&<article className="ai-coach-plan"><h3>Progress tracking</h3><ProgressFacts values={data.journey.progress_tracking}/>{data.journey.weekly_metrics&&<><h4>Weekly progress</h4><ProgressFacts values={data.journey.weekly_metrics}/></>}{!!data.journey.daily_schedule?.length&&<><h4>Daily learning schedule</h4>{data.journey.daily_schedule.map((task,index)=><section className="ai-progress-skill" key={String(task.id||index)}><ProgressFacts values={task}/></section>)}</>}</article>}
-     {!data.plans.length&&!data.journey?<div className="ai-empty"><TrendingUp size={26}/><h3>No progress recorded for this drive</h3><p>A saved plan and its progress will appear after the student creates one in their portal.</p></div>:data.plans.map(plan=><article key={plan.id} className="ai-coach-plan">
-      <h3>{plan.company_name} · {plan.role_title}</h3>{plan.target_date&&<p>Target date: {plan.target_date.slice(0,10)}</p>}{plan.goal&&<h4>{plan.goal}</h4>}{plan.summary&&<p>{plan.summary}</p>}
-      <h4>Learning plan</h4><ol>{plan.lessons.map((lesson,index)=><li key={lesson.session_id||index}><span className={`ai-status ${lesson.stage==='completed'?'good':'neutral'}`}>{label(lesson.stage)}</span><div><strong>Day {lesson.day||index+1} · {lesson.title||lesson.focus||'Lesson'}</strong>{lesson.objective&&<p>Learning objective: {lesson.objective}</p>}{lesson.activities?.map((activity,i)=><p key={i}>{activity}</p>)}<p>{lesson.schedule_status==='cancelled'?'Booking cancelled':lesson.scheduled_at?`Scheduled · ${formatPlacementDateTime(lesson.scheduled_at)}`:'Not scheduled'}</p><p>Teaching: {lesson.teaching_completed===true?'Completed':lesson.teaching_completed===false?'Not completed':'Not recorded'} · Validation: {lesson.validation_status?label(lesson.validation_status):'Not assessed'}</p>{!!lesson.weak_sub_skills?.length&&<p>Needs practice: {lesson.weak_sub_skills.join(', ')}</p>}{lesson.validated_at&&<small>Validated: {formatPlacementDateTime(lesson.validated_at)}</small>}</div></li>)}</ol>
-      <h4>What your evidence shows</h4>{plan.skills_progress? <>{typeof plan.skills_progress.score==='number'&&<p>{plan.skills_progress.score}% readiness from recorded evidence</p>}{!plan.skills_progress.skills.length&&<p>No skill assessments recorded.</p>}{plan.skills_progress.skills.map(skill=><section key={skill.skill} className="ai-progress-skill"><h5>{skill.skill} <span className="ai-status neutral">{skillLabel(skill.state)}</span></h5><p>{skill.evidence_note}</p><p>Main Resume: {skill.resume_evidence==='none'?'No evidence found':skill.resume_evidence?'Declared evidence':'Not assessed'} · Training: {label(skill.training_stage)}</p>{skill.drive_ready&&<p>Drive Ready · {skill.strong_evidence_count} independent evaluations across {skill.independent_context_count} question contexts</p>}{skill.last_assessed_at&&<p>Last assessed: {formatPlacementDateTime(skill.last_assessed_at)}</p>}{!!skill.objectives?.length&&<details><summary>Assessment details · {skill.objectives.length} tasks</summary>{skill.objectives.map(objective=><div key={objective.task_id}><strong>{objective.question||'Assessment task'}</strong><p>{skillLabel(objective.status)}</p><p>{objective.answer||'Not answered yet.'}</p>{objective.feedback?.feedback&&<p>{objective.feedback.feedback}</p>}{objective.feedback?.gaps?.map(gap=><p key={gap}>Needs work: {gap}</p>)}</div>)}</details>}</section>)}</>:<p>Skill progress is unavailable. Refresh after the progress API is updated.</p>}
-     </article>)}
-     {!!data.cycles.length&&<section className="ai-coach-plan"><h3>Focused improvement cycles</h3>{data.cycles.map(cycle=><p key={cycle.id}>{label(cycle.status)} · {cycle.call_completed_at?'Teaching completed':'Teaching not completed'} · {cycle.validation_completed_at?'Validation completed':'Validation pending'}</p>)}</section>}
+     {data.journey_unlocked===false?<section className="ai-coach-plan"><h3>Your improvement journey starts with an interview</h3><p>Complete your first interview for this placement drive to unlock your AI Coach, learning plan, practice resources and progress dashboard.</p><p>Starting an interview alone doesn’t unlock coaching. Once completed, your journey stays available for later attempts and after the drive ends.</p></section>:<>
+     <DriveProgress points={points} progressMetrics={data.journey?.progress_tracking} onReport={()=>setShowReports(value=>!value)}/>
+     {showReports&&<section className="ai-coach-plan" aria-label="Recorded interview scores"><h3>Recorded interview scores</h3>{points.length?<table><thead><tr><th>Attempt</th><th>Overall score</th><th>Technical</th><th>Communication</th></tr></thead><tbody>{points.map((point,index)=><tr key={index}><td>{point.milestone}</td><td>{point.overall}/100</td><td>{point.technical}/100</td><td>{point.communication}/100</td></tr>)}</tbody></table>:<p>No released interview scores for this drive.</p>}</section>}
+     </>}
     </>}
    </div><footer><p>Read-only. The student completes learning and validation in their own portal.</p><button className="ai-button" onClick={onClose}>Close progress</button></footer>
   </section>
