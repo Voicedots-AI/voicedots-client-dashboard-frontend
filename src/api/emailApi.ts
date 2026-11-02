@@ -27,7 +27,10 @@ const emailApi = {
   campaign: async (id: string) => (await apiClient.get(`/v3/email/campaigns/${id}`)).data,
   createCampaign: async (payload: Record<string, unknown>) => (await apiClient.post("/v3/email/campaigns", payload)).data,
   addCampaignRecipients: async (id: string, recipients: Array<Record<string, unknown>>) => (await apiClient.post(`/v3/email/campaigns/${id}/recipients`, { recipients })).data,
+  uploadRecipients: async (id: string, file: File) => { const body = new FormData(); body.append("file", file); return (await apiClient.post<{ added: number; skipped: number; total_rows: number }>(`/v3/email/campaigns/${id}/recipients/upload`, body)).data; },
   scheduleCampaign: async (id: string, scheduled_for: string) => (await apiClient.post(`/v3/email/campaigns/${id}/schedule`, { scheduled_for })).data,
+  transitionCampaign: async (id: string, action: string) => (await apiClient.post(`/v3/email/campaigns/${id}/${action}`)).data,
+  deleteCampaign: async (id: string) => (await apiClient.delete(`/v3/email/campaigns/${id}`)).data,
   automations: async () => (await apiClient.get("/v3/email/automations")).data,
   send: async (payload: Record<string, unknown>) => (await apiClient.post("/v3/email/messages/send", payload)).data,
 };

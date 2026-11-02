@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Dow
 import { phoneAgentsApi, type ClientPhoneAgent } from '@/api/phoneAgents';
 import { outboundCallsApi, type AiHealth, type OutboundAgent, type OutboundCallStatus } from '@/api/outboundCalls';
 import { outboundBatchesApi, type BatchDetails, type BatchFilters, type BatchSummary, type BatchUploadResult } from '@/api/outboundBatches';
+import CallingOverviewTab from '@/components/calling/CallingOverviewTab';
 
 const card = 'rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900';
 const input = 'mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-3 dark:border-slate-700';
@@ -32,7 +33,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 
 export default function CallingPage() {
   const [agents, setAgents] = useState<ClientPhoneAgent[]>([]), [selectedId, setSelectedId] = useState('');
-  const [outbound, setOutbound] = useState<OutboundAgent[]>([]), [tab, setTab] = useState<'campaigns' | 'single'>('campaigns');
+  const [outbound, setOutbound] = useState<OutboundAgent[]>([]), [tab, setTab] = useState<'overview' | 'campaigns' | 'single'>('overview');
   const [message, setMessage] = useState(''), [name, setName] = useState(''), [number, setNumber] = useState('');
   const [singleConsent, setSingleConsent] = useState(false), [calling, setCalling] = useState(false);
   const [batches, setBatches] = useState<BatchSummary[]>([]), [campaignName, setCampaignName] = useState('');
@@ -78,34 +79,651 @@ export default function CallingPage() {
   const exportReport = async () => { if (!details) return; setBusy(true); try { await outboundBatchesApi.downloadReport(details.id, details.campaign_name, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Report could not be exported.')); } finally { setBusy(false); } };
   const exportCampaign = async () => { if (!selectedCampaign) return; setBusy(true); try { await outboundBatchesApi.downloadCampaignReport(selectedCampaign, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Campaign report could not be exported.')); } finally { setBusy(false); } };
 
-  return <div className="space-y-6">
-    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><div><div className="font-semibold">Gemini voice status</div><div className="text-sm text-slate-500">{aiHealth?.message || 'Check AI before placing a call.'}</div></div><button onClick={checkAi} disabled={checkingAi || !ready} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50">{checkingAi ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}Check AI status</button></div>
-    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold text-slate-900 dark:text-white">AI Calling</h1><p className="mt-1 text-sm text-slate-500">Manage outbound campaigns, call history, outcomes and exports.</p></div>{agents.length > 1 && <label className="text-sm font-medium">Phone agent<select className={`${input} min-w-64`} value={selected?.id || ''} onChange={(event) => setSelectedId(event.target.value)}>{agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.display_name}</option>)}</select></label>}</div>
-    <div className="grid gap-4 sm:grid-cols-3"><div className={`${card} p-4`}><div className="text-xs text-slate-500">Status</div><div className="mt-1 flex items-center gap-2 font-bold"><CheckCircle2 size={17} className={ready ? 'text-emerald-500' : 'text-amber-500'} />{ready ? 'Ready' : selected?.status || 'Pending'}</div></div><div className={`${card} p-4`}><div className="text-xs text-slate-500">Assigned number</div><div className="mt-1 font-bold">{selected?.dids.map((did) => did.did).join(', ') || 'Pending'}</div></div><div className={`${card} p-4`}><div className="text-xs text-slate-500">Capacity</div><div className="mt-1 font-bold">{capacity} concurrent call(s)</div></div></div>
-    {!ready && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300"><strong>Outbound calls are unavailable.</strong><ul className="mt-2 list-disc pl-5">{reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>}
-    {message && <div className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">{message}</div>}
-    {activeCall && <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-200"><div className="font-semibold">Call status: {activeCall.status.replaceAll('_', ' ')}</div><div className="mt-1">{activeCallMessage}</div>{activeCall.failure_code && <div className="mt-1 text-xs opacity-80">Reference: {activeCall.id}</div>}</div>}
-    <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">{([['campaigns', 'Campaigns'], ['single', 'Single call']] as const).map(([value, label]) => <button key={value} onClick={() => setTab(value)} className={`border-b-2 px-4 py-3 text-sm font-semibold ${tab === value ? 'border-violet-600 text-violet-600' : 'border-transparent text-slate-500'}`}>{label}</button>)}</div>
+  return (
+    <div className="space-y-6">
+      {/* Upper Left Top: Phone Agent Selector */}
+      {agents.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+              Phone agent
+            </label>
+            <select
+              className="min-w-64 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 shadow-sm outline-none transition-all hover:border-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              value={selected?.id || ''}
+              onChange={(event) => setSelectedId(event.target.value)}
+            >
+              {agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.display_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
-    {tab === 'single' ? <div className="grid gap-5 lg:grid-cols-2"><section className={`${card} p-5`}><div className="flex items-center gap-2"><Phone className="text-violet-600" /><h2 className="text-lg font-bold">Place an outbound call</h2></div><div className="mt-5 space-y-4"><label className="block text-sm font-medium">Contact name<input className={input} value={name} onChange={(event) => setName(event.target.value)} placeholder="Customer name" /></label><label className="block text-sm font-medium">Phone number<input className={input} value={number} onChange={(event) => setNumber(event.target.value)} placeholder="+919876543210" /><span className="mt-1 block text-xs text-slate-500">Include country code in E.164 format.</span></label><label className="flex items-start gap-3 rounded-xl border p-3 text-sm"><input type="checkbox" className="mt-1" checked={singleConsent} onChange={(event) => setSingleConsent(event.target.checked)} /><span>I confirm this recipient consented to receive this call.</span></label><button onClick={placeCall} disabled={calling || !ready} className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 p-3 font-semibold text-white disabled:opacity-50">{calling ? <Loader2 className="animate-spin" size={18} /> : <Phone size={18} />}Start outbound call</button></div></section><section className={`${card} p-5`}><div className="flex items-center gap-2"><ShieldCheck className="text-violet-600" /><h2 className="text-lg font-bold">Call safeguards</h2></div><dl className="mt-5 space-y-4 text-sm"><div><dt className="text-slate-500">Daily call limit</dt><dd className="font-semibold">{config?.daily_limit ?? '—'}</dd></div><div><dt className="text-slate-500">Maximum duration</dt><dd className="font-semibold">{config ? `${Math.round(config.max_duration_seconds / 60)} minutes` : '—'}</dd></div><div><dt className="text-slate-500">Caller ID</dt><dd className="font-semibold">{config?.did || 'Not assigned'}</dd></div></dl></section></div>
-    : !selectedCampaign ? <div className="space-y-5"><div className="flex items-center justify-between"><div><h2 className="text-lg font-bold">Campaigns</h2><p className="text-sm text-slate-500">Open a campaign to view its upload history and call results.</p></div><div className="flex gap-2"><button title="Refresh" onClick={loadBatches} className="rounded-xl border p-2.5"><RefreshCw size={17} /></button><button onClick={() => setShowCreate((value) => !value)} className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white"><Plus size={17} />New campaign</button></div></div>
-      {showCreate && <CreateCampaign campaignName={campaignName} setCampaignName={setCampaignName} setFile={setFile} batchConsent={batchConsent} setBatchConsent={setBatchConsent} uploadResult={uploadResult} uploadBatch={uploadBatch} startBatch={startBatch} busy={busy} ready={ready} file={file} />}
-      {campaigns.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{campaigns.map((campaign) => <button key={campaign.name} onClick={() => { setSelectedCampaign(campaign.name); setDetails(null); }} className={`${card} group p-5 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700`}><div className="flex items-start justify-between gap-3"><div className="rounded-xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-950 dark:text-violet-300"><Phone size={22} /></div><StatusBadge value={campaign.status} /></div><h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{campaign.name}</h3><div className="mt-1 flex items-center gap-2 text-sm text-slate-500"><CalendarDays size={15} />Last activity {formatDate(campaign.latest)}</div><div className="my-5 grid grid-cols-3 gap-3 border-y border-slate-100 py-4 dark:border-slate-800"><Metric label="Candidates" value={campaign.total.toLocaleString()} /><Metric label="Completed" value={campaign.completed.toLocaleString()} /><Metric label="Runs" value={campaign.batches.length} /></div><div className="flex items-center justify-between text-sm"><span className="text-slate-500">{campaign.failed} call not connected · {campaign.pending} pending</span><span className="flex items-center gap-1 font-semibold text-violet-600">View campaign <ChevronRight size={16} className="transition group-hover:translate-x-1" /></span></div></button>)}</div> : <div className={`${card} p-12 text-center text-slate-500`}><FileSpreadsheet className="mx-auto mb-3" /><p className="font-semibold">No campaigns yet</p><p className="mt-1 text-sm">Create the first campaign from a consented contact sheet.</p></div>}
-    </div> : <CampaignDetails activeCampaign={activeCampaign} selectedCampaign={selectedCampaign} details={details} setDetails={setDetails} setSelectedCampaign={setSelectedCampaign} openRun={openRun} outcome={outcome} setOutcome={setOutcome} callStatus={callStatus} setCallStatus={setCallStatus} search={search} setSearch={setSearch} page={page} setPage={setPage} busy={busy} exportReport={exportReport} exportCampaign={exportCampaign} cancelBatch={cancelBatch} />}
-  </div>;
+      {/* =========================================================================
+          PREVIOUS TOP SECTION (Commented out for future use if needed)
+          ========================================================================= */}
+      {/*
+      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <div>
+          <div className="font-semibold">Gemini voice status</div>
+          <div className="text-sm text-slate-500">{aiHealth?.message || 'Check AI before placing a call.'}</div>
+        </div>
+        <button
+          onClick={checkAi}
+          disabled={checkingAi || !ready}
+          className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+        >
+          {checkingAi ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+          Check AI status
+        </button>
+      </div>
+
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">AI Calling</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage outbound campaigns, call history, outcomes and exports.</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className={`${card} p-4`}>
+          <div className="text-xs text-slate-500">Status</div>
+          <div className="mt-1 flex items-center gap-2 font-bold">
+            <CheckCircle2 size={17} className={ready ? 'text-emerald-500' : 'text-amber-500'} />
+            {ready ? 'Ready' : selected?.status || 'Pending'}
+          </div>
+        </div>
+        <div className={`${card} p-4`}>
+          <div className="text-xs text-slate-500">Assigned number</div>
+          <div className="mt-1 font-bold">{selected?.dids.map((did) => did.did).join(', ') || 'Pending'}</div>
+        </div>
+        <div className={`${card} p-4`}>
+          <div className="text-xs text-slate-500">Capacity</div>
+          <div className="mt-1 font-bold">{capacity} concurrent call(s)</div>
+        </div>
+      </div>
+
+      {!ready && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300">
+          <strong>Outbound calls are unavailable.</strong>
+          <ul className="mt-2 list-disc pl-5">
+            {reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {message && <div className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">{message}</div>}
+
+      {activeCall && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-200">
+          <div className="font-semibold">Call status: {activeCall.status.replaceAll('_', ' ')}</div>
+          <div className="mt-1">{activeCallMessage}</div>
+          {activeCall.failure_code && <div className="mt-1 text-xs opacity-80">Reference: {activeCall.id}</div>}
+        </div>
+      )}
+      */}
+
+      {/* Tabs bar: Overview | Campaigns | Single call */}
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
+        {([
+          ['overview', 'Overview'],
+          ['campaigns', 'Campaigns'],
+          ['single', 'Single call'],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setTab(value)}
+            className={`border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
+              tab === value
+                ? 'border-violet-600 text-violet-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'overview' ? (
+        <CallingOverviewTab
+          agentId={selected?.phone_agent_id || selected?.id}
+          batches={batches}
+          onOpenNewCampaign={() => {
+            setTab('campaigns');
+            setShowCreate(true);
+          }}
+          onOpenSingleCall={() => setTab('single')}
+        />
+      ) : tab === 'single' ? (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <section className={`${card} p-5`}>
+            <div className="flex items-center gap-2">
+              <Phone className="text-violet-600" />
+              <h2 className="text-lg font-bold">Place an outbound call</h2>
+            </div>
+            <div className="mt-5 space-y-4">
+              <label className="block text-sm font-medium">
+                Contact name
+                <input
+                  className={input}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Customer name"
+                />
+              </label>
+              <label className="block text-sm font-medium">
+                Phone number
+                <input
+                  className={input}
+                  value={number}
+                  onChange={(event) => setNumber(event.target.value)}
+                  placeholder="+919876543210"
+                />
+                <span className="mt-1 block text-xs text-slate-500">Include country code in E.164 format.</span>
+              </label>
+              <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={singleConsent}
+                  onChange={(event) => setSingleConsent(event.target.checked)}
+                />
+                <span>I confirm this recipient consented to receive this call.</span>
+              </label>
+              <button
+                onClick={placeCall}
+                disabled={calling || !ready}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 p-3 font-semibold text-white disabled:opacity-50"
+              >
+                {calling ? <Loader2 className="animate-spin" size={18} /> : <Phone size={18} />}
+                Start outbound call
+              </button>
+            </div>
+          </section>
+          <section className={`${card} p-5`}>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="text-violet-600" />
+              <h2 className="text-lg font-bold">Call safeguards</h2>
+            </div>
+            <dl className="mt-5 space-y-4 text-sm">
+              <div>
+                <dt className="text-slate-500">Daily call limit</dt>
+                <dd className="font-semibold">{config?.daily_limit ?? '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Maximum duration</dt>
+                <dd className="font-semibold">
+                  {config ? `${Math.round(config.max_duration_seconds / 60)} minutes` : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Caller ID</dt>
+                <dd className="font-semibold">{config?.did || 'Not assigned'}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+      ) : !selectedCampaign ? (
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">Campaigns</h2>
+              <p className="text-sm text-slate-500">Open a campaign to view its upload history and call results.</p>
+            </div>
+            <div className="flex gap-2">
+              <button title="Refresh" onClick={loadBatches} className="rounded-xl border p-2.5">
+                <RefreshCw size={17} />
+              </button>
+              <button
+                onClick={() => setShowCreate((value) => !value)}
+                className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                <Plus size={17} />New campaign
+              </button>
+            </div>
+          </div>
+          {showCreate && (
+            <CreateCampaign
+              campaignName={campaignName}
+              setCampaignName={setCampaignName}
+              setFile={setFile}
+              batchConsent={batchConsent}
+              setBatchConsent={setBatchConsent}
+              uploadResult={uploadResult}
+              uploadBatch={uploadBatch}
+              startBatch={startBatch}
+              busy={busy}
+              ready={ready}
+              file={file}
+            />
+          )}
+          {campaigns.length ? (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {campaigns.map((campaign) => (
+                <button
+                  key={campaign.name}
+                  onClick={() => {
+                    setSelectedCampaign(campaign.name);
+                    setDetails(null);
+                  }}
+                  className={`${card} group p-5 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="rounded-xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                      <Phone size={22} />
+                    </div>
+                    <StatusBadge value={campaign.status} />
+                  </div>
+                  <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{campaign.name}</h3>
+                  <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+                    <CalendarDays size={15} />Last activity {formatDate(campaign.latest)}
+                  </div>
+                  <div className="my-5 grid grid-cols-3 gap-3 border-y border-slate-100 py-4 dark:border-slate-800">
+                    <Metric label="Candidates" value={campaign.total.toLocaleString()} />
+                    <Metric label="Completed" value={campaign.completed.toLocaleString()} />
+                    <Metric label="Runs" value={campaign.batches.length} />
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">
+                      {campaign.failed} call not connected · {campaign.pending} pending
+                    </span>
+                    <span className="flex items-center gap-1 font-semibold text-violet-600">
+                      View campaign <ChevronRight size={16} className="transition group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className={`${card} p-12 text-center text-slate-500`}>
+              <FileSpreadsheet className="mx-auto mb-3" />
+              <p className="font-semibold">No campaigns yet</p>
+              <p className="mt-1 text-sm">Create the first campaign from a consented contact sheet.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <CampaignDetails
+          activeCampaign={activeCampaign}
+          selectedCampaign={selectedCampaign}
+          details={details}
+          setDetails={setDetails}
+          setSelectedCampaign={setSelectedCampaign}
+          openRun={openRun}
+          outcome={outcome}
+          setOutcome={setOutcome}
+          callStatus={callStatus}
+          setCallStatus={setCallStatus}
+          search={search}
+          setSearch={setSearch}
+          page={page}
+          setPage={setPage}
+          busy={busy}
+          exportReport={exportReport}
+          exportCampaign={exportCampaign}
+          cancelBatch={cancelBatch}
+        />
+      )}
+    </div>
+  );
 }
 
-type CreateProps = { campaignName: string; setCampaignName: (v: string) => void; setFile: (v: File | null) => void; batchConsent: boolean; setBatchConsent: (v: boolean) => void; uploadResult: BatchUploadResult | null; uploadBatch: () => void; startBatch: (id: string) => void; busy: boolean; ready: boolean; file: File | null };
+type CreateProps = {
+  campaignName: string;
+  setCampaignName: (v: string) => void;
+  setFile: (v: File | null) => void;
+  batchConsent: boolean;
+  setBatchConsent: (v: boolean) => void;
+  uploadResult: BatchUploadResult | null;
+  uploadBatch: () => void;
+  startBatch: (id: string) => void;
+  busy: boolean;
+  ready: boolean;
+  file: File | null;
+};
 function CreateCampaign(p: CreateProps) {
-  return <section className={`${card} p-5`}><div className="flex items-center gap-2"><Upload className="text-violet-600" /><h2 className="text-lg font-bold">Create campaign</h2></div><div className="mt-4 grid gap-4 lg:grid-cols-2"><label className="text-sm font-medium">Campaign name<input className={input} value={p.campaignName} onChange={(e) => p.setCampaignName(e.target.value)} placeholder="e.g. MBA Outbound" maxLength={120} /></label><div className="text-sm font-medium"><div className="flex flex-wrap items-center justify-between gap-2"><span>Contact sheet (.csv or .xlsx)</span><button type="button" onClick={() => void outboundBatchesApi.downloadTemplate()} className="flex items-center gap-1.5 rounded-lg border border-violet-200 px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30"><Download size={15} />Download Excel template</button></div><input type="file" accept=".csv,.xlsx" className={input} onChange={(e) => p.setFile(e.target.files?.[0] || null)} /><span className="mt-1 block text-xs font-normal text-slate-500">Name and Phone are required. The example row is skipped automatically.</span></div></div><label className="mt-4 flex items-start gap-3 rounded-xl border p-3 text-sm"><input type="checkbox" className="mt-1" checked={p.batchConsent} onChange={(e) => p.setBatchConsent(e.target.checked)} /><span>{consentText}</span></label><div className="mt-4 flex justify-end"><button onClick={p.uploadBatch} disabled={p.busy || !p.ready || !p.file || !p.batchConsent || !p.campaignName.trim()} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 font-semibold text-white disabled:opacity-50">{p.busy ? <Loader2 className="animate-spin" size={18} /> : <FileSpreadsheet size={18} />}Upload & validate</button></div>{p.uploadResult && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20"><div><strong>{p.uploadResult.accepted} contacts ready</strong><div className="text-sm text-slate-600 dark:text-slate-300">{p.uploadResult.rejected_count} rejected · daily limit {p.uploadResult.daily_limit}</div></div><button onClick={() => p.startBatch(p.uploadResult!.id)} disabled={p.busy} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white disabled:opacity-50">Start campaign</button></div>}</section>;
+  return (
+    <section className={`${card} p-5`}>
+      <div className="flex items-center gap-2">
+        <Upload className="text-violet-600" />
+        <h2 className="text-lg font-bold">Create campaign</h2>
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <label className="text-sm font-medium">
+          Campaign name
+          <input
+            className={input}
+            value={p.campaignName}
+            onChange={(e) => p.setCampaignName(e.target.value)}
+            placeholder="e.g. MBA Outbound"
+            maxLength={120}
+          />
+        </label>
+        <div className="text-sm font-medium">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span>Contact sheet (.csv or .xlsx)</span>
+            <button
+              type="button"
+              onClick={() => void outboundBatchesApi.downloadTemplate()}
+              className="flex items-center gap-1.5 rounded-lg border border-violet-200 px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30"
+            >
+              <Download size={15} />Download Excel template
+            </button>
+          </div>
+          <input
+            type="file"
+            accept=".csv,.xlsx"
+            className={input}
+            onChange={(e) => p.setFile(e.target.files?.[0] || null)}
+          />
+          <span className="mt-1 block text-xs font-normal text-slate-500">
+            Name and Phone are required. The example row is skipped automatically.
+          </span>
+        </div>
+      </div>
+      <label className="mt-4 flex items-start gap-3 rounded-xl border p-3 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={p.batchConsent}
+          onChange={(e) => p.setBatchConsent(e.target.checked)}
+        />
+        <span>{consentText}</span>
+      </label>
+      <div className="mt-4 flex justify-end">
+        <button
+          onClick={p.uploadBatch}
+          disabled={p.busy || !p.ready || !p.file || !p.batchConsent || !p.campaignName.trim()}
+          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 font-semibold text-white disabled:opacity-50"
+        >
+          {p.busy ? <Loader2 className="animate-spin" size={18} /> : <FileSpreadsheet size={18} />}
+          Upload & validate
+        </button>
+      </div>
+      {p.uploadResult && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+          <div>
+            <strong>{p.uploadResult.accepted} contacts ready</strong>
+            <div className="text-sm text-slate-600 dark:text-slate-300">
+              {p.uploadResult.rejected_count} rejected · daily limit {p.uploadResult.daily_limit}
+            </div>
+          </div>
+          <button
+            onClick={() => p.startBatch(p.uploadResult!.id)}
+            disabled={p.busy}
+            className="rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white disabled:opacity-50"
+          >
+            Start campaign
+          </button>
+        </div>
+      )}
+    </section>
+  );
 }
 
-type DetailProps = { activeCampaign: CampaignGroup | null; selectedCampaign: string; details: BatchDetails | null; setDetails: (v: BatchDetails | null) => void; setSelectedCampaign: (v: string | null) => void; openRun: (b: BatchSummary) => void; outcome: string; setOutcome: (v: string) => void; callStatus: string; setCallStatus: (v: string) => void; search: string; setSearch: (v: string) => void; page: number; setPage: React.Dispatch<React.SetStateAction<number>>; busy: boolean; exportReport: () => void; exportCampaign: () => void; cancelBatch: (id: string) => void };
+type DetailProps = {
+  activeCampaign: CampaignGroup | null;
+  selectedCampaign: string;
+  details: BatchDetails | null;
+  setDetails: (v: BatchDetails | null) => void;
+  setSelectedCampaign: (v: string | null) => void;
+  openRun: (b: BatchSummary) => void;
+  outcome: string;
+  setOutcome: (v: string) => void;
+  callStatus: string;
+  setCallStatus: (v: string) => void;
+  search: string;
+  setSearch: (v: string) => void;
+  page: number;
+  setPage: React.Dispatch<React.SetStateAction<number>>;
+  busy: boolean;
+  exportReport: () => void;
+  exportCampaign: () => void;
+  cancelBatch: (id: string) => void;
+};
 function CampaignDetails(p: DetailProps) {
-  return <div className="space-y-5"><button onClick={() => { p.setSelectedCampaign(null); p.setDetails(null); }} className="flex items-center gap-2 text-sm font-semibold text-violet-600"><ArrowLeft size={17} />All campaigns</button><section className={`${card} p-5`}><div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><div className="rounded-xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-950"><Phone size={22} /></div><div><h2 className="text-xl font-bold">{p.activeCampaign?.name || p.selectedCampaign}</h2><p className="text-sm text-slate-500">{p.activeCampaign?.batches.length || 0} campaign runs · {p.activeCampaign?.total.toLocaleString() || 0} candidates</p></div></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Campaign export outcome" className="rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm dark:border-slate-700" value={p.outcome} onChange={(e) => { p.setOutcome(e.target.value); p.setPage(1); }}><option value="">All outcomes</option>{OUTCOMES.map((v) => <option key={v} value={v}>{v}</option>)}</select><button onClick={p.exportCampaign} disabled={p.busy} className="flex items-center gap-2 rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><Download size={16} />{p.outcome ? `Export ${p.outcome}` : 'Export campaign'}</button><StatusBadge value={p.activeCampaign?.status || 'draft'} /></div></div></section><div><h3 className="font-bold">Campaign history</h3><p className="text-sm text-slate-500">Each card is an uploaded contact-list run within this campaign.</p></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{p.activeCampaign?.batches.map((batch, index) => <button key={batch.id} onClick={() => p.openRun(batch)} className={`${card} p-4 text-left transition hover:border-violet-300 ${p.details?.id === batch.id ? 'ring-2 ring-violet-500' : ''}`}><div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Run {p.activeCampaign!.batches.length - index}</span><StatusBadge value={batch.status} /></div><div className="mt-3 truncate font-semibold" title={batch.filename}>{batch.filename}</div><div className="mt-3 flex items-center gap-2 text-sm text-slate-500"><Users size={15} />{batch.total_contacts.toLocaleString()} candidates</div><div className="mt-1 text-xs text-slate-500">{formatDate(batch.created_at)}</div></button>)}</div>{!p.details ? <section className={`${card} p-12 text-center text-slate-500`}><FileSpreadsheet className="mx-auto mb-3" /><p>Select a history card to see candidates and outcomes.</p></section> : <RunDetails {...p} details={p.details} />}</div>;
+  return (
+    <div className="space-y-5">
+      <button
+        onClick={() => {
+          p.setSelectedCampaign(null);
+          p.setDetails(null);
+        }}
+        className="flex items-center gap-2 text-sm font-semibold text-violet-600"
+      >
+        <ArrowLeft size={17} />All campaigns
+      </button>
+      <section className={`${card} p-5`}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-950">
+              <Phone size={22} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">{p.activeCampaign?.name || p.selectedCampaign}</h2>
+              <p className="text-sm text-slate-500">
+                {p.activeCampaign?.batches.length || 0} campaign runs · {p.activeCampaign?.total.toLocaleString() || 0} candidates
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Campaign export outcome"
+              className="rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm dark:border-slate-700"
+              value={p.outcome}
+              onChange={(e) => {
+                p.setOutcome(e.target.value);
+                p.setPage(1);
+              }}
+            >
+              <option value="">All outcomes</option>
+              {OUTCOMES.map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+            <button
+              onClick={p.exportCampaign}
+              disabled={p.busy}
+              className="flex items-center gap-2 rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              <Download size={16} />{p.outcome ? `Export ${p.outcome}` : 'Export campaign'}
+            </button>
+            <StatusBadge value={p.activeCampaign?.status || 'draft'} />
+          </div>
+        </div>
+      </section>
+      <div>
+        <h3 className="font-bold">Campaign history</h3>
+        <p className="text-sm text-slate-500">Each card is an uploaded contact-list run within this campaign.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {p.activeCampaign?.batches.map((batch, index) => (
+          <button
+            key={batch.id}
+            onClick={() => p.openRun(batch)}
+            className={`${card} p-4 text-left transition hover:border-violet-300 ${
+              p.details?.id === batch.id ? 'ring-2 ring-violet-500' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Run {p.activeCampaign!.batches.length - index}
+              </span>
+              <StatusBadge value={batch.status} />
+            </div>
+            <div className="mt-3 truncate font-semibold" title={batch.filename}>{batch.filename}</div>
+            <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+              <Users size={15} />{batch.total_contacts.toLocaleString()} candidates
+            </div>
+            <div className="mt-1 text-xs text-slate-500">{formatDate(batch.created_at)}</div>
+          </button>
+        ))}
+      </div>
+      {!p.details ? (
+        <section className={`${card} p-12 text-center text-slate-500`}>
+          <FileSpreadsheet className="mx-auto mb-3" />
+          <p>Select a history card to see candidates and outcomes.</p>
+        </section>
+      ) : (
+        <RunDetails {...p} details={p.details} />
+      )}
+    </div>
+  );
 }
 
 function RunDetails(p: DetailProps & { details: BatchDetails }) {
   const d = p.details;
-  return <section className={`${card} min-w-0 overflow-hidden`}><div className="border-b p-5 dark:border-slate-800"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h2 className="text-lg font-bold">{d.filename}</h2><StatusBadge value={d.status} /></div><p className="mt-1 text-sm text-slate-500">{d.agent_name} · {d.total_contacts.toLocaleString()} candidates</p></div><div className="flex gap-2"><button onClick={p.exportReport} disabled={p.busy || !d.report_ready} className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-50"><Download size={16} />{p.outcome || p.callStatus ? 'Export filtered CSV' : 'Export all CSV'}</button>{d.status === 'running' && <button onClick={() => p.cancelBatch(d.id)} disabled={p.busy} className="flex items-center gap-2 rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><Square size={14} />Cancel</button>}</div></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className="h-full bg-violet-600" style={{ width: `${d.progress_percent}%` }} /></div><div className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-slate-500"><span>{d.progress_percent}% · {d.completed_contacts}/{d.total_contacts} processed</span><span>Connected {d.call_status_counts.connected || 0} · Call not connected {d.call_status_counts.failed || 0}</span></div></div><div className="grid gap-3 border-b bg-slate-50 p-4 sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-950"><label className="text-xs font-semibold">Outcome<select className={input} value={p.outcome} onChange={(e) => { p.setOutcome(e.target.value); p.setPage(1); }}><option value="">All outcomes</option>{OUTCOMES.map((v) => <option key={v} value={v}>{v} ({d.outcome_counts[v] || 0})</option>)}</select></label><label className="text-xs font-semibold">Call status<select className={input} value={p.callStatus} onChange={(e) => { p.setCallStatus(e.target.value); p.setPage(1); }}><option value="">All statuses</option>{CALL_STATUSES.filter((v) => d.call_status_counts[v]).map((v) => <option key={v} value={v}>{statusLabel(v)} ({d.call_status_counts[v]})</option>)}</select></label><label className="text-xs font-semibold">Find candidate<input className={input} value={p.search} onChange={(e) => { p.setSearch(e.target.value); p.setPage(1); }} placeholder="Name or phone" /></label></div><div className="overflow-auto"><table className="w-full min-w-[860px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800"><tr><th className="p-3">#</th><th className="p-3">Candidate</th><th className="p-3">Phone</th><th className="p-3">Call status</th><th className="p-3">Outcome</th><th className="p-3">Conversation</th></tr></thead><tbody>{d.contacts.map((c) => <tr key={c.row_number} className="border-t dark:border-slate-800"><td className="p-3 text-slate-500">{c.row_number}</td><td className="p-3 font-medium">{c.contact_name}</td><td className="p-3">{c.destination}</td><td className="p-3"><StatusBadge value={c.call_status || c.status} /></td><td className="p-3 font-medium">{c.outcome}</td><td className="p-3">{c.conversation_id ? <a className="font-semibold text-violet-600 hover:underline" href={`/dashboard/conversations/${c.conversation_id}`}>View transcript</a> : '—'}</td></tr>)}</tbody></table>{!d.contacts.length && <div className="p-10 text-center text-sm text-slate-500">No candidates match these filters.</div>}</div><div className="flex flex-wrap items-center justify-between gap-3 border-t p-4 text-sm dark:border-slate-800"><span className="text-slate-500">{d.filtered_total.toLocaleString()} matching candidate(s)</span><div className="flex items-center gap-2"><button disabled={p.page === 1} onClick={() => p.setPage((v) => Math.max(1, v - 1))} className="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button><span>Page {p.page} of {Math.max(1, Math.ceil(d.filtered_total / d.limit))}</span><button disabled={p.page * d.limit >= d.filtered_total} onClick={() => p.setPage((v) => v + 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">Next</button></div></div>{(d.counts.failed || 0) > 0 && <div className="flex items-start gap-2 border-t bg-amber-50 p-3 text-xs text-amber-800 dark:border-slate-800 dark:bg-amber-950/20 dark:text-amber-300"><AlertTriangle size={15} className="mt-0.5 shrink-0" />Contacts whose calls did not connect remain available as a filtered retry list.</div>}</section>;
+  return (
+    <section className={`${card} min-w-0 overflow-hidden`}>
+      <div className="border-b p-5 dark:border-slate-800">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold">{d.filename}</h2>
+              <StatusBadge value={d.status} />
+            </div>
+            <p className="mt-1 text-sm text-slate-500">{d.agent_name} · {d.total_contacts.toLocaleString()} candidates</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={p.exportReport}
+              disabled={p.busy || !d.report_ready}
+              className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              <Download size={16} />{p.outcome || p.callStatus ? 'Export filtered CSV' : 'Export all CSV'}
+            </button>
+            {d.status === 'running' && (
+              <button
+                onClick={() => p.cancelBatch(d.id)}
+                disabled={p.busy}
+                className="flex items-center gap-2 rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                <Square size={14} />Cancel
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-violet-600" style={{ width: `${d.progress_percent}%` }} />
+        </div>
+        <div className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-slate-500">
+          <span>{d.progress_percent}% · {d.completed_contacts}/{d.total_contacts} processed</span>
+          <span>Connected {d.call_status_counts.connected || 0} · Call not connected {d.call_status_counts.failed || 0}</span>
+        </div>
+      </div>
+      <div className="grid gap-3 border-b bg-slate-50 p-4 sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-950">
+        <label className="text-xs font-semibold">
+          Outcome
+          <select
+            className={input}
+            value={p.outcome}
+            onChange={(e) => {
+              p.setOutcome(e.target.value);
+              p.setPage(1);
+            }}
+          >
+            <option value="">All outcomes</option>
+            {OUTCOMES.map((v) => (
+              <option key={v} value={v}>{v} ({d.outcome_counts[v] || 0})</option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-semibold">
+          Call status
+          <select
+            className={input}
+            value={p.callStatus}
+            onChange={(e) => {
+              p.setCallStatus(e.target.value);
+              p.setPage(1);
+            }}
+          >
+            <option value="">All statuses</option>
+            {CALL_STATUSES.filter((v) => d.call_status_counts[v]).map((v) => (
+              <option key={v} value={v}>{statusLabel(v)} ({d.call_status_counts[v]})</option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-semibold">
+          Find candidate
+          <input
+            className={input}
+            value={p.search}
+            onChange={(e) => {
+              p.setSearch(e.target.value);
+              p.setPage(1);
+            }}
+            placeholder="Name or phone"
+          />
+        </label>
+      </div>
+      <div className="overflow-auto">
+        <table className="w-full min-w-[860px] text-left text-sm">
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800">
+            <tr>
+              <th className="p-3">#</th>
+              <th className="p-3">Candidate</th>
+              <th className="p-3">Phone</th>
+              <th className="p-3">Call status</th>
+              <th className="p-3">Outcome</th>
+              <th className="p-3">Conversation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {d.contacts.map((c) => (
+              <tr key={c.row_number} className="border-t dark:border-slate-800">
+                <td className="p-3 text-slate-500">{c.row_number}</td>
+                <td className="p-3 font-medium">{c.contact_name}</td>
+                <td className="p-3">{c.destination}</td>
+                <td className="p-3"><StatusBadge value={c.call_status || c.status} /></td>
+                <td className="p-3 font-medium">{c.outcome}</td>
+                <td className="p-3">
+                  {c.conversation_id ? (
+                    <a className="font-semibold text-violet-600 hover:underline" href={`/dashboard/conversations/${c.conversation_id}`}>
+                      View transcript
+                    </a>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!d.contacts.length && <div className="p-10 text-center text-sm text-slate-500">No candidates match these filters.</div>}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4 text-sm dark:border-slate-800">
+        <span className="text-slate-500">{d.filtered_total.toLocaleString()} matching candidate(s)</span>
+        <div className="flex items-center gap-2">
+          <button
+            disabled={p.page === 1}
+            onClick={() => p.setPage((v) => Math.max(1, v - 1))}
+            className="rounded-lg border px-3 py-2 disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <span>Page {p.page} of {Math.max(1, Math.ceil(d.filtered_total / d.limit))}</span>
+          <button
+            disabled={p.page * d.limit >= d.filtered_total}
+            onClick={() => p.setPage((v) => v + 1)}
+            className="rounded-lg border px-3 py-2 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+      {(d.counts.failed || 0) > 0 && (
+        <div className="flex items-start gap-2 border-t bg-amber-50 p-3 text-xs text-amber-800 dark:border-slate-800 dark:bg-amber-950/20 dark:text-amber-300">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          Contacts whose calls did not connect remain available as a filtered retry list.
+        </div>
+      )}
+    </section>
+  );
 }

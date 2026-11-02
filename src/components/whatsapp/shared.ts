@@ -62,6 +62,7 @@ const TEMPLATE_STATUS: Record<string, string> = {
 };
 const CAMPAIGN_STATUS: Record<string, string> = {
   draft: "Draft",
+  scheduled: "Scheduled",
   running: "Sending",
   completed: "Completed",
   completed_with_errors: "Completed with errors",

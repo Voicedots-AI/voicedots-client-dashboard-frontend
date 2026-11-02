@@ -78,6 +78,7 @@ export type Campaign = {
   read_rate?: number | null;
   counts: Record<string, number>;
   progress_percent: number;
+  scheduled_for?: string | null;
   created_at: string;
 };
 export type Contact = {
@@ -276,11 +277,12 @@ export const whatsappApi = {
       .data,
   preview: async (id: string) =>
     (await apiClient.post<Preview>(`${base}/campaigns/${id}/preview`)).data,
-  start: async (id: string, consent_declaration: string) =>
+  start: async (id: string, consent_declaration: string, scheduled_for?: string) =>
     (
       await apiClient.post(`${base}/campaigns/${id}/start`, {
         consent_confirmed: true,
         consent_declaration,
+        scheduled_for: scheduled_for || undefined,
       })
     ).data,
   cancel: async (id: string) =>
