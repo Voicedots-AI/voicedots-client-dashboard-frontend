@@ -701,7 +701,7 @@ function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;c
   const current = assessment?.scope === scope ? assessment : undefined;
   const row = current?.row;
   const score = row?.ats_status === "evaluated" && typeof row.ats_fit_score === "number" && Number.isFinite(row.ats_fit_score) && row.ats_fit_score >= 0 && row.ats_fit_score <= 100 ? row.ats_fit_score : null;
-  // Presentation only: 50 is the requested tint threshold, never an eligibility rule.
+  // Match the drive cutoff; a blank cutoff imposes no ATS restriction.
   const tone = score === null ? "neutral" : score >= 50 ? "green" : "red";
   const rows=row?.skills||[];
   const matched=rows.filter(row=>['FULL_MATCH','RELATED_EVIDENCE'].includes(String(row.match_status)));
@@ -1100,7 +1100,7 @@ function DriveSettings({
       "Eligibility",
       [
         ["Minimum CGPA", drive.criteria_min_cgpa ?? "Not restricted"],
-        ["Minimum ATS Fit",drive.criteria_ats_fit==null?"Default (50%)":`${drive.criteria_ats_fit}%`],
+        ["Minimum ATS Fit",drive.criteria_ats_fit==null?"No minimum":`${drive.criteria_ats_fit}%`],
         ["Minimum interview score",drive.criteria_interview_score==null?"Not restricted":`${drive.criteria_interview_score}%`],
         ["Programs", drive.criteria_programs?.join(", ") || "All programs"],
         [
