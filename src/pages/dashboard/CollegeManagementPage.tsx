@@ -328,6 +328,7 @@ export default function CollegeManagementPage() {
   if (creating)
     return (
       <CreateDriveWizard
+        key={draftId||'new'}
         programs={programs}
         collegeTimezone={PLACEMENT_TIME_ZONE}
         draftId={draftId}
@@ -456,10 +457,11 @@ export default function CollegeManagementPage() {
           create={() =>
             setParams((p) => {
               p.set("create", "1");
+              p.delete("draft");
               return p;
             })
           }
-          resumeDraft={(id) => setParams((p) => { p.set("create", "1"); if(id==="local-device")p.delete("draft");else p.set("draft", id); return p; })}
+          resumeDraft={(id) => setParams((p) => { p.set("create", "1"); p.set("draft", id); return p; })}
           deleteDraft={deleteSavedDraft}
           manage={(id) =>
             setParams((p) => {
