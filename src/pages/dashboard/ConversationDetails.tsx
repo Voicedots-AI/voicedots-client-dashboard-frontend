@@ -18,7 +18,8 @@ import { UI } from "@/ui/colors";
 import type { GetConversationDetailsResult } from "@/types/conversation.types";
 import { ConversationAudioPlayer } from "@/components/ConversationAudioPlayer";
 import { useAuth } from "@/context/AuthContext";
-import {outboundCallsApi,type OutboundAgent} from "@/api/outboundCalls";
+import {outboundCallsApi,type OutboundAgent,type OutboundCallStatus} from "@/api/outboundCalls";
+import {OutboundCallTracker} from "@/components/calling/OutboundCallTracker";
 
 const logoIcon = "/voicedotslogo.svg";
 
@@ -43,6 +44,15 @@ export function ConversationDetails() {
   const [consent,setConsent]=useState(false);
   const [callStatus,setCallStatus]=useState("");
   const [calling,setCalling]=useState(false);
+  const [activeCall,setActiveCall]=useState<OutboundCallStatus|null>(null);
+
+  useEffect(() => {
+    if (!activeCall || ['connected', 'failed', 'blocked'].includes(activeCall.status)) return;
+    const timer = window.setInterval(() => {
+      outboundCallsApi.status(activeCall.id).then(setActiveCall).catch(() => undefined);
+    }, 1500);
+    return () => window.clearInterval(timer);
+  }, [activeCall]);
 
   useEffect(() => {
     async function fetchConversationDetails() {
@@ -78,8 +88,8 @@ export function ConversationDetails() {
   const source = stateSource || dataSource;
   const isWebsite = source !== undefined && source !== null && source !== "phone_call" && source !== "phone";
   const showLeadInfo = hasPhone && !isWebsite;
-  const openCall=()=>{setCallNumber(leadPhone);setCallStatus('');setConsent(false);setShowCall(true)};
-  const placeCall=async()=>{if(!id||!outboundAgent)return;setCalling(true);setCallStatus('');try{const result=await outboundCallsApi.create({phone_agent_id:outboundAgent.id,destination:callNumber,contact_name:lead?.name||'DSCET enquiry',consent_confirmed:consent,conversation_id:id});setCallStatus(`Call queued successfully (${result.id}).`)}catch(e:any){const d=e.response?.data?.detail;setCallStatus(typeof d==='string'?d:d?.reasons?.join(' · ')||d?.message||'Unable to place the call.')}finally{setCalling(false)}};
+  const openCall=()=>{setCallNumber(leadPhone);setCallStatus('');setActiveCall(null);setConsent(false);setShowCall(true)};
+  const placeCall=async()=>{if(!id||!outboundAgent)return;setCalling(true);setCallStatus('');try{const result=await outboundCallsApi.create({phone_agent_id:outboundAgent.id,destination:callNumber,contact_name:lead?.name||'DSCET enquiry',consent_confirmed:consent,conversation_id:id});setActiveCall({id:result.id,status:'queued',contact_name:lead?.name||'DSCET enquiry',created_at:new Date().toISOString(),updated_at:new Date().toISOString(),user_message:result.user_message});setCallStatus(`Call queued successfully (${result.id}).`)}catch(e:any){const d=e.response?.data?.detail;setCallStatus(typeof d==='string'?d:d?.reasons?.join(' · ')||d?.message||'Unable to place the call.')}finally{setCalling(false)}};
 
   return (
     <div className="flex flex-col bg-white dark:bg-slate-900">
@@ -210,7 +220,7 @@ export function ConversationDetails() {
           </div>
         </div>
       )}
-      {showCall&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"><div className="flex items-start justify-between"><div><h2 className="text-xl font-bold dark:text-slate-100">Outbound follow-up</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The dedicated follow-up agent will receive a secure summary and recent turns from this conversation.</p></div><button onClick={()=>setShowCall(false)}><X/></button></div><div className="mt-5 space-y-4"><label className="block text-sm font-medium dark:text-slate-200">Contact<input value={lead?.name||'DSCET enquiry'} readOnly className="mt-1 w-full rounded-lg border bg-slate-50 p-3 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"/></label><label className="block text-sm font-medium dark:text-slate-200">Phone number<input value={callNumber} onChange={e=>setCallNumber(e.target.value)} placeholder="+919876543210" className="mt-1 w-full rounded-lg border bg-transparent p-3 dark:border-slate-700 dark:text-slate-100"/><span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Review the number and include its country code.</span></label><div className="rounded-lg border bg-violet-50 p-3 text-sm text-violet-900 dark:bg-violet-950/30 dark:text-violet-200"><strong>Context included:</strong> lead name and summary plus up to the latest 20 transcript turns. Audio and unrelated conversations are never sent.</div><label className="flex items-start gap-3 rounded-lg border p-3 text-sm dark:border-slate-700 dark:text-slate-200"><input type="checkbox" className="mt-1" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>I confirm this person consented to this follow-up call.</span></label>{callStatus&&<p className="rounded-lg bg-slate-100 p-3 text-sm dark:bg-slate-800 dark:text-slate-200">{callStatus}</p>}<button onClick={placeCall} disabled={calling||!consent||!callNumber} className="flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 p-3 font-semibold text-white disabled:opacity-40">{calling?<Loader2 className="animate-spin" size={18}/>:<PhoneCall size={18}/>}Place follow-up call</button></div></div></div>}
+      {showCall&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"><div className="flex items-start justify-between"><div><h2 className="text-xl font-bold dark:text-slate-100">Outbound follow-up</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The dedicated follow-up agent will receive a secure summary and recent turns from this conversation.</p></div><button onClick={()=>setShowCall(false)}><X/></button></div>{activeCall ? (<div className="mt-5 space-y-4"><OutboundCallTracker call={activeCall} contactName={lead?.name || 'DSCET enquiry'} destination={callNumber} /><button onClick={()=>{setActiveCall(null);setCallStatus('');}} className="w-full rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">New call / Back to form</button></div>) : (<div className="mt-5 space-y-4"><label className="block text-sm font-medium dark:text-slate-200">Contact<input value={lead?.name||'DSCET enquiry'} readOnly className="mt-1 w-full rounded-lg border bg-slate-50 p-3 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"/></label><label className="block text-sm font-medium dark:text-slate-200">Phone number<input value={callNumber} onChange={e=>setCallNumber(e.target.value)} placeholder="+919876543210" className="mt-1 w-full rounded-lg border bg-transparent p-3 dark:border-slate-700 dark:text-slate-100"/><span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Review the number and include its country code.</span></label><div className="rounded-lg border bg-violet-50 p-3 text-sm text-violet-900 dark:bg-violet-950/30 dark:text-violet-200"><strong>Context included:</strong> lead name and summary plus up to the latest 20 transcript turns. Audio and unrelated conversations are never sent.</div><label className="flex items-start gap-3 rounded-lg border p-3 text-sm dark:border-slate-700 dark:text-slate-200"><input type="checkbox" className="mt-1" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>I confirm this person consented to this follow-up call.</span></label>{callStatus&&<p className="rounded-lg bg-slate-100 p-3 text-sm dark:bg-slate-800 dark:text-slate-200">{callStatus}</p>}<button onClick={placeCall} disabled={calling||!consent||!callNumber} className="flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 p-3 font-semibold text-white disabled:opacity-40">{calling?<Loader2 className="animate-spin" size={18}/>:<PhoneCall size={18}/>}Place follow-up call</button></div>)}</div></div>}
     </div>
   );
 }
