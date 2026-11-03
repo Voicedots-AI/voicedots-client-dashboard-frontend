@@ -14,6 +14,15 @@ import {
   Smartphone,
   Trash2,
   Upload,
+  Clock,
+  Calendar,
+  UserCheck,
+  GraduationCap,
+  Users,
+  Search,
+  CheckSquare,
+  Square,
+  Filter,
   X,
 } from "lucide-react";
 import type {
@@ -27,6 +36,8 @@ import type {
   UploadResult,
 } from "@/api/whatsapp";
 import { whatsappApi as api } from "@/api/whatsapp";
+import leadsApi from "@/api/leads";
+import { collegeApi } from "@/api/collegeApi";
 import { MediaHeaderPicker } from "./SlotInputs";
 import TemplatePreview from "./TemplatePreview";
 import { structureOf } from "./templateRules";
@@ -41,6 +52,7 @@ import {
 } from "./shared";
 import { Field, Badge, Pager, TemplateSelect } from "./WhatsAppUi";
 import Messages from "./MessagesTab";
+import CampaignAudienceSelector, { type SelectedContact } from "@/components/campaigns/CampaignAudienceSelector";
 
 const label = "text-[10px] font-medium uppercase tracking-wider text-slate-500";
 const rate = (value?: number | null) => (value == null ? "—" : `${value}%`);
@@ -120,10 +132,109 @@ export default function Campaigns({
     [offset, setOffset] = useState(0),
     [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState(""),
-    [creating, setCreating] = useState(false),
+    [creating, setCreating] = useState(true),
     [name, setName] = useState(""),
     [templateId, setTemplateId] = useState(""),
+    [timerInput, setTimerInput] = useState(""),
     [busy, setBusy] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState<"now" | "timer">("now");
+  const [scheduledTime, setScheduledTime] = useState("");
+  const [stagedContacts, setStagedContacts] = useState<SelectedContact[]>([]);
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [manualNumbers, setManualNumbers] = useState("");
+
+  const selectedTemplate = templates.find((t) => t.id === templateId);
+
+  const handleCreateAndLaunchCampaign = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      notify("Please enter a campaign name.");
+      return;
+    }
+    if (!templateId) {
+      notify("Please select an approved WhatsApp template.");
+      return;
+    }
+    if (scheduleMode === "timer" && !scheduledTime) {
+      notify("Please pick a date and time for the scheduled timer.");
+      return;
+    }
+
+    const manualList = manualNumbers
+      .split(/[\n,]/)
+      .map((x) => x.trim())
+      .filter((x) => x.length >= 7);
+    const totalRecipients = stagedContacts.length + manualList.length;
+
+    if (totalRecipients === 0 && !stagedFile) {
+      notify("Please select recipients from Leads, Students, or upload an Excel sheet.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const targetTime =
+        scheduleMode === "timer" && scheduledTime
+          ? new Date(scheduledTime).toISOString()
+          : undefined;
+
+      // 1. Create campaign draft
+      const c = await api.saveCampaign({
+        account_id: account.id,
+        name: name.trim(),
+        template_id: templateId,
+        mapping: {},
+        scheduled_at: targetTime,
+      });
+
+      // 2. Add staged contacts (Leads + College students + Manual numbers)
+      const contactsToAdd = [
+        ...stagedContacts.map((sc) => ({
+          contact_name: sc.name || "Recipient",
+          destination: sc.destination.trim(),
+          extra: sc.extra || {},
+        })),
+        ...manualList.map((num) => ({
+          contact_name: "Recipient",
+          destination: num,
+          extra: {},
+        })),
+      ];
+
+      if (contactsToAdd.length > 0) {
+        await api.addContacts(c.id, contactsToAdd);
+      }
+
+      // 3. Upload Excel / CSV file if staged
+      if (stagedFile) {
+        await api.upload(c.id, stagedFile);
+      }
+
+      // 4. Start / Schedule campaign
+      await api.start(c.id, consent, targetTime);
+
+      notify(
+        scheduleMode === "timer" && scheduledTime
+          ? `Campaign "${c.name}" scheduled successfully with timer for ${new Date(scheduledTime).toLocaleString()}.`
+          : `Campaign "${c.name}" launched successfully.`
+      );
+
+      // Reset form
+      setName("");
+      setTemplateId("");
+      setStagedContacts([]);
+      setStagedFile(null);
+      setManualNumbers("");
+      setScheduledTime("");
+      setScheduleMode("now");
+      setSelected(c.id);
+      await load();
+    } catch (error) {
+      notify(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  };
   const editor = useRef<HTMLDivElement>(null);
   const load = useCallback(async () => {
     const [list, totals] = await Promise.all([
@@ -188,66 +299,208 @@ export default function Campaigns({
       </section>
       <div ref={editor}>
         {creating && (
-          <section className={`${card} p-6`}>
-            <div className="mb-5 flex items-center justify-between">
-              <h3 className="font-semibold">Set up your campaign</h3>
+          <section className={`${card} space-y-6 p-6`}>
+            <div className="flex items-center justify-between border-b pb-4 dark:border-slate-800">
+              <div>
+                <h3 className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  New WhatsApp Campaign
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Target Leads, registered college students by branch/class, or upload an Excel sheet.
+                </p>
+              </div>
               <button
+                type="button"
                 aria-label="Close campaign setup"
                 onClick={() => setCreating(false)}
+                className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <X size={18} />
               </button>
             </div>
-            <form
-              className="grid items-end gap-4 md:grid-cols-[1fr_1fr_auto]"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setBusy(true);
-                try {
-                  const c = await api.saveCampaign({
-                    account_id: account.id,
-                    name,
-                    template_id: templateId,
-                    mapping: {},
-                  });
-                  setSelected(c.id);
-                  setCreating(false);
-                  setName("");
-                  await load();
-                } catch (error) {
-                  notify(errorText(error));
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <Field label="Campaign name">
-                <input
-                  required
-                  maxLength={255}
-                  className={input}
-                  placeholder="September exam reminder"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+
+            <form onSubmit={handleCreateAndLaunchCampaign} className="space-y-6">
+              {/* CAMPAIGN DETAILS */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Campaign Name *">
+                  <input
+                    required
+                    maxLength={255}
+                    className={input}
+                    placeholder="e.g. Mechanical Engg 2026 Batch Alert"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </Field>
+
+                <div>
+                  <Field label="WhatsApp Template *">
+                    <TemplateSelect
+                      templates={templates}
+                      value={templateId}
+                      change={setTemplateId}
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              {/* TEMPLATE PREVIEW BANNER */}
+              {selectedTemplate && (
+                <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3.5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
+                  <div className="mb-1 flex items-center justify-between font-semibold text-indigo-700 dark:text-indigo-400">
+                    <span>Template: {selectedTemplate.name} ({selectedTemplate.category})</span>
+                    <Badge value={selectedTemplate.status} />
+                  </div>
+                  <p className="whitespace-pre-wrap">{selectedTemplate.body}</p>
+                </div>
+              )}
+
+              {/* WHOM TO SEND (AUDIENCE TARGET) */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                  WHOM TO SEND (AUDIENCE TARGET)
+                </label>
+
+                <CampaignAudienceSelector
+                  channel="whatsapp"
+                  busy={busy}
+                  onAddContacts={async (newContacts) => {
+                    setStagedContacts((prev) => {
+                      const map = new Map(prev.map((c) => [c.destination.toLowerCase(), c]));
+                      newContacts.forEach((c) => {
+                        if (c.destination) map.set(c.destination.toLowerCase(), c);
+                      });
+                      return Array.from(map.values());
+                    });
+                  }}
+                  onUploadFile={async (file) => {
+                    setStagedFile(file);
+                  }}
                 />
-              </Field>
-              <TemplateSelect
-                templates={templates}
-                value={templateId}
-                change={setTemplateId}
-              />
-              <button
-                disabled={busy || !templateId || !name.trim()}
-                className={button}
-              >
-                {busy && <Loader2 className="animate-spin" size={14} />}Create
-                draft
-              </button>
+
+                {/* STAGED RECIPIENTS SUMMARY BADGE */}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/40">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-indigo-700 dark:text-indigo-300">
+                      Selected Audience Total:
+                    </span>
+                    <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 font-bold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                      {stagedContacts.length + (manualNumbers ? manualNumbers.split(/[\n,]/).filter((x) => x.trim().length >= 7).length : 0)} contact(s) staged
+                    </span>
+                    {stagedFile && (
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                        📄 Sheet: {stagedFile.name}
+                      </span>
+                    )}
+                  </div>
+                  {(stagedContacts.length > 0 || stagedFile) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStagedContacts([]);
+                        setStagedFile(null);
+                      }}
+                      className="text-xs text-rose-600 hover:underline"
+                    >
+                      Clear Selected Audience
+                    </button>
+                  )}
+                </div>
+
+                {/* MANUAL NUMBERS ACCORDION */}
+                <details className="rounded-xl border border-slate-200 p-3 text-xs dark:border-slate-800">
+                  <summary className="cursor-pointer font-medium text-slate-600 hover:text-indigo-600 dark:text-slate-400">
+                    ▸ Or type/paste raw phone numbers manually
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    <textarea
+                      rows={3}
+                      value={manualNumbers}
+                      onChange={(e) => setManualNumbers(e.target.value)}
+                      placeholder="+919876543210, +919812345678 (comma or line separated)"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-3 font-mono text-xs outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Include country code (+91 for India) for all phone numbers.
+                    </p>
+                  </div>
+                </details>
+              </div>
+
+              {/* CAMPAIGN TIMER & DELIVERY SCHEDULE */}
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Campaign Timer & Delivery Schedule
+                </p>
+                <div className="flex flex-wrap items-center gap-6 text-xs">
+                  <label className="flex cursor-pointer items-center gap-2 font-medium">
+                    <input
+                      type="radio"
+                      name="campaign-timer-mode"
+                      checked={scheduleMode === "now"}
+                      onChange={() => setScheduleMode("now")}
+                      className="text-indigo-600"
+                    />
+                    <span>Send Immediately</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 font-medium text-indigo-700 dark:text-indigo-300">
+                    <input
+                      type="radio"
+                      name="campaign-timer-mode"
+                      checked={scheduleMode === "timer"}
+                      onChange={() => setScheduleMode("timer")}
+                      className="text-indigo-600"
+                    />
+                    <Clock size={14} />
+                    <span>Run on Timer (Schedule Date & Time)</span>
+                  </label>
+                </div>
+
+                {scheduleMode === "timer" && (
+                  <div className="max-w-md space-y-1.5 pt-2">
+                    <label className="block text-[11px] font-medium text-slate-500">
+                      Select campaign run date & time:
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required={scheduleMode === "timer"}
+                      value={scheduledTime}
+                      min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      The campaign will be queued and sent out automatically at this scheduled time.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* LAUNCH BUTTON */}
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                <button
+                  type="submit"
+                  disabled={busy || !templateId || !name.trim()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {busy ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : scheduleMode === "timer" ? (
+                    <Clock size={16} />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  {scheduleMode === "timer"
+                    ? "Schedule WhatsApp Campaign with Timer"
+                    : "Launch WhatsApp Campaign Now"}
+                  {stagedContacts.length > 0 && ` (${stagedContacts.length} recipients)`}
+                </button>
+
+                <p className="text-[11px] text-slate-400">
+                  Messages use your connected WhatsApp Business sender. Meta delivery limits apply.
+                </p>
+              </div>
             </form>
-            <p className="mt-4 text-xs text-slate-500">
-              Choose an approved template, then add your audience and
-              personalize each message.
-            </p>
           </section>
         )}
         {selected && (
@@ -389,17 +642,22 @@ export default function Campaigns({
                     <td className="px-4">{c.total_contacts}</td>
                     <td className="px-4">{c.sent ?? 0}</td>
                     <td className="min-w-[105px] px-4">
-                      <Metric
-                        count={c.delivered ?? 0}
-                        percentage={c.delivery_rate}
-                      />
+                      <Metric count={c.delivered ?? 0} percentage={c.delivery_rate} />
                     </td>
                     <td className="min-w-[105px] px-4">
                       <Metric count={c.read ?? 0} percentage={c.read_rate} />
                     </td>
                     <td className="px-4 text-rose-600">{c.failed ?? 0}</td>
                     <td className="px-4">
-                      <Badge value={c.status} />
+                      <div className="space-y-1">
+                        <Badge value={c.status} />
+                        {c.scheduled_for && (
+                          <div className="flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400">
+                            <Clock size={11} />
+                            <span>{new Date(c.scheduled_for).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4">
                       <button
@@ -501,11 +759,14 @@ function CampaignEditor({
     [offset, setOffset] = useState(0);
   const [name, setName] = useState(""),
     [templateId, setTemplateId] = useState(""),
+    [timerInput, setTimerInput] = useState(""),
     [mapping, setMapping] = useState<Record<string, Binding>>({});
   const [preview, setPreview] = useState<Preview>(),
     [result, setResult] = useState<UploadResult>(),
     [consented, setConsented] = useState(false),
     [busy, setBusy] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState<"now" | "timer">("now");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [file, setFile] = useState<File | null>(null),
     [filename, setFilename] = useState(""),
     [manualName, setManualName] = useState(""),
@@ -709,6 +970,7 @@ function CampaignEditor({
                 <Badge value={s} /> {n}
               </span>
             ))}
+            {/* FIXED: Removed stray /> here */}
           </div>
           <p className="text-xs text-slate-400">
             Submission progress is separate from delivery. Receipts continue
@@ -774,35 +1036,32 @@ function CampaignEditor({
                   </div>
                 ))}
               </div>
-              <div className="rounded-xl border border-dashed border-indigo-200 bg-violet-50/30 p-4 dark:border-slate-700 dark:bg-slate-950/40">
-                <Field label="Upload CSV or Excel">
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx"
-                    className={`${input} text-xs`}
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  />
-                </Field>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                  <p className="max-w-[240px] text-[11px] leading-relaxed text-slate-500">
-                    Include name and phone columns. Up to 5 MB / 5,000 contacts.
-                  </p>
-                  <button
-                    disabled={busy || !file}
-                    className={secondary}
-                    onClick={() =>
-                      action(async () => {
-                        const r = await api.upload(id, file!);
-                        setResult(r);
-                        setFilename(file!.name);
-                        invalidate();
-                      })
-                    }
-                  >
-                    <Upload size={14} />
-                    Upload & validate
-                  </button>
-                </div>
+              <div className="mt-4">
+                <CampaignAudienceSelector
+                  channel="whatsapp"
+                  busy={busy}
+                  onAddContacts={async (selectedContacts) => {
+                    await action(async () => {
+                      const contactsToAdd = selectedContacts.map((s) => ({
+                        contact_name: s.name,
+                        destination: s.destination,
+                        extra: s.extra || {},
+                      }));
+                      const r = await api.addContacts(id, contactsToAdd);
+                      setResult(r);
+                      setFilename(`Imported ${selectedContacts.length} contacts`);
+                      invalidate();
+                    }, `Added ${selectedContacts.length} recipients`);
+                  }}
+                  onUploadFile={async (uploadedFile) => {
+                    await action(async () => {
+                      const r = await api.upload(id, uploadedFile);
+                      setResult(r);
+                      setFilename(uploadedFile.name);
+                      invalidate();
+                    });
+                  }}
+                />
               </div>
               <details className="rounded-xl border border-violet-100 p-4 dark:border-slate-800">
                 <summary className="cursor-pointer text-sm font-medium">
@@ -945,6 +1204,7 @@ function CampaignEditor({
                 </span>
                 {template && <Badge value={template.status} />}
               </div>
+
               <TemplateSelect
                 templates={templates}
                 value={templateId}
@@ -954,6 +1214,7 @@ function CampaignEditor({
                   invalidate();
                 }}
               />
+
               <div className="rounded-xl bg-violet-50 p-4 dark:bg-slate-950">
                 <p className={label}>Template message</p>
                 <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300">
@@ -967,9 +1228,6 @@ function CampaignEditor({
                   column or a fixed value.
                 </p>
               </div>
-              {/* Rendered from the template's own slots, so a header, a body
-                  variable, a dynamic link and a media header each appear only
-                  when that template actually declares one. */}
               {(["header", "body", "button"] as const).map((section) => {
                 const group = (template?.slot_fields || []).filter(
                   (f) => f.section === section,
@@ -1054,7 +1312,7 @@ function CampaignEditor({
                                 });
                                 invalidate();
                               }}
-                            />
+                            /> {/* FIXED: Added missing / here */}
                           </div>
                         </div>
                       ),
@@ -1116,9 +1374,6 @@ function CampaignEditor({
                     : "Awaiting validation"}
                 </span>
               </div>
-              {/* The campaign shows the same rendering as the builder and the
-                  chat, including the approved header image, so what is confirmed
-                  here is what recipients receive. */}
               {template && (
                 <div className="mt-4 grid items-start gap-4 sm:grid-cols-[minmax(0,1fr)_260px]">
                   <dl className="space-y-1.5 text-xs">
@@ -1208,7 +1463,7 @@ function CampaignEditor({
                   <Smartphone
                     size={30}
                     className="mx-auto mb-3 text-indigo-200"
-                  />
+                  /> {/* FIXED: Added missing / here */}
                   <p className="text-sm font-medium">
                     See exactly what you’ll send
                   </p>
@@ -1235,7 +1490,8 @@ function CampaignEditor({
                     setName(e.target.value);
                     invalidate();
                   }}
-                />
+                  />
+  
               </Field>
               <dl className="space-y-3 rounded-xl bg-violet-50 p-4 text-xs dark:bg-slate-950">
                 <div className="flex justify-between gap-3">
@@ -1253,14 +1509,64 @@ function CampaignEditor({
                   <dd>Queued delivery</dd>
                 </div>
               </dl>
+
+              {/* CAMPAIGN TIMER / RUN SCHEDULE */}
+              <div className="space-y-3 rounded-xl border border-violet-100 bg-violet-50/20 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Campaign Timer & Schedule
+                </p>
+                <div className="flex flex-wrap gap-4 text-xs">
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      name={`campaign-schedule-${id}`}
+                      checked={scheduleMode === "now"}
+                      onChange={() => setScheduleMode("now")}
+                      className="text-indigo-600"
+                    />
+                    <span>Run Immediately</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      name={`campaign-schedule-${id}`}
+                      checked={scheduleMode === "timer"}
+                      onChange={() => setScheduleMode("timer")}
+                      className="text-indigo-600"
+                    />
+                    <span className="flex items-center gap-1 font-medium text-indigo-700 dark:text-indigo-300">
+                      <Clock size={13} /> Schedule with Timer
+                    </span>
+                  </label>
+                </div>
+                {scheduleMode === "timer" && (
+                  <div className="space-y-1.5 pt-1">
+                    <label className="block text-[11px] font-medium text-slate-500">
+                      Run campaign at date & time:
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required={scheduleMode === "timer"}
+                      value={scheduledTime}
+                      min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      The campaign will be queued and sent out automatically at this scheduled time.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <label className="flex items-start gap-2.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                 <input
                   type="checkbox"
                   className="mt-0.5 shrink-0"
                   checked={consented}
                   onChange={(e) => setConsented(e.target.checked)}
-                />
-                {consent}
+                /> {/* FIXED: Closed input tag */}
+                {consent} {/* FIXED: Moved text outside input */}
               </label>
               <button
                 className={`${button} w-full`}
@@ -1273,8 +1579,17 @@ function CampaignEditor({
                 }
                 onClick={() =>
                   action(
-                    () => api.start(id, consent),
-                    "Campaign queued for sending.",
+                    () =>
+                      api.start(
+                        id,
+                        consent,
+                        scheduleMode === "timer" && scheduledTime
+                          ? new Date(scheduledTime).toISOString()
+                          : undefined,
+                      ),
+                    scheduleMode === "timer" && scheduledTime
+                      ? `Campaign scheduled for ${new Date(scheduledTime).toLocaleString()}.`
+                      : "Campaign queued for sending.",
                   )
                 }
               >

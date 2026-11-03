@@ -6,6 +6,7 @@ import {
   LayoutTemplate,
   Megaphone,
   Send,
+  LayoutDashboard,
 } from "lucide-react";
 import type { Account, Template } from "@/api/whatsapp";
 import { card, input, errorText } from "@/components/whatsapp/shared";
@@ -14,15 +15,18 @@ import Campaigns from "@/components/whatsapp/CampaignsTab";
 import Templates from "@/components/whatsapp/TemplatesTab";
 import Single from "@/components/whatsapp/SingleMessageTab";
 import Messages from "@/components/whatsapp/MessagesTab";
+import WhatsAppDashboardOverview from "@/components/whatsapp/WhatsAppDashboardOverview";
 import { whatsappApi as api } from "@/api/whatsapp";
 import { useAuth } from "@/context/AuthContext";
+
 export default function WhatsAppPage() {
   const { user } = useAuth();
   const previewMode = user?.email?.toLowerCase() === "sona@voicedots.io";
-  const [accounts, setAccounts] = useState<Account[]>([]),
-    [accountId, setAccountId] = useState("");
-  const [loading, setLoading] = useState(true),
-    [error, setError] = useState("");
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountId, setAccountId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     let active = true;
     api
@@ -43,7 +47,9 @@ export default function WhatsAppPage() {
       active = false;
     };
   }, []);
+
   const account = accounts.find((a) => a.id === accountId);
+
   return (
     <div className="min-h-[calc(100dvh-140px)] space-y-6 rounded-2xl bg-[#f9f8ff] p-3 text-slate-900 dark:bg-slate-950/30 dark:text-slate-100 sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -89,6 +95,7 @@ export default function WhatsAppPage() {
           )}
         </div>
       </div>
+
       {previewMode ? (
         <PreviewWorkspace />
       ) : loading ? (
@@ -126,61 +133,109 @@ export default function WhatsAppPage() {
     </div>
   );
 }
+
 function PreviewWorkspace() {
-  const [tab, setTab] = useState("campaigns");
+  const [tab, setTab] = useState<"overview" | "messages" | "templates" | "campaigns" | "single">("overview");
   const tabs = [
+    ["overview", "Overview", LayoutDashboard],
     ["messages", "Inbox", Inbox],
     ["templates", "Templates", LayoutTemplate],
     ["campaigns", "Campaigns", Megaphone],
     ["single", "Single message", Send],
   ] as const;
+
   const content: [string, string, string] = ({
+    overview: ["Overview", "WhatsApp Dashboard", "Overview of conversations, templates and campaigns."],
     messages: ["Inbox", "No conversations yet", "Incoming and outgoing conversations will appear here."],
     templates: ["Message templates", "No templates yet", "Approved WhatsApp templates will appear here."],
     campaigns: ["WhatsApp Campaigns", "Your first campaign starts here", "Create campaigns, add recipients, and review delivery analytics."],
     single: ["Send a single message", "No sender connected", "Choose an approved template and recipient when your sender is activated."],
   } as Record<string, [string, string, string]>)[tab];
+
   const Icon = tabs.find(([key]) => key === tab)?.[2] || MessageCircle;
+
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/20 dark:text-indigo-300">
         Preview workspace — live WhatsApp data and actions are disabled for this account.
       </div>
-      <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1.5 dark:bg-slate-900" role="tablist" aria-label="WhatsApp preview sections">
+      <div
+        className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1.5 dark:bg-slate-900"
+        role="tablist"
+        aria-label="WhatsApp preview sections"
+      >
         {tabs.map(([key, label, TabIcon]) => (
-          <button key={key} role="tab" aria-selected={tab === key}
-            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs font-medium ${tab === key ? "bg-indigo-700 text-white shadow-sm" : "text-slate-500 hover:bg-violet-50 dark:hover:bg-slate-800"}`}
-            onClick={() => setTab(key)}>
-            <TabIcon size={15} />{label}
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs font-medium ${
+              tab === key
+                ? "bg-indigo-700 text-white shadow-sm"
+                : "text-slate-500 hover:bg-violet-50 dark:hover:bg-slate-800"
+            }`}
+            onClick={() => setTab(key as any)}
+          >
+            <TabIcon size={15} />
+            {label}
           </button>
         ))}
       </div>
-      <section className={`${card} p-5 sm:p-6`}>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-violet-100 p-3 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"><Icon size={23} /></span>
-            <div><h2 className="text-xl font-semibold">{content[0]}</h2><p className="mt-1 text-xs text-slate-500">Feature preview</p></div>
+
+      {tab === "overview" ? (
+        <WhatsAppDashboardOverview
+          onNavigateTab={(nextTab) => setTab(nextTab)}
+          onOpenNewCampaign={() => setTab("campaigns")}
+        />
+      ) : (
+        <section className={`${card} p-5 sm:p-6`}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="rounded-xl bg-violet-100 p-3 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                <Icon size={23} />
+              </span>
+              <div>
+                <h2 className="text-xl font-semibold">{content[0]}</h2>
+                <p className="mt-1 text-xs text-slate-500">Feature preview</p>
+              </div>
+            </div>
+            <button
+              disabled
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white opacity-50"
+            >
+              <span>+</span>
+              {tab === "single"
+                ? "Send message"
+                : tab === "messages"
+                ? "New conversation"
+                : tab === "templates"
+                ? "New template"
+                : "New campaign"}
+            </button>
           </div>
-          <button disabled className="inline-flex items-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white opacity-50">
-            <span>+</span>{tab === "single" ? "Send message" : tab === "messages" ? "New conversation" : tab === "templates" ? "New template" : "New campaign"}
-          </button>
-        </div>
-        <div className="mt-6 rounded-2xl border border-dashed border-violet-200 p-12 text-center dark:border-slate-700">
-          <Icon className="mx-auto mb-3 text-indigo-300" size={32} />
-          <h3 className="font-medium">{content[1]}</h3>
-          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{content[2]}</p>
-        </div>
-      </section>
+          <div className="mt-6 rounded-2xl border border-dashed border-violet-200 p-12 text-center dark:border-slate-700">
+            <Icon className="mx-auto mb-3 text-indigo-300" size={32} />
+            <h3 className="font-medium">{content[1]}</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+              {content[2]}
+            </p>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
+
 function Workspace({ account }: { account: Account }) {
-  const [tab, setTab] = useState("campaigns"),
-    [templates, setTemplates] = useState<Template[]>([]),
-    [notice, setNotice] = useState("");
+  const [tab, setTab] = useState<"overview" | "messages" | "templates" | "campaigns" | "single">("overview");
+  const [selectedDestination, setSelectedDestination] = useState<string | undefined>();
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [notice, setNotice] = useState("");
+
   const refresh = useCallback(async () => {
     setTemplates(await api.templates(account.id));
   }, [account.id]);
+
   useEffect(() => {
     let active = true;
     api
@@ -195,6 +250,7 @@ function Workspace({ account }: { account: Account }) {
       active = false;
     };
   }, [account.id]);
+
   return (
     <div className="space-y-5">
       {!account.ready && (
@@ -225,6 +281,7 @@ function Workspace({ account }: { account: Account }) {
       >
         {(
           [
+            ["overview", "Overview", LayoutDashboard],
             ["messages", "Inbox", Inbox],
             ["templates", "Templates", LayoutTemplate],
             ["campaigns", "Campaigns", Megaphone],
@@ -235,9 +292,13 @@ function Workspace({ account }: { account: Account }) {
             key={key}
             role="tab"
             aria-selected={tab === key}
-            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs font-medium ${tab === key ? "bg-indigo-700 text-white shadow-sm" : "text-slate-500 hover:bg-violet-50 dark:hover:bg-slate-800"}`}
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs font-medium ${
+              tab === key
+                ? "bg-indigo-700 text-white shadow-sm"
+                : "text-slate-500 hover:bg-violet-50 dark:hover:bg-slate-800"
+            }`}
             onClick={() => {
-              setTab(key);
+              setTab(key as any);
               setNotice("");
             }}
           >
@@ -246,6 +307,23 @@ function Workspace({ account }: { account: Account }) {
           </button>
         ))}
       </div>
+
+      {tab === "overview" && (
+        <WhatsAppDashboardOverview
+          account={account}
+          onNavigateTab={(nextTab, destination) => {
+            if (destination) {
+              setSelectedDestination(destination);
+            }
+            setTab(nextTab);
+            setNotice("");
+          }}
+          onOpenNewCampaign={() => {
+            setTab("campaigns");
+            setNotice("");
+          }}
+        />
+      )}
       {tab === "campaigns" && (
         <Campaigns account={account} templates={templates} notify={setNotice} />
       )}
@@ -265,6 +343,7 @@ function Workspace({ account }: { account: Account }) {
           accountId={account.id}
           account={account}
           templates={templates}
+          initialDestination={selectedDestination}
         />
       )}
     </div>

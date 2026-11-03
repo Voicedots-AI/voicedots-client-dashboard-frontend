@@ -51,11 +51,13 @@ export default function Messages({
   campaignId,
   account,
   templates = [],
+  initialDestination,
 }: {
   accountId: string;
   campaignId?: string;
   account?: Account;
   templates?: Template[];
+  initialDestination?: string;
 }) {
   const [threads, setThreads] = useState(emptyPage<Thread>()),
     [offset, setOffset] = useState(0),
@@ -72,6 +74,15 @@ export default function Messages({
         if (active) {
           setThreads(rows);
           setError("");
+          if (initialDestination) {
+            const found = rows.items.find(
+              (t) => t.destination === initialDestination
+            );
+            if (found) {
+              setSelected(found);
+              setMobileOpen(true);
+            }
+          }
         }
       } catch (e) {
         if (active) setError(errorText(e));
@@ -86,7 +97,7 @@ export default function Messages({
       window.clearTimeout(timeout);
       window.clearInterval(timer);
     };
-  }, [accountId, campaignId, offset, search]);
+  }, [accountId, campaignId, offset, search, initialDestination]);
   const dropThread = (destination: string) => {
     setThreads((current) => ({
       ...current,

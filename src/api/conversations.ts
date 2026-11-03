@@ -8,13 +8,10 @@ import type {
 
 
 const getApiVersion = (agentId?: string | null): string => {
-  if (agentId && agentId.startsWith("voicedots_agent_")) {
-    return "v3";
-  }
   if (agentId && (agentId.startsWith("agent_") || agentId.startsWith("agenet_"))) {
     return "v1";
   }
-  return "v1"; // Default to v1
+  return "v3"; // Default to v3
 };
 
 const conversationsApi = {
