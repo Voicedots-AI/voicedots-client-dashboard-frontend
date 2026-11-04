@@ -656,7 +656,6 @@ export default function CandidateReport({
   const growthBriefs = growthAreas.map(item => typeof item === "string" ? item : show((item as Data).label || (item as Data).focus || (item as Data).summary || (item as Data).evidence || (item as Data).text));
   const followUpBriefs = nextRoundQuestions.map(item => typeof item === "string" ? item : show((item as Data).question || (item as Data).text || (item as Data).prompt));
   const candidateProfile = (bundle?.candidate_info || {}) as Data;
-  const readinessScore = comparable ? Number(pri.score) : null;
   const readinessLabel = report.readiness ? displayName(String(report.readiness)) : "—";
   const competencyRows = dimensions.map(item => ({
     label: show(item.label || (item.dimension ? displayName(String(item.dimension)) : null), "—"),
@@ -729,7 +728,7 @@ export default function CandidateReport({
       {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}<button className={`${btn} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap`} onClick={() => void load()}>Retry report</button></div>}
       {notice && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
 
-      <ReferenceScorecard student={student} studentId={studentId} candidatePhoto={candidatePhoto} candidateProfile={candidateProfile} role={drive?.role_title} report={report} recordingDuration={recordingDuration} questionCount={reviews.length} executiveSummary={executiveSummary} readinessScore={readinessScore} readinessLabel={readinessLabel} competencyRows={competencyRows} strengthBriefs={strengthBriefs} growthBriefs={growthBriefs} followUpBriefs={followUpBriefs} evidenceHighlights={evidenceHighlights} onSeek={videoReady?seekToOffset:undefined} infoMessage={driveError?<>Drive details: {driveError} <button className="underline" onClick={()=>void load()}>Retry</button></>:undefined}/>
+      <ReferenceScorecard student={student} studentId={studentId} candidatePhoto={candidatePhoto} candidateProfile={candidateProfile} role={drive?.role_title} report={report} recordingDuration={recordingDuration} questionCount={reviews.length} executiveSummary={executiveSummary} readinessLabel={readinessLabel} competencyRows={competencyRows} strengthBriefs={strengthBriefs} growthBriefs={growthBriefs} followUpBriefs={followUpBriefs} evidenceHighlights={evidenceHighlights} onSeek={videoReady?seekToOffset:undefined} infoMessage={driveError?<>Drive details: {driveError} <button className="underline" onClick={()=>void load()}>Retry</button></>:undefined}/>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <main className="candidate-report-content min-w-0 space-y-5">
