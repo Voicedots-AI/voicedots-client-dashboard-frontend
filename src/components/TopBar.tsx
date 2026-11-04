@@ -55,17 +55,22 @@ export function TopBar({
         {/* LEFT */}
         <div className="flex items-center gap-2">
           <button
+            type="button"
+            aria-label="Open navigation menu"
             onClick={onMenuClick}
             className="md:hidden p-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:text-gray-400"
           >
-            <Menu size={20} />
+            <Menu size={20} aria-hidden="true" focusable="false" />
           </button>
 
           <button
+            type="button"
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!isSidebarCollapsed}
             onClick={onToggleSidebar}
             className="hidden md:flex p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-400 dark:hover:bg-slate-800"
           >
-            <PanelLeft size={20} />
+            <PanelLeft size={20} aria-hidden="true" focusable="false" />
           </button>
         </div>
 
@@ -87,13 +92,16 @@ export function TopBar({
           {/* 🔔 Notifications */}
           <div className="relative" ref={notifRef}>
             <button
+              type="button"
+              aria-label={notifOpen ? "Close notifications" : "Open notifications"}
+              aria-expanded={notifOpen}
               onClick={() => {
                 setNotifOpen(!notifOpen);
                 setProfileOpen(false);
               }}
               className="relative h-9 w-9 rounded-full border border-gray-200 flex items-center justify-center bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:text-gray-400"
             >
-              <Bell size={18} />
+              <Bell size={18} aria-hidden="true" focusable="false" />
             </button>
 
             {notifOpen && (
