@@ -1859,7 +1859,7 @@ export default function DriveManagement({
       count("result_view=all"), collegeApi.get<Data>(`drives/${driveId}/dashboard/overview?limit=1&offset=0&q=`, controller.signal), count("result_view=incomplete"), count("result_view=decision_pending"), count("decision=shortlist"), count("publication_state=released"),
     ]).then(([candidates, overview, incomplete, decisionPending, shortlisted, released]) => {
       if (controller.signal.aborted) return;
-      setResultKpis({ candidates: Number(candidates), interviewed: Number(((overview as Data).interview_progress as Data)?.completed || 0), incomplete: Number(incomplete), decisionPending: Number(decisionPending), shortlisted: Number(shortlisted), released: Number(released) });
+      setResultKpis({ candidates: Number(candidates), interviewed: Number((((overview as Data).metrics || overview) as Data).interview_completed || 0), incomplete: Number(incomplete), decisionPending: Number(decisionPending), shortlisted: Number(shortlisted), released: Number(released) });
       setResultKpisState("ready");
     }).catch(() => { if (!controller.signal.aborted) setResultKpisState("error"); });
     return () => controller.abort();
