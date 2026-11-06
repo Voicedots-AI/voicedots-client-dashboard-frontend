@@ -1,4 +1,5 @@
 import {RosterExpandControl} from '@/shared-assessment/RosterExpandControl';
+import { UserFacingError } from '@/lib/userFacingError';
 import {loadCandidateAssessment,peekAssessment,studentAssessmentPath,mergeResumeEvidence,invalidateStudentAssessment,type FullBundle} from './assessmentClient';
 import { createPortal } from 'react-dom';
 import EvidenceText from './EvidenceText';
@@ -2694,11 +2695,17 @@ export default function DriveManagement({
             setError("");
             try {
               const result = await collegeApi.save<{warnings?: string[]}>(`drives/${driveId}`, body, true);
+              if ('criteria_interview_score' in body) {
+                const saved = await collegeApi.get<Drive>(`drives/${driveId}`);
+                if ((saved.criteria_interview_score ?? null) !== body.criteria_interview_score) {
+                  throw new UserFacingError('The drive was saved, but its interview score requirement could not be confirmed. Reopen Eligibility and check the saved value.');
+                }
+              }
               const eligibilityChanged = ["min_cgpa", "eligible_departments", "eligible_programs", "eligible_graduation_years"].some(key => key in body);
               setNotice(result?.warnings?.length
                 ? `Drive section saved. ${result.warnings.join(" ")}`
                 : eligibilityChanged
-                  ? "Eligibility criteria saved and candidate assignments refreshed."
+                  ? `Eligibility criteria saved and candidate assignments refreshed.${body.criteria_interview_score != null ? ` Minimum interview score saved: ${body.criteria_interview_score}%.` : ''}`
                   : "Drive section saved.");
               setVersion((v) => v + 1);
             } catch (e) {

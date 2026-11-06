@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import axios from 'axios';
+import { UserFacingError } from '@/lib/userFacingError';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, CircleAlert, Plus, Save, Trash2, X } from 'lucide-react';
 import { collegeApi, collegeError, collegeFieldErrors, type Drive, type Program, type RoundConfiguration } from '@/api/collegeApi';
 import type { AgentLibrary, Selection } from './interviewAgentTypes';
@@ -331,10 +332,15 @@ export default function CreateDriveWizard({programs,drive,draftId,initialStep=0,
     submittingRef.current=true;setBusy(true);setFormError('');setFieldErrors({});
     try{
       while(draftSavingRef.current)await new Promise<void>(resolve=>draftSaveWaitersRef.current.push(resolve));
-      const result=await collegeApi.save<{status?:string;warnings?:string[]}>(drive?`drives/${drive.id}`:'drives',apiPayload(),!!drive);
+      const payload=apiPayload();
+      const result=await collegeApi.save<{drive_id:string;status?:string;warnings?:string[]}>(drive?`drives/${drive.id}`:'drives',payload,!!drive);
+      const saved=await collegeApi.get<Drive>(`drives/${drive?.id||result.drive_id}`);
+      if((saved.criteria_interview_score??null)!==payload.criteria_interview_score){
+        throw new UserFacingError('The drive was saved, but its interview score requirement could not be confirmed. Reopen the drive and check Eligibility before continuing.');
+      }
       submittedRef.current=true;draftResaveRef.current=false;
       localStorage.removeItem(DRAFT_KEY);draftIdRef.current=null;
-      onSaved([drive?'Drive changes saved.':`Drive created (${displayName(result.status||'draft')}).`,...(result.warnings||[])].join(' '));
+      onSaved([drive?'Drive changes saved.':`Drive created (${displayName(result.status||'draft')}).`,saved.criteria_interview_score!=null?`Minimum interview score saved: ${saved.criteria_interview_score}%.`:'No minimum interview score set.',...(result.warnings||[])].join(' '));
     }catch(error){applyBackendErrors(error);}finally{submittingRef.current=false;setBusy(false);}
   }
 
