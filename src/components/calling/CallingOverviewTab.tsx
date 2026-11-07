@@ -150,7 +150,9 @@ export default function CallingOverviewTab({ agentId }: CallingOverviewTabProps)
 
   const loadStats = useCallback(async () => {
     try {
-      setStats(await kpiAPI.getCallStats());
+      const res = await kpiAPI.getCallStats();
+      // Ignore a malformed response rather than crash the tiles.
+      setStats(res?.inbound && res?.outbound ? res : null);
     } catch (err) {
       console.warn("Could not load call figures:", err);
     }

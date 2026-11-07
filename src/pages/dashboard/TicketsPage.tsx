@@ -17,7 +17,7 @@ export function TicketsPage() {
           icon={TicketIcon}
           title="Support tickets"
           description="Issues your callers report to the assistant, tracked from the first message to the fix."
-          status={<HeroStatus ok={false}>Not enabled for this account yet</HeroStatus>}
+          status={<HeroStatus ok={false}><span role="status">Support ticketing is not enabled yet</span></HeroStatus>}
         />
       </CommsItem>
 

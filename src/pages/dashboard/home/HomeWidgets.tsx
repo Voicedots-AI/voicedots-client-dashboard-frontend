@@ -147,7 +147,7 @@ function Sparkline({ values, color, id }: { values: number[]; color: string; id:
   const data = values.map((v, i) => ({ i, v }));
   return (
     <div className="h-11 w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 160, height: 44 }}>
         <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
@@ -271,7 +271,7 @@ export function SentimentTrendCard({ points, loading }: { points: InsightsTimese
             No conversations in this range yet.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 520, height: 240 }}>
             <ComposedChart data={data} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
               <defs>
                 <linearGradient id="home-bar-fill" x1="0" y1="0" x2="0" y2="1">
@@ -320,7 +320,7 @@ function Donut({
   const data = hasData ? slices : [{ name: "None", value: 1, color: "#E6EDF8" }];
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: size, height: size }}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" innerRadius={innerRadius} outerRadius="100%" stroke="#fff" strokeWidth={2} isAnimationActive={false}>
             {data.map((s) => (

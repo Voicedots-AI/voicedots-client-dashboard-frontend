@@ -164,7 +164,9 @@ export function HomePage() {
     if (!isSilent) setInsightsLoading(true);
     try {
       const res = await kpiAPI.getInsights(from || undefined, to || undefined, channel);
-      if (id === insightsRequest.current) setInsights(res);
+      // A malformed response (proxy error page, older backend) is ignored so
+      // the cards fall back to their empty state instead of crashing.
+      if (id === insightsRequest.current) setInsights(res?.sentiment && res?.totals ? res : null);
     } catch (err) {
       console.error("Failed to fetch dashboard insights:", err);
     } finally {
@@ -178,7 +180,7 @@ export function HomePage() {
     setSummaryLoading(true);
     try {
       const res = await kpiAPI.getInsightsSummary(from || undefined, to || undefined, channel);
-      if (id === summaryRequest.current) setSummary(res);
+      if (id === summaryRequest.current) setSummary(typeof res?.summary === "string" ? res : null);
     } catch (err) {
       console.error("Failed to fetch dashboard summary:", err);
       if (id === summaryRequest.current) setSummary(null);
@@ -403,6 +405,7 @@ export function HomePage() {
         <div>
           <h1 className="text-[28px] font-semibold leading-tight sm:text-[32px]" style={{ color: NAVY }}>
             {greeting}
+            <span className="sr-only"> Dashboard overview</span>
           </h1>
           <p className="mt-1 text-[14px]" style={{ color: "#6B7A99" }}>
             Here’s what your conversations are telling you today.
