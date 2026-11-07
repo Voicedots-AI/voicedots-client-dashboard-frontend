@@ -1,0 +1,19 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import Module,{createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+import {buildSync} from 'esbuild';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+const require=createRequire(import.meta.url),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+function load(entry){const result=buildSync({entryPoints:[path.join(root,entry)],bundle:true,write:false,format:'cjs',platform:'node',jsx:'automatic',external:['react','react/jsx-runtime'],loader:{'.css':'empty'},alias:{'@':path.join(root,'src')}});const module=new Module(path.join(root,'tests',entry.replaceAll('/','_')+'.cjs'));module.filename=path.join(root,'tests','journey.cjs');module.paths=Module._nodeModulePaths(path.join(root,'tests'));module._compile(result.outputFiles[0].text,module.filename);return module.exports}
+const {JourneyReview,JOURNEY_SCREENS}=load('src/shared-journey/JourneyReview.tsx');
+const {validateStudentJourney}=load('src/pages/dashboard/studentJourneyContract.ts');
+const journey={id:'journey-a',drive_id:'drive-a',student_name:'Asha',company_name:'Acme',role_title:'Engineer',interview_result:{overall_score:0,competencies:[{name:'Saved skill',score:0,max:100}],submitted_answers:[{question:'Saved interview question',answer:'Saved answer'}]},coach_popup:{message:'Saved coach recommendation'},improvement_plan:{focus_areas:['Saved focus']},daily_schedule:[{id:'task',date_label:'Monday',activity:'Saved task',status:'Completed'}],learning_resources:{syllabus_topics:['Saved resource'],question_bank:['Saved practice question']},reattempt_plan:[{attempt_number:2,status:'Scheduled',score:null}],progress_tracking:{plan_completed_percent:100,modules_completed:1,modules_total:1},placement_readiness:{overall_score:0,status_label:'Saved readiness',competencies:[{name:'Saved skill',percentage:0}]}};
+const render=(screen,data=journey)=>renderToStaticMarkup(React.createElement(JourneyReview,{journey:data,studentName:'Asha',initialScreen:screen}));
+test('both portals use the same component and styles',()=>{const student=path.resolve(root,'../voicedots-student-dashboard-frontend/src/shared-journey');if(!fs.existsSync(student))return;for(const file of ['JourneyReview.tsx','journey-review.css'])assert.equal(fs.readFileSync(path.join(root,'src/shared-journey',file),'utf8'),fs.readFileSync(path.join(student,file),'utf8'));});
+test('nine screens show saved content without editable student actions',()=>{const expected=['Saved answer','0/100','Saved coach recommendation','Saved focus','Saved task','Saved resource','Scheduled','100%','Saved readiness'];expected.forEach((text,index)=>{const markup=render(index+1);assert.ok(markup.includes(text),`${JOURNEY_SCREENS[index]} must contain ${text}`);assert.ok(markup.includes(`Screen ${index+1} of 9`));assert.ok(!/<(input|textarea|form)\b/.test(markup));});});
+test('empty journeys stay empty and never display demo progress',()=>{for(let screen=1;screen<=9;screen++){const markup=render(screen,null);assert.ok(markup.includes('No saved improvement journey'));assert.ok(!markup.includes('Saved task'));assert.ok(!markup.includes('80/100'));}});
+test('coordinator rejects another student, drive, or nested journey',()=>{const valid={student_id:'student-a',drive_id:'drive-a',journey};assert.doesNotThrow(()=>validateStudentJourney(valid,'student-a','drive-a'));for(const value of [{...valid,student_id:'student-b'},{...valid,drive_id:'drive-b'},{...valid,journey:{...journey,drive_id:'drive-b'}},{student_id:'student-a',drive_id:'drive-a'}])assert.throws(()=>validateStudentJourney(value,'student-a','drive-a'));assert.doesNotThrow(()=>validateStudentJourney({...valid,journey:null},'student-a','drive-a'));});

@@ -1,22 +1,52 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {BookOpen,CheckCircle2,RefreshCw,Sparkles,X} from 'lucide-react';
-import {collegeError} from '@/api/collegeApi';
-import {cachedAssessmentRequest,endpointMissing,type FullBundle} from './assessmentClient';
-import {displayName} from './placementDisplay';
+import {RefreshCw,TrendingUp,X} from 'lucide-react';
+import {collegeApi,collegeError} from '@/api/collegeApi';
+import {endpointMissing,type FullBundle} from './assessmentClient';
 import {driveHistory} from './assessmentIntelligenceData';
 
-type Lesson={session_id?:string;day?:number;focus?:string;objective?:string;scheduled_at?:string;stage?:string;validation_status?:string;validated_at?:string};
-type Plan={id:string;drive_id?:string;company_name?:string;role_title?:string;target_date?:string;priority_topics?:{topic?:string;priority?:string}[];lessons:Lesson[]};
-type CoachData={student_id:string;plans:Plan[];cycles:{id:string;drive_id?:string;status?:string;call_completed_at?:string;validation_completed_at?:string}[]};
-export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBundle;driveId?:string;onClose:()=>void}){
- const [selected,setSelected]=useState(driveId||''),[data,setData]=useState<{key:string;value:CoachData}|null>(null),[error,setError]=useState('');
- const path=`students/${encodeURIComponent(bundle.student.id)}/coach${selected?`?drive_id=${encodeURIComponent(selected)}`:''}`;
- useEffect(()=>{let alive=true;setError('');void cachedAssessmentRequest<CoachData>(path).then(value=>{if(alive){if(value.student_id!==bundle.student.id)throw new Error('Student mismatch');setData({key:path,value})}}).catch(reason=>{if(alive)setError(endpointMissing(reason)?'The AI Coach admin endpoint is not available on this server yet. The updated backend is required to display saved coaching plans.':collegeError(reason))});return()=>{alive=false}},[path,bundle.student.id]);
- useEffect(()=>{const focus=document.activeElement as HTMLElement|null,previous=document.body.style.overflow;document.body.style.overflow='hidden';const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.stopPropagation();event.preventDefault();onClose()}};window.addEventListener('keydown',escape,true);return()=>{window.removeEventListener('keydown',escape,true);document.body.style.overflow=previous;focus?.focus()}},[onClose]);
- const current=data?.key===path?data.value:null;
- const lessons=current?.plans.flatMap(plan=>plan.lessons)||[],completed=lessons.filter(lesson=>lesson.stage==='completed').length;
- return createPortal(<div className="ai-coach-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section className="ai-coach-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-coach-title"><header><div><span className="ai-eyebrow">STUDENT DEVELOPMENT</span><h2 id="ai-coach-title"><Sparkles size={21}/>AI Coach · {bundle.student.full_name}</h2><p>Saved coaching plans and validated progress from the student portal.</p></div><button autoFocus className="ai-button" onClick={onClose} aria-label="Close AI Coach"><X size={18}/></button></header><div className="ai-coach-content"><label>Placement drive<select value={selected} onChange={event=>setSelected(event.target.value)}><option value="">All placement drives</option>{driveHistory(bundle).map(({drive})=><option value={drive.drive_id} key={drive.drive_id}>{drive.company_name} · {drive.role_title}</option>)}</select></label>
- {error?<div className="ai-empty ai-error" role="alert"><p>{error}</p></div>:!current?<p role="status" className="ai-inline-loading"><RefreshCw size={15}/>Loading AI Coach plans…</p>:<><div className="ai-coach-summary"><span><BookOpen size={18}/><strong>{current.plans.length}</strong> saved plans</span><span><CheckCircle2 size={18}/><strong>{completed} / {lessons.length}</strong> lessons completed</span></div>{!current.plans.length?<div className="ai-empty"><Sparkles size={26}/><h3>No AI Coach plan recorded</h3><p>The student has not created a coaching plan for {selected?'this drive':'these drives'} yet. A plan will appear here after it is saved in their portal.</p></div>:current.plans.map(plan=><article key={plan.id} className="ai-coach-plan"><h3>{plan.company_name||'Placement preparation'} · {plan.role_title||'Role not supplied'}</h3>{plan.target_date&&<p>Target date: {plan.target_date.slice(0,10)}</p>}<div className="ai-active-tags">{plan.priority_topics?.map((topic,index)=><span key={index}>{topic.topic}{topic.priority?` · ${displayName(topic.priority)}`:''}</span>)}</div><ol>{plan.lessons.map((lesson,index)=><li key={lesson.session_id||index}><span className={`ai-status ${lesson.stage==='completed'?'good':'neutral'}`}>{lesson.stage?displayName(lesson.stage):'Not started'}</span><div><strong>{lesson.focus||`Lesson ${lesson.day||index+1}`}</strong>{lesson.objective&&<p>{lesson.objective}</p>}{lesson.validation_status&&<small>Validation: {displayName(lesson.validation_status)}</small>}</div></li>)}</ol></article>)}{current.cycles.length>0&&<section className="ai-coach-plan"><h3>Focused improvement cycles</h3>{current.cycles.map(cycle=><p key={cycle.id}><span className="ai-status neutral">{displayName(cycle.status||'Not assessed')}</span> {cycle.call_completed_at?'Teaching completed':'Teaching not completed'} · {cycle.validation_completed_at?'Validation completed':'Validation pending'}</p>)}</section>}</>}
- </div><footer><p>This admin view is read-only. Students complete coaching in their own portal.</p><button className="ai-button" onClick={onClose}>Close AI Coach</button></footer></section></div>,document.body);
+import {JourneyReview} from '@/shared-journey/JourneyReview';
+import {validateStudentJourney, type StudentJourneyResponse} from './studentJourneyContract';
+import './assessmentJourney.css';
+
+export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBundle;driveId:string;onClose:()=>void}){
+ const [result,setResult]=useState<{key:string;data?:StudentJourneyResponse;error?:string}>(),[version,setVersion]=useState(0);
+ const dialog=useRef<HTMLElement>(null),restoreFocus=useRef(document.activeElement as HTMLElement|null);
+ const drive=driveHistory(bundle).find(row=>row.drive.drive_id===driveId)?.drive;
+ const path=`students/${encodeURIComponent(bundle.student.id)}/journey?drive_id=${encodeURIComponent(driveId)}`;
+ const key=`${path}:${version}`,loading=result?.key!==key,data=result?.key===key?result.data:null,error=result?.key===key?result.error:undefined;
+ useEffect(()=>{
+  const controller=new AbortController();
+  // Progress changes during lessons: bypass the indefinite assessment cache.
+  void collegeApi.get<StudentJourneyResponse>(path,controller.signal).then(value=>{
+   if(controller.signal.aborted)return;
+   validateStudentJourney(value,bundle.student.id,driveId);
+   setResult({key,data:value});
+  }).catch(reason=>{if(!controller.signal.aborted)setResult({key,error:endpointMissing(reason)?'Progress is not available on this server yet.':collegeError(reason)})});
+  return()=>controller.abort();
+ },[path,bundle.student.id,driveId,key]);
+ useEffect(()=>{
+  const focus=restoreFocus.current,previous=document.body.style.overflow;document.body.style.overflow='hidden';
+  const keydown=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'){event.stopPropagation();event.preventDefault();onClose()}
+   if(event.key==='Tab'){
+    const elements=dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],summary,[tabindex="0"]');
+    if(!elements?.length)return;const first=elements[0],last=elements[elements.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+   }
+  };
+  window.addEventListener('keydown',keydown,true);
+  return()=>{window.removeEventListener('keydown',keydown,true);document.body.style.overflow=previous;focus?.focus()};
+ },[onClose]);
+ return createPortal(<div className="ai-coach-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}>
+  <section ref={dialog} className="ai-coach-dialog ai-journey-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-progress-title">
+   <header><div><span className="ai-eyebrow">STUDENT PROGRESS</span><h2 id="ai-progress-title"><TrendingUp size={21}/>Progress · {bundle.student.full_name}</h2><p>{drive?.company_name} · {drive?.role_title}</p><p>The same nine-screen saved-progress view available in this student’s portal.</p></div><button autoFocus className="ai-button" onClick={onClose} aria-label="Close progress"><X size={18}/></button></header>
+   <div className="ai-coach-content">
+    <button className="ai-button" disabled={loading} onClick={()=>setVersion(value=>value+1)}><RefreshCw size={15}/>Refresh progress</button>
+    {error?<div className="ai-empty ai-error" role="alert"><p>{error}</p><button className="ai-button" onClick={()=>setVersion(value=>value+1)}>Retry progress</button></div>:loading?<p role="status" className="ai-inline-loading">Loading student journey…</p>:data&&<JourneyReview key={key} journey={data.journey} studentName={bundle.student.full_name} companyName={drive?.company_name} roleTitle={drive?.role_title}/>}
+
+   </div><footer><p>Read-only. The student completes learning and validation in their own portal.</p><button className="ai-button" onClick={onClose}>Close progress</button></footer>
+  </section>
+ </div>,document.body);
 }

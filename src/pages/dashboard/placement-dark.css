@@ -1,0 +1,239 @@
+/* Home-aligned dark palette. Dark-only paint overrides; layout and light mode are unchanged. */
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) { --pc-heading:#f1f5ff;--pc-body:#cbd5e1;--pc-muted:#9aa8c2;--pc-card:#0f172a;--pc-border:#293850;--pc-shadow:0 8px 26px #02061730;--pc-mint-surface:#102d29;--pc-blue-surface:#132a49;--pc-purple-surface:#282042;--pc-amber-surface:#332b1c;--pc-mint-icon:#4ade80;--pc-blue-icon:#60a5fa;--pc-purple-icon:#c084fc;--pc-amber-icon:#fbbf24;--dashboard-chart-text:#9aa8c2;--dashboard-chart-grid:#1e2a44;--dashboard-chart-tooltip-bg:#0f172a;--dashboard-chart-tooltip-border:#293850;--fo-text:#f1f5ff;--fo-border:#293850;--fo-surface:#0f172a;--rr-ink:#f1f5ff;--rr-muted:#9aa8c2;--rr-line:#293850;background:#081022;color:var(--pc-body);color-scheme:dark; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(h1,h2,h3,h4,strong,b) { color:var(--pc-heading); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(p,small,label,dt,figcaption),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-legend,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-batch-legend,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-chart-legend,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-chart-caption,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-chart-data,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-muted,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-note,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-eyebrow { color:var(--pc-muted); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) a.pi-link,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-text-button,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-chart-data summary,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-tab-content .pi-link { color:#7db2ff; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pi-card,.pi-hero,.pi-filter-panel,.pi-settings,.pi-integrations-content,.feedback-header,.feedback-card,.feedback-filters,.feedback-export,.candidate-person-card,.candidate-profile-hero,.candidate-assigned-groups,.pd-panel,.pd-drive-card,.placement-result-row,.dw-main,.dw-section,.dw-datetime,.dw-role-card,.dw-review-card,.dw-company-results,.dw-question-mode,.dw-step,.pdo-development,.pi-deliverables>div),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) >header,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is([role="dialog"],[role="alertdialog"]) { background:var(--pc-card);background-image:none;border-color:var(--pc-border);box-shadow:var(--pc-shadow);color:var(--pc-body); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pdo-strengths,.pdo-gaps,.pdo-dialog-evidence,.pi-review,.pi-alert,.pi-hero-tag,.candidate-history-row,.feedback-question-grid>div,.feedback-recommendation,.feedback-highlight-preview,.dw-info,.dw-salary-summary,.dw-rules,.dw-add-role,.dw-check-list,.pd-drive-locked,.pd-drive-progress),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-integrations-content .pi-insight-grid>div { background:#162238;background-image:none;border-color:var(--pc-border);color:var(--pc-body);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-integrations-content .pi-insight-grid>div:nth-child(2) { background:var(--pc-blue-surface);border-color:var(--pc-border);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-integrations-content .pi-insight-grid p,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-reports-content .pi-alert :is(strong,p),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-review-card p,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-company-identity p,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-card .pd-fact dd,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-drive-summary .feedback-text-button { color:var(--pc-body); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-filter-panel :is(input,select):is(:hover,:focus,:active) { background:#101c30!important;background-image:none!important;color:var(--pc-body);border-color:var(--pc-border);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(input,select,textarea):disabled,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-filter-panel select:disabled { background:#111b2b!important;color:#8997af; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) select option { background:#101c30;color:var(--pc-body); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) input::placeholder,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) textarea::placeholder { color:#8797b2;opacity:1; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(button,a,input,select,textarea,summary):focus-visible { outline-color:#60a5fa; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pi-tabs button,.pi-filter-actions button,.pdo-card-heading button,.candidate-card-actions button,.feedback-button,.feedback-pagination button,.pd-button,.pdo-development a,.dw-review-card header button),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) >nav[aria-label]>button { background:#162238;color:var(--pc-body);border-color:var(--pc-border);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-tabs button[aria-pressed=true],
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-clean-primary,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-theme-primary,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(button,a):is(.pd-primary,.bg-indigo-600,.bg-violet-600,.bg-blue-600),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) >nav[aria-label]>button:is([aria-pressed=true],.border-indigo-600) { background:#2463eb;border-color:#2463eb;color:#fff; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pi-clean-primary,.pi-theme-primary,.pd-primary):hover,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-tabs button[aria-pressed=true]:hover { background:#1d4ed8;border-color:#1d4ed8;color:#fff; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pi-table-wrap,.feedback-table-scroll,.pdo-dialog-surface),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) table { background:var(--pc-card);border-color:var(--pc-border);color:var(--pc-body); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) thead,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) th,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-tab-content thead,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-tab-content thead th,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-roster-header { background:#162238;color:var(--pc-muted);border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) td,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-tab-content tbody :is(th,td) { color:var(--pc-body);border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(tr,.pdo-metric-row,.pdo-recent-row,.pdo-card-heading,.pi-card-heading,.feedback-highlight-preview,.feedback-compact-pagination,.pd-company-header,.pd-drive-actions,.dw-step-intro,.dw-check-list label,.placement-result-review-line) { border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) tbody tr:hover,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .candidate-card-actions button:hover,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-company-results button:hover { background:#192840;color:var(--pc-heading); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pdo-metric-track,.pd-progress-track,.feedback-progress,.pi-progress-track) { background:#263750; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pdo-chart-key span,.candidate-class,.pi-neutral-chip,.fo-suggestion strong) { background:#162238;border-color:var(--pc-border);color:var(--pc-body); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pi-score-chip,.pi-readiness-chip,.pi-gap-chip,.feedback-rating-pill,.feedback-recommendation-pill) { background:#233451;color:#bfdbfe;border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-kpi.blue,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-kpi:nth-child(4n+1),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-kpi:nth-child(4n+1),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .result-kpi-card:nth-child(4n+1) { background:var(--pc-mint-surface);border-color:#25463e;box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-kpi.green,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-kpi:nth-child(4n+2),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-kpi:nth-child(4n+2),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .result-kpi-card:nth-child(4n+2) { background:var(--pc-blue-surface);border-color:#294467;box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-kpi.purple,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-kpi:nth-child(4n+3),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-kpi:nth-child(4n+3),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .result-kpi-card:nth-child(4n+3) { background:var(--pc-purple-surface);border-color:#44335e;box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-kpi.gold,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-kpi:nth-child(4n),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-kpi:nth-child(4n),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .result-kpi-card:nth-child(4n) { background:var(--pc-amber-surface);border-color:#51432b;box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>a:nth-child(1),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>button:nth-child(1),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-action:nth-child(1) { background:var(--pc-purple-surface);border-color:var(--pc-border);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>a:nth-child(2),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>button:nth-child(2),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-action:nth-child(2) { background:var(--pc-blue-surface);border-color:var(--pc-border);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>a:nth-child(3),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>button:nth-child(3),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-action:nth-child(3) { background:var(--pc-mint-surface);border-color:var(--pc-border);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>a:nth-child(4),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions>button:nth-child(4),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-action:nth-child(4) { background:var(--pc-amber-surface);border-color:var(--pc-border);box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.pi-icon,.feedback-icon,.pd-kpi-label>svg,.result-kpi-icon,.pd-company-monogram,.feedback-highlight-icon,.pi-avatar,.feedback-student-avatar,.candidate-profile-initials),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-tab-content h2>svg,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-integrations-content h3>svg { background:#223654;color:#93c5fd;box-shadow:none; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-kpi.blue .pi-icon,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-icon.green { background:#164437;color:#4ade80; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-kpi.purple .pi-icon,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-icon.purple { background:#3b2858;color:#c084fc; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-kpi.gold .pi-icon,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-icon.gold { background:#4a3819;color:#fbbf24; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-tags>span,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-selected-company,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-role-index { background:#302541;color:#d8b4fe; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-tags>span+span,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-locked { background:#1e293b;color:var(--pc-muted); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-fact,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-fact:nth-child(2),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-fact:nth-child(3),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-card>.pd-drive-progress { background:#142137;border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-fact-eligibility { background:#102d29;border-color:#25463e; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-card .pd-fact-eligibility dd { color:#6ee7b7; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-progress-caption,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-card .pd-fact dt,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-company-identity small { color:var(--pc-muted); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-progress-caption strong,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-fact-icon { color:#60a5fa; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-step.active,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-question-mode.selected,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-metric { background:var(--pc-blue-surface);border-color:#42699a;color:#93c5fd; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-step.completed,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .dw-step.completed .dw-step-number { background:#102d29;color:#6ee7b7;border-color:#25463e; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.recharts-cartesian-axis-tick-value,.recharts-label-list text) { fill:var(--pc-muted); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .recharts-cartesian-grid line { stroke:#1e2a44; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .recharts-tooltip-wrapper .recharts-default-tooltip { background:var(--pc-card)!important;border-color:var(--pc-border)!important;color:var(--pc-body)!important; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .recharts-tooltip-label,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .recharts-legend-item-text { color:var(--pc-body)!important; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .recharts-tooltip-cursor { fill:#94a3b81a; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-ring-center strong,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-donut-center strong,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-donut-total strong { color:var(--pc-heading); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-ring-center span,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-donut-center small,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-batch-legend strong,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .fo-suggestions>small { color:var(--pc-muted); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-indigo-50,.bg-blue-50),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) [class*="bg-white/"] { background:#162238;background-image:none;border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-slate-900,.text-slate-800,.text-gray-900,.text-gray-800) { color:var(--pc-heading); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-slate-700,.text-slate-600,.text-slate-500,.text-gray-700,.text-gray-600,.text-gray-500) { color:var(--pc-muted); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.bg-emerald-50,.bg-emerald-100) { background:#10382e;color:#6ee7b7;border-color:#6ee7b740; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-emerald-600,.text-emerald-700,.text-emerald-800) { color:#6ee7b7; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.bg-green-50,.bg-green-100) { background:#10382e;color:#86efac;border-color:#86efac40; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-green-600,.text-green-700,.text-green-800) { color:#86efac; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.bg-amber-50,.bg-amber-100) { background:#3a2b16;color:#fcd34d;border-color:#fcd34d40; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-amber-600,.text-amber-700,.text-amber-800) { color:#fcd34d; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.bg-yellow-50,.bg-yellow-100) { background:#3a2b16;color:#fde68a;border-color:#fde68a40; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-yellow-600,.text-yellow-700,.text-yellow-800) { color:#fde68a; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.bg-rose-50,.bg-rose-100) { background:#3a1e2d;color:#fda4af;border-color:#fda4af40; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-rose-600,.text-rose-700,.text-rose-800) { color:#fda4af; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.bg-red-50,.bg-red-100) { background:#3a1e2d;color:#fca5a5;border-color:#fca5a540; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) :is(.text-red-600,.text-red-700,.text-red-800) { color:#fca5a5; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) { --dashboard-chart-border:#293850;--dashboard-chart-surface:#0f172a; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1) { background:var(--pc-purple-surface);border-color:var(--pc-border);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1)>svg:first-child,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1)>.pdo-action-arrow { background:#1e293b;color:var(--pc-purple-icon);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2) { background:var(--pc-blue-surface);border-color:var(--pc-border);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>svg:first-child,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>.pdo-action-arrow { background:#1e293b;color:var(--pc-blue-icon);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3) { background:var(--pc-mint-surface);border-color:var(--pc-border);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>svg:first-child,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>.pdo-action-arrow { background:#1e293b;color:var(--pc-mint-icon);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4) { background:var(--pc-amber-surface);border-color:var(--pc-border);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>svg:first-child,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>.pdo-action-arrow { background:#1e293b;color:var(--pc-amber-icon);box-shadow:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>span { color:var(--pc-heading); }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) small { color:var(--pc-muted); }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-insights section,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-dialog-evidence section { background:#162238!important;border-color:var(--pc-border); }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-evidence-dialog,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-modal { background:var(--pc-card);color:var(--pc-body);border-color:var(--pc-border); }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-dialog-evidence p { color:var(--pc-body); }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-evidence-open,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-evidence-number { color:#93c5fd; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-interview-labels,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-evidence-number { background:#162238; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-experience-chart .pdo-ring,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-trends-chart { background:none;filter:none; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-response-count { color:var(--pc-muted)!important; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-kpi:nth-child(n) .pd-kpi-label>svg,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .result-kpi-card:nth-child(n) .result-kpi-icon,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-drive-card:nth-child(n) .pd-company-monogram { background:#223654;color:#93c5fd; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-button.primary,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-export button,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .candidate-search button { background:#2463eb;color:#fff;border-color:#2463eb; }
+
+/* Dark-mode surface corrections for nested roster rows, footer cards and controls. */
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-recent .pdo-interview { background:var(--pc-card);color:var(--pc-body);border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-recent .pdo-interview:hover { background:#192840; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-recent .pdo-interview strong { color:var(--pc-heading); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-recent .pdo-score { background:#10382e;color:#6ee7b7;border:1px solid #275a49; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-recent .pdo-score.developing { background:#3a2b16;color:#fcd34d;border-color:#695027; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-recent .pdo-score.not-assessed { background:#233047;color:#cbd5e1;border-color:#35455f; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development { background:var(--pc-card)!important;border-color:var(--pc-border); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-deliverables article { background:var(--pc-card);border-color:var(--pc-border);box-shadow:var(--pc-shadow); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-deliverables article h3,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development h2 { color:var(--pc-heading); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-deliverables article p,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development p { color:var(--pc-muted); }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-deliverables svg,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development>svg { color:#7db2ff; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development>svg { background:#223654; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-card>.pi-link:not(.pi-clean-primary),
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development>button,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-card .pdo-card-heading>button,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-card .pdo-card-heading>a:not(.pi-link) { background:#162238;border-color:#40516c;color:#dbeafe; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-card>.pi-link:not(.pi-clean-primary):hover,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development>button:hover { background:#223654;border-color:#60a5fa;color:#f1f5ff; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development>.pi-clean-primary,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-development>.pi-clean-primary:hover { background:#2463eb;border-color:#2463eb;color:#fff; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-search { background:#101c30!important;border-color:#40516c;color:#9aa8c2; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-search input { background:transparent!important;color:#e2e8f0;caret-color:#93c5fd; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-search input::placeholder { color:#a4b2ca;opacity:1; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-search:focus-within { border-color:#60a5fa;box-shadow:0 0 0 2px #60a5fa26; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-status { background:#10382e;color:#6ee7b7;border:1px solid #275a49; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-modal-close,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pdo-dialog-surface>header button { background:#162238;color:#e2e8f0;border-color:#40516c; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-button:disabled,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .feedback-pagination button:disabled,
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pd-button:disabled { background:#162238;color:#94a3b8;border-color:#293850;opacity:.65; }
+
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-card>button:not(.pi-clean-primary):not(.pi-theme-primary) { background:#162238;color:#dbeafe;border-color:#40516c; }
+:root.dark :is(.placement-intelligence.placement-dashboard-clean,.placement-scheme.placement-scheme) .pi-card>button:not(.pi-clean-primary):not(.pi-theme-primary):hover { background:#223654;color:#f1f5ff;border-color:#60a5fa; }
