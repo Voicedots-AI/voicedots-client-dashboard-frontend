@@ -63,6 +63,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     {
       id: "communications", icon: Radio, label: "Communications", path: "/dashboard/communications",
       children: [
+        { id: "gemini-logs", label: "Gemini Logs", path: "/dashboard/communications/gemini-logs" },
         { id: "calling", label: "AI Calling", path: "/dashboard/communications/calling" },
         { id: "whatsapp", label: "WhatsApp", path: "/dashboard/communications/whatsapp" },
         ...(emailEnabled ? [{ id: "gmail", label: "Gmail", path: "/dashboard/communications/gmail" }] : []),

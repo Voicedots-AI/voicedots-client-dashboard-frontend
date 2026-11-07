@@ -19,6 +19,7 @@ const LeadsPage = lazy(() => import("@/pages/dashboard/LeadsPage").then((module)
 const TicketsPage = lazy(() => import("@/pages/dashboard/TicketsPage").then((module) => ({ default: module.TicketsPage })));
 const KnowledgePage = lazy(() => import("@/pages/dashboard/KnowledgePage"));
 const SettingsPage = lazy(() => import("@/pages/dashboard/SettingsPage"));
+const GeminiAuditPage = lazy(() => import("@/pages/dashboard/communications/GeminiAuditPage"));
 const CallingPage = lazy(() => import("@/pages/dashboard/communications/CallingPage"));
 const WhatsAppPage = lazy(() => import("@/pages/dashboard/communications/WhatsAppPage"));
 const EmailPage = lazy(() => import("@/pages/dashboard/email/EmailPage"));
@@ -68,6 +69,7 @@ const AppRoutes = () => {
 
           {/* COMMUNICATIONS — AI calling + WhatsApp (shown; not wired yet) */}
           <Route path="communications" element={<Navigate to="/dashboard/communications/calling" replace />} />
+          <Route path="communications/gemini-logs" element={<GeminiAuditPage />} />
           <Route path="communications/calling" element={<CallingPage />} />
           <Route path="communications/whatsapp" element={<WhatsAppPage />} />
 
