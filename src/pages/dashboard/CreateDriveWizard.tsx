@@ -7,10 +7,13 @@ import type { AgentLibrary, Selection } from './interviewAgentTypes';
 import { defaultSelection, roleLabels } from './interviewAgentTypes';
 import { displayName, formatDateOnly, formatWallTime, wallTimeFromInstant, wallTimeToInstant } from './placementDisplay';
 
-const input = 'mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-violet-950';
-const button = 'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold transition hover:border-violet-300 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700';
-const primary = `${button} border-violet-600 bg-violet-600 text-white hover:bg-violet-700`;
-const panel = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7';
+import './placement-dashboard-theme.css';
+import './placement-drives-theme.css';
+
+const input = 'pd-field mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-violet-950';
+const button = 'pd-button inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold transition hover:border-violet-300 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700';
+const primary = `${button} pd-primary border-violet-600 bg-violet-600 text-white hover:bg-violet-700`;
+const panel = 'pd-panel rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7';
 const creationSteps = ['Drive & company', 'Interview setup', 'Interview roles', 'Questions', 'Eligibility', 'Review & create'];
 const DRAFT_KEY = 'voicedots:placement-drive-draft:v2';
 const CURRENCIES = [['INR','INR · ₹'],['USD','USD · $'],['EUR','EUR · €'],['GBP','GBP · £'],['AUD','AUD · A$'],['CAD','CAD · C$'],['CHF','CHF · Fr'],['CNY','CNY · ¥'],['JPY','JPY · ¥'],['NZD','NZD · NZ$'],['SGD','SGD · S$'],['AED','AED · د.إ'],['SAR','SAR · ر.س'],['ZAR','ZAR · R']] as const;
@@ -359,7 +362,7 @@ export default function CreateDriveWizard({programs,drive,draftId,initialStep=0,
   const chosenProfile=companyProfiles.find(profile=>profile.id===form.company_profile_id);
   const salaryCurrency=CURRENCIES.find(([code])=>code===form.salary_currency)?.[1]||form.salary_currency;
 
-  return <section className="drive-wizard space-y-6 text-slate-900 dark:text-white">
+  return <section className="drive-wizard placement-drives-scheme placement-scheme space-y-6 text-slate-900 dark:text-white">
     <div className="flex flex-wrap items-center justify-between gap-3"><button className={button} onClick={onCancel}><ArrowLeft size={16}/>Back to placement drives</button>{!drive&&<div className="flex items-center gap-2 text-xs text-slate-500" role="status">{draftStatus==='saving'?<><span className="rs-save-dot saving"/>Saving draft…</>:draftStatus==='saved'?<><span className="rs-save-dot"/>Draft saved</>:draftStatus==='error'?<><span className="rs-save-dot error"/>Offline draft saved on this device</>:<><span className="rs-save-dot"/>Draft auto-save ready</>}</div>}</div>
     <header className="dw-heading"><div><p className="text-sm font-semibold uppercase tracking-[.16em] text-violet-600">Placement management</p><h1 className="mt-2 text-3xl font-bold tracking-tight">{drive?'Modify placement drive':'Create placement drive'}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{drive?'Modify the saved configuration for this drive. All sections are available; changes apply when you save.':'Set up a clear hiring workflow. Your draft saves as you work; publish after reviewing all details.'}</p></div>{!drive&&<button className={button} disabled={draftStatus==='saving'||advancing||busy} onClick={()=>void saveDraft(true)}><Save size={16}/>Save draft</button>}</header>
     <nav className="dw-stepper" aria-label="Drive creation steps">{steps.map((name,index)=>{

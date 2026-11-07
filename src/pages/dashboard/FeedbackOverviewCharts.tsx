@@ -6,7 +6,7 @@ import './feedback-overview.css';
 
 type Group = {id:string;name:string;interviews:number;feedback:number;average_rating:number|null};
 type Comment = {session_id:string;comments:string;department:string;drive_name:string};
-export const feedbackReferenceColors = ['#2789ee','#9a67dd','#f5b52e','#22b78c','#36c4cb','#ed7b91'];
+export const feedbackReferenceColors = ['#2463eb','#60a5fa','#0284c7','#93c5fd','#06b6d4','#1d4ed8'];
 const count = (value:number) => value.toLocaleString('en-IN');
 export function FeedbackOverviewCharts({drives,batches,departments}:{drives:Group[];batches:Group[];departments:Group[]}) {
  const driveRows=drives.filter(row=>row.feedback>0).slice(0,8).map((row,index)=>({...row,short:`Drive ${index+1}`}));

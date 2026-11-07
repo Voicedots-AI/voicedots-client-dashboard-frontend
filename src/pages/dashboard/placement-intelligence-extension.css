@@ -1,0 +1,191 @@
+/* Candidate and Feedback surfaces consume the locked analytics theme.
+   All selectors require placement-scheme; shared/student scorecard files stay intact. */
+.candidate-directory.placement-scheme,
+.feedback-dashboard.placement-scheme,
+.candidate-review.placement-scheme {font-family:var(--pc-font);color:var(--pc-body);background:#f8fafc;--dashboard-chart-border:#e2e8f0;--dashboard-chart-surface:#fff;--dashboard-chart-text:#334155;--fo-text:#171037;--fo-border:#e2e8f0;--fo-surface:#fff;}
+.candidate-directory.placement-scheme .pi-hero,
+.feedback-dashboard.placement-scheme .feedback-header {background:#fff;border:1px solid var(--pc-border);border-radius:12px;padding:22px 24px;box-shadow:var(--pc-shadow);color:var(--pc-heading);}
+.candidate-directory.placement-scheme .pi-hero h1,
+.candidate-directory.placement-scheme .candidate-identity h1,
+.feedback-dashboard.placement-scheme .feedback-header h1 {color:var(--pc-heading);font-family:var(--pc-font);font-size:28px;font-weight:700;letter-spacing:-.6px;margin:6px 0 8px;}
+.candidate-directory.placement-scheme .pi-hero p,
+.candidate-directory.placement-scheme .candidate-eyebrow,
+.feedback-dashboard.placement-scheme .feedback-eyebrow {color:var(--pc-muted);font-size:10px;font-weight:600;letter-spacing:1px;}
+.candidate-directory.placement-scheme .pi-hero>svg {box-sizing:content-box;padding:12px;border-radius:50%;background:#e6d6fc;color:var(--pc-purple-icon);width:28px;height:28px;flex-shrink:0;}
+.candidate-directory.placement-scheme .pi-hero span,
+.feedback-dashboard.placement-scheme .feedback-header p {color:var(--pc-muted);font-size:14px;line-height:1.6;}
+.candidate-directory.placement-scheme .pi-card,
+.feedback-dashboard.placement-scheme .feedback-card {background:#fff;border:1px solid var(--pc-border);border-radius:12px;padding:20px;box-shadow:var(--pc-shadow);}
+.candidate-directory.placement-scheme .pi-card h2,
+.candidate-directory.placement-scheme>.pi-card-heading h2,
+.feedback-dashboard.placement-scheme .feedback-card h2 {font-family:var(--pc-font);font-size:16px;font-weight:700!important;color:var(--pc-heading);letter-spacing:-.25px;line-height:1.4;}
+.candidate-directory.placement-scheme .pi-card p,
+.feedback-dashboard.placement-scheme .feedback-muted {color:var(--pc-muted);font-size:13px;line-height:1.65;}
+.candidate-directory.placement-scheme button,
+.feedback-dashboard.placement-scheme :is(.feedback-button,.feedback-pagination button) {display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:var(--pc-font);background:#fff;border:1px solid var(--pc-border);border-radius:8px;color:var(--pc-body);font-size:12px;font-weight:600;padding:9px 12px;box-shadow:none;cursor:pointer;}
+.candidate-directory.placement-scheme button.pc-primary,
+.feedback-dashboard.placement-scheme .feedback-export button {background:var(--pc-primary);border:1px solid var(--pc-primary);color:#fff;}
+.candidate-directory.placement-scheme button:disabled,
+.feedback-dashboard.placement-scheme button:disabled {opacity:.45;cursor:not-allowed;}
+.candidate-directory.placement-scheme .pi-filter-panel,
+.feedback-dashboard.placement-scheme .feedback-filters {background:#fff;border:1px solid var(--pc-border);border-radius:12px;padding:20px;box-shadow:var(--pc-shadow);gap:12px;}
+.candidate-directory.placement-scheme .pi-filter-panel {display:flex;flex-wrap:wrap;align-items:end;margin:20px 0;}
+.candidate-directory.placement-scheme .pi-filter-panel label {flex:1;min-width:200px;}
+.candidate-directory.placement-scheme .pi-filter-panel>span {font-size:12px;color:var(--pc-muted);align-self:center;}
+.candidate-directory.placement-scheme :is(input,select),
+.feedback-dashboard.placement-scheme :is(.feedback-filters input,.feedback-filters select,.feedback-search,.feedback-search input) {font-family:var(--pc-font);background:#fff!important;color:var(--pc-body);border-color:var(--pc-border);box-shadow:none;font-size:12px;}
+.candidate-directory.placement-scheme :is(input,select),
+.feedback-dashboard.placement-scheme .feedback-filters :is(input,select) {height:40px;border:1px solid var(--pc-border);border-radius:8px;padding:9px 11px;min-width:0;}
+.candidate-directory.placement-scheme label,
+.feedback-dashboard.placement-scheme .feedback-filters label {color:var(--pc-muted);font-size:12px;font-weight:500;}
+.candidate-directory.placement-scheme .candidate-card-grid {gap:20px;}
+.candidate-directory.placement-scheme .candidate-person-card {min-height:0;padding:22px;}
+.candidate-directory.placement-scheme .candidate-person-top {margin-bottom:14px;align-items:center;}
+.candidate-directory.placement-scheme .candidate-person-top h2 {font-size:16px;margin:0 0 5px;}
+.candidate-directory.placement-scheme .candidate-person-top small {font-size:12px;color:var(--pc-muted);line-height:1.5;}
+.candidate-directory.placement-scheme .pi-avatar {width:46px;height:46px;background:#d6eaff;color:var(--pc-blue-icon);border-radius:50%;font-weight:700;font-size:15px;flex-shrink:0;}
+.candidate-directory.placement-scheme .candidate-person-card:nth-child(4n+2) .pi-avatar {background:#e6d6fc;color:var(--pc-purple-icon);}
+.candidate-directory.placement-scheme .candidate-person-card:nth-child(4n+3) .pi-avatar {background:#d4f9df;color:#16a34a;}
+.candidate-directory.placement-scheme .candidate-person-card:nth-child(4n) .pi-avatar {background:#ffedbd;color:#d97706;}
+.candidate-directory.placement-scheme .candidate-class {background:var(--pc-blue-surface);color:#1d4ed8;border-radius:999px;font-size:11px;margin-bottom:18px;}
+.candidate-directory.placement-scheme .candidate-card-actions {padding-top:14px;border-top:1px solid #eef2f7;}
+.candidate-directory.placement-scheme .candidate-assigned-groups {background:var(--pc-blue-surface);margin-bottom:20px;}
+.candidate-directory.placement-scheme .candidate-assigned-groups h2 {font-size:14px;}
+.candidate-directory.placement-scheme .candidate-pagination {gap:12px;}
+.candidate-directory.placement-scheme .candidate-pagination span {color:var(--pc-muted);font-size:12px;}
+.candidate-directory.placement-scheme .candidate-profile-hero {display:block;background:#fff;border:1px solid var(--pc-border);border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:var(--pc-shadow);}
+.candidate-directory.placement-scheme .candidate-profile-avatar {background:var(--pc-purple-surface);color:var(--pc-purple-icon);border-radius:12px;}
+.candidate-directory.placement-scheme .candidate-identity p {color:var(--pc-muted);font-size:13px;}
+.candidate-directory.placement-scheme .candidate-identity dl {font-size:12px;gap:8px;}
+.candidate-directory.placement-scheme .candidate-identity dt {color:var(--pc-body);font-weight:600;}
+.candidate-directory.placement-scheme .candidate-identity dd {color:var(--pc-muted);}
+.candidate-directory.placement-scheme .candidate-history-row {background:#fff;border:1px solid var(--pc-border);border-radius:12px;padding:18px 20px;margin-bottom:20px;}
+.candidate-directory.placement-scheme .candidate-history-row label {font-size:12px;}
+.candidate-directory.placement-scheme .candidate-history-row button {height:40px;}
+.candidate-directory.placement-scheme .pi-card h2>svg {color:var(--pc-primary);}
+.candidate-directory.placement-scheme table {font-family:var(--pc-font);font-size:12px;}
+.candidate-directory.placement-scheme table thead {background:#f1f5fb;color:var(--pc-muted);}
+.candidate-directory.placement-scheme table :is(td,th) {border-color:#eef2f7;padding:12px;}
+.candidate-directory.placement-scheme .uniform-scorecard {font-family:var(--pc-font);}
+.candidate-directory.placement-scheme .scorecard-card {border-color:var(--pc-border);box-shadow:var(--pc-shadow);}
+/* Officer review: style the existing controls, never their release/decision logic. */
+.candidate-review.placement-scheme .bg-indigo-600 {background-color:var(--pc-primary)!important;}
+.candidate-review.placement-scheme .text-indigo-700 {color:var(--pc-primary)!important;}
+.candidate-review.placement-scheme .border-indigo-600 {border-color:var(--pc-primary)!important;}
+.candidate-review.placement-scheme .report-nav [aria-selected=true] {color:var(--pc-primary);border-bottom-color:var(--pc-primary);}
+.candidate-review.placement-scheme .candidate-report-content>section,
+.candidate-review.placement-scheme aside>article,
+.candidate-review.placement-scheme aside form {border-color:var(--pc-border);border-radius:12px;box-shadow:var(--pc-shadow);}
+.candidate-review.placement-scheme .candidate-pager {border:1px solid var(--pc-border);border-radius:10px;}
+.candidate-review.placement-scheme :is(input,select,textarea) {background-color:#fff;color:#334155;border-color:var(--pc-border);font-family:var(--pc-font);}
+/* Feedback: matching cards and icons, with independent data semantics retained. */
+.feedback-dashboard.placement-scheme .feedback-content {gap:20px;}
+.feedback-dashboard.placement-scheme .feedback-kpis {gap:16px;}
+.feedback-dashboard.placement-scheme .feedback-kpi {gap:14px;align-items:flex-start;min-height:140px;border:1px solid #fff;box-shadow:inset 0 0 0 2px #ffffffa6,var(--pc-shadow);}
+.feedback-dashboard.placement-scheme .feedback-kpi:nth-child(1) {background:var(--pc-mint-surface);}
+.feedback-dashboard.placement-scheme .feedback-kpi:nth-child(2) {background:var(--pc-blue-surface);}
+.feedback-dashboard.placement-scheme .feedback-kpi:nth-child(3) {background:var(--pc-purple-surface);}
+.feedback-dashboard.placement-scheme .feedback-kpi:nth-child(4) {background:var(--pc-amber-surface);}
+.feedback-dashboard.placement-scheme .feedback-kpi p {font-size:13px;line-height:1.4;font-weight:700;color:var(--pc-heading);margin:0 0 8px;}
+.feedback-dashboard.placement-scheme .feedback-kpi strong {font-size:28px;line-height:1.15;font-weight:700;color:var(--pc-heading);letter-spacing:-.7px;}
+.feedback-dashboard.placement-scheme .feedback-kpi small {font-size:12px;color:#615d78;margin-top:10px;}
+.feedback-dashboard.placement-scheme .feedback-icon {width:50px;height:50px;border-radius:50%;}
+.feedback-dashboard.placement-scheme .feedback-icon svg {stroke-width:2.4;}
+.feedback-dashboard.placement-scheme .feedback-icon.blue {background:#d4f9df;color:var(--pc-mint-icon);}
+.feedback-dashboard.placement-scheme .feedback-icon.green {background:#d6eaff;color:var(--pc-blue-icon);}
+.feedback-dashboard.placement-scheme .feedback-icon.purple {background:#e6d6fc;color:var(--pc-purple-icon);}
+.feedback-dashboard.placement-scheme .feedback-icon.gold {background:#ffedbd;color:var(--pc-amber-icon);}
+.feedback-dashboard.placement-scheme .feedback-question-grid>div {background:#f8fafc;border-color:var(--pc-border);border-radius:9px;}
+.feedback-dashboard.placement-scheme .feedback-question-grid p {font-size:12px;color:var(--pc-body);}
+.feedback-dashboard.placement-scheme .feedback-question-grid strong {color:var(--pc-heading);}
+.feedback-dashboard.placement-scheme .feedback-question-grid svg {color:var(--pc-amber-icon);}
+.feedback-dashboard.placement-scheme .feedback-recommendation {background:var(--pc-purple-surface);}
+.feedback-dashboard.placement-scheme .feedback-recommendation>svg {color:var(--pc-purple-icon);}
+.feedback-dashboard.placement-scheme .feedback-recommendation>strong {color:var(--pc-heading);}
+.feedback-dashboard.placement-scheme .feedback-recommendation h2 {color:#6426bd;}
+.feedback-dashboard.placement-scheme .feedback-status {background:#dcfce7;color:#166534;font-size:11px;padding:4px 8px;border-radius:999px;}
+.feedback-dashboard.placement-scheme .feedback-status::before {content:'•';margin-right:5px;}
+.feedback-dashboard.placement-scheme .feedback-star {color:var(--pc-amber-icon);}
+.feedback-dashboard.placement-scheme :is(.feedback-text-button,.feedback-modal a,.fo-chart-data summary) {color:var(--pc-primary);}
+.feedback-dashboard.placement-scheme table th {background:#f1f5fb;color:var(--pc-muted);font-size:11px;font-weight:600;}
+.feedback-dashboard.placement-scheme table td {color:var(--pc-body);font-size:12px;}
+.feedback-dashboard.placement-scheme table :is(th,td) {border-color:#eef2f7;}
+.feedback-dashboard.placement-scheme table td strong {font-size:13px;color:var(--pc-heading);font-weight:600;}
+.feedback-dashboard.placement-scheme table td small {font-size:11px;color:var(--pc-muted);}
+.feedback-dashboard.placement-scheme .feedback-table-scroll {max-height:none;overflow-x:auto;overflow-y:visible;}
+.feedback-dashboard.placement-scheme .feedback-export {background:#fff;border-color:var(--pc-border);border-radius:12px;}
+.feedback-dashboard.placement-scheme .feedback-export strong {font-size:16px;color:var(--pc-heading);}
+.feedback-dashboard.placement-scheme .feedback-export p {font-size:13px;color:var(--pc-muted);}
+.feedback-dashboard.placement-scheme .feedback-export button {border-radius:8px;font-family:var(--pc-font);font-size:12px;font-weight:600;}
+.feedback-dashboard.placement-scheme .feedback-modal {background:#fff;}
+.feedback-dashboard.placement-scheme .feedback-modal h2 {padding-right:30px;}
+.feedback-dashboard.placement-scheme .dashboard-bar-track {background:#e7efff;}
+.feedback-dashboard.placement-scheme .dashboard-bar-track>span {background:var(--pc-primary);}
+.feedback-dashboard.placement-scheme .fo-donut {container-type:inline-size;}
+.feedback-dashboard.placement-scheme .fo-donut-center {inset:29%;gap:2px;}
+.feedback-dashboard.placement-scheme .fo-donut-center strong {font-size:clamp(16px,18cqi,24px);line-height:1.1;color:var(--pc-heading);max-width:100%;}
+.feedback-dashboard.placement-scheme .fo-donut-center small {max-width:100%;font-size:clamp(8px,8cqi,10px);line-height:1.25;text-align:center;overflow-wrap:anywhere;text-wrap:balance;color:var(--pc-muted);}
+.placement-scheme :is(a,button,input,select,textarea,summary):focus-visible {outline:3px solid #bfdbfe;outline-offset:3px;}
+@media(hover:hover) {
+ .candidate-directory.placement-scheme button.pc-primary:hover,
+ .feedback-dashboard.placement-scheme .feedback-export button:hover {background:var(--pc-hover);border-color:var(--pc-hover);}
+ .candidate-directory.placement-scheme .candidate-person-card:hover {border-color:#bdd1f9;}
+ .feedback-dashboard.placement-scheme tbody tr:hover {background:#f8faff;}
+}
+@media(max-width:1450px) {.feedback-dashboard.placement-scheme .feedback-kpi {gap:12px;}.feedback-dashboard.placement-scheme .feedback-icon {width:42px;height:42px;}.feedback-dashboard.placement-scheme .feedback-kpi strong {font-size:25px;}}
+@media(max-width:1000px) {.feedback-dashboard.placement-scheme .feedback-kpis {grid-template-columns:repeat(2,minmax(0,1fr));}.feedback-dashboard.placement-scheme .feedback-charts {grid-template-columns:minmax(0,1fr);}.feedback-dashboard.placement-scheme .feedback-charts>section:last-child {grid-column:auto;}}
+@media(max-width:650px) {
+ .candidate-directory.placement-scheme .pi-hero {padding:20px;align-items:flex-start;}
+ .candidate-directory.placement-scheme .pi-hero h1,.feedback-dashboard.placement-scheme .feedback-header h1 {font-size:26px;}
+ .candidate-directory.placement-scheme .pi-filter-panel label {min-width:0;flex-basis:100%;}
+ .candidate-directory.placement-scheme .candidate-profile-hero {padding:20px;}
+ .candidate-directory.placement-scheme .candidate-profile-avatar {width:66px;height:84px;}
+ .candidate-directory.placement-scheme .candidate-identity h1 {font-size:23px;}
+ .feedback-dashboard.placement-scheme .feedback-header {padding:20px;align-items:flex-start;flex-wrap:wrap;}
+ .feedback-dashboard.placement-scheme .feedback-filters {padding:16px;}
+ .feedback-dashboard.placement-scheme .feedback-kpi {flex-direction:column;}
+ .feedback-dashboard.placement-scheme .feedback-bottom-grid {grid-template-columns:minmax(0,1fr);}
+}
+@media(max-width:420px) {.feedback-dashboard.placement-scheme .feedback-kpis {grid-template-columns:minmax(0,1fr);}}
+@media(prefers-reduced-motion:no-preference) {.candidate-directory.placement-scheme .candidate-person-card {transition:border-color .18s ease;}}
+
+/* Compact, quieter directory: primary blue is reserved for search/export. */
+.candidate-directory.placement-scheme .candidate-person-card {padding:18px;}
+.candidate-directory.placement-scheme .candidate-person-top {margin-bottom:12px;gap:12px;}
+.candidate-directory.placement-scheme .candidate-person-top .pi-avatar {width:40px;height:40px;font-size:13px;background:#edf1f7;color:#526582;}
+.candidate-directory.placement-scheme .candidate-person-card p {margin-bottom:8px;font-size:13px;}
+.candidate-directory.placement-scheme .candidate-class {background:#f1f5f9;color:#596579;font-size:11px;margin-bottom:12px;}
+.candidate-directory.placement-scheme .candidate-card-actions {display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding-top:12px;}
+.candidate-directory.placement-scheme .candidate-card-actions button {width:auto;background:#fff;color:#475569;border:1px solid #dce3ec;padding:8px 12px;font-size:12px;}
+.candidate-directory.placement-scheme .candidate-card-actions .candidate-ended {flex-basis:100%;}
+.candidate-directory.placement-scheme .candidate-assigned-groups {background:#fff;}
+.feedback-dashboard.placement-scheme .feedback-section-caption {color:#64748b;font-size:13px;line-height:1.6;margin:6px 0 14px;}
+.feedback-dashboard.placement-scheme .feedback-table-heading .feedback-section-caption {margin-bottom:0;}
+.feedback-dashboard.placement-scheme .feedback-submissions table {min-width:780px;}
+.feedback-dashboard.placement-scheme .feedback-submissions table :is(th,td) {padding:12px 10px;vertical-align:middle;}
+.feedback-dashboard.placement-scheme .feedback-submissions table th {position:static;}
+.feedback-dashboard.placement-scheme .feedback-submission-person {display:flex;align-items:center;gap:10px;min-width:0;}
+.feedback-dashboard.placement-scheme .feedback-student-avatar {display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:50%;background:#edf2fa;color:#526c92;font-size:11px;font-weight:700;}
+.feedback-dashboard.placement-scheme .feedback-submissions td strong {font-size:13px;line-height:1.5;}
+.feedback-dashboard.placement-scheme .feedback-submissions td small {font-size:11px;line-height:1.5;margin-top:3px;white-space:normal;max-width:250px;}
+.feedback-dashboard.placement-scheme :is(.feedback-rating-pill,.feedback-recommendation-pill) {display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap;}
+.feedback-dashboard.placement-scheme .feedback-rating-pill {background:#fffbeb;color:#966b19;}
+.feedback-dashboard.placement-scheme .feedback-recommendation-pill {background:#eff4fc;color:#526b91;}
+.feedback-dashboard.placement-scheme .feedback-submissions td .feedback-button {white-space:nowrap;font-size:11px;}
+.feedback-dashboard.placement-scheme .feedback-compact-pagination {padding-top:12px;border-top:1px solid #edf1f7;gap:7px;}
+.feedback-dashboard.placement-scheme .feedback-compact-pagination button {padding:6px 9px;font-size:11px;}
+.feedback-dashboard.placement-scheme .feedback-drive-summary td {font-size:12px;}
+.feedback-dashboard.placement-scheme .feedback-drive-summary td:first-child {max-width:210px;overflow-wrap:anywhere;}
+.feedback-dashboard.placement-scheme .feedback-drive-summary .feedback-text-button {font-size:12px;line-height:1.6;color:#334155;}
+.feedback-dashboard.placement-scheme .feedback-highlight-preview {display:flex;gap:10px;padding:14px 0;}
+.feedback-dashboard.placement-scheme .feedback-highlight-icon {display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:9px;background:#f1ecfa;color:#8063ac;}
+.feedback-dashboard.placement-scheme .feedback-highlight-preview>div {min-width:0;}
+.feedback-dashboard.placement-scheme .feedback-highlight-preview p {display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;line-height:1.7;}
+.feedback-dashboard.placement-scheme .feedback-highlight-preview small {display:block;font-size:11px;line-height:1.6;margin:6px 0;}
+.feedback-dashboard.placement-scheme .feedback-highlight-preview .feedback-text-button {font-size:12px;font-weight:600;padding:0;}
+.feedback-dashboard.placement-scheme .fo-suggestions>small {display:block;font-size:13px!important;line-height:1.7;color:#596579;margin-top:14px;}
+@media(hover:hover) {.candidate-directory.placement-scheme .candidate-card-actions button:hover {background:#f8fafc;border-color:#bdc9da;color:#2463eb;}}
+@media(max-width:650px) {.feedback-dashboard.placement-scheme .feedback-table-heading {align-items:flex-start;}.feedback-dashboard.placement-scheme .feedback-compact-pagination {flex-wrap:wrap;}.candidate-directory.placement-scheme .candidate-pagination {position:static;}}
+.candidate-directory.placement-scheme .candidate-person-top .pi-avatar {overflow:hidden;}
+.candidate-directory.placement-scheme .candidate-person-top .pi-avatar img {display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.candidate-directory.placement-scheme .candidate-profile-initials {font-size:30px;font-weight:700;letter-spacing:-.5px;}

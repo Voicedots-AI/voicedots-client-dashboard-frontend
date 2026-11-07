@@ -15,9 +15,9 @@ import {
   type RoundConfiguration,
 } from "@/api/collegeApi";
 import {
-  btn,
-  field,
-  panel,
+  btn as sharedButton,
+  field as sharedField,
+  panel as sharedPanel,
   roleLabels,
   selectionName,
   type AgentLibrary,
@@ -30,6 +30,13 @@ import DriveQuestionBank from "./DriveQuestionBank";
 import CreateDriveWizard from "./CreateDriveWizard";
 import ATSFitAssessment from "./ATSFitAssessment";
 import "./interviewResults.css";
+
+import './placement-dashboard-theme.css';
+import './placement-drives-theme.css';
+
+const btn = `${sharedButton} pd-button`;
+const field = `${sharedField} pd-field`;
+const panel = `${sharedPanel} pd-panel`;
 
 type Data = Record<string, unknown>;
 type Candidate = Data & {
@@ -230,7 +237,7 @@ function Metric({
   note?: string;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <article className="pd-panel pd-kpi rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </p>
@@ -327,7 +334,7 @@ function ResumeMatchSummary({ driveId, candidate, onOpen }: { driveId: string; c
   const gaps=rows.filter(row=>["NO_EVIDENCE","WEAK_OR_INFERRED"].includes(String(row.match_status))).slice(0,4);
   return <span className="resume-evidence-trigger relative inline-flex" onMouseEnter={()=>{if(closeTimer.current)clearTimeout(closeTimer.current);if(window.matchMedia?.("(hover: hover)").matches){if(!Array.isArray(candidate.skills))void loadResumeMatch(driveId,candidate.student_id).catch(()=>{});timer.current=setTimeout(show,180)}}} onMouseLeave={event=>{if(!document.getElementById(`resume-match-${candidate.student_id}`)?.contains(event.relatedTarget as Node|null))close()}} onKeyDown={event=>{if(event.key==="Escape"&&open){event.stopPropagation();setOpen(false);skipFocus.current=document.activeElement!==button.current;button.current?.focus()}}}>
     <button ref={button} type="button" className="resume-evidence-label rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-600" aria-haspopup="dialog" aria-expanded={open} aria-controls={`resume-match-${candidate.student_id}`} onFocus={()=>{if(skipFocus.current)skipFocus.current=false;else show()}} onBlur={event=>{if(!event.currentTarget.parentElement?.contains(event.relatedTarget as Node|null)&&!document.getElementById(`resume-match-${candidate.student_id}`)?.contains(event.relatedTarget as Node|null))close()}} onClick={()=>{if(!open)show()}}>ATS Fit & Resume Evidence</button>
-    {open&&createPortal(<span id={`resume-match-${candidate.student_id}`} role="dialog" aria-label={`Resume match for ${candidate.full_name}`} style={position} className={`fixed z-50 block max-h-[min(32rem,calc(100dvh-2rem))] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-4 text-left shadow-xl dark:border-slate-700 dark:bg-slate-900`} onMouseEnter={()=>{if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current)}} onMouseLeave={event=>{if(!button.current?.parentElement?.contains(event.relatedTarget as Node|null))close()}}>
+    {open&&createPortal(<span id={`resume-match-${candidate.student_id}`} role="dialog" aria-label={`Resume match for ${candidate.full_name}`} style={position} className={`placement-drives-scheme placement-scheme pd-portal fixed z-50 block max-h-[min(32rem,calc(100dvh-2rem))] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-4 text-left shadow-xl dark:border-slate-700 dark:bg-slate-900`} onMouseEnter={()=>{if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current)}} onMouseLeave={event=>{if(!button.current?.parentElement?.contains(event.relatedTarget as Node|null))close()}}>
       <span className="flex items-start justify-between gap-3"><span className="min-w-0"><strong className="block truncate text-sm text-slate-900 dark:text-white">{candidate.full_name}</strong><span className="text-xs text-slate-500">Resume · role evidence</span></span><button type="button" aria-label="Close resume match" className="rounded-md px-2 text-slate-500 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-600" onClick={()=>setOpen(false)}>×</button></span>
       {loading?<span role="status" className="mt-3 block text-sm text-slate-500">Checking resume evidence…</span>:error?<span role="alert" className="mt-3 block text-sm text-rose-700">{error}<button type="button" className="ml-2 font-semibold underline" onClick={()=>void load()}>Retry</button></span>:!summary||summary.ats_fit_score==null||rows.length===0?<span role="status" className="mt-3 block text-sm text-slate-500">{atsStatusLabel(String(summary?.ats_status||candidate.ats_status||''))}</span>:<>
         <span className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800"><span className="text-xs font-medium text-slate-600 dark:text-slate-300">AI resume match</span><strong className="text-sm text-slate-900 dark:text-white">{summary.ats_fit_score==null?"Not assessed":`${summary.ats_fit_score}/100`}</strong></span>
@@ -369,7 +376,7 @@ export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequireme
   },[]);
   const merged={...candidate,...result} as Candidate;
   const assessmentData={...result,job_description:result?.job_description||null,current_drive_job_description:drive?.id===driveId?drive.jd_raw_text:null};
-  return createPortal(<div style={{margin:0}} className="ats-assessment-page" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="ats-assessment-dialog"><header className="ats-assessment-dialog-header"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
+  return createPortal(<div style={{margin:0}} className="ats-assessment-page placement-drives-scheme placement-scheme pd-portal" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="ats-assessment-dialog"><header className="ats-assessment-dialog-header"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
 }
 
 export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezone,checked,onSelect,onReport,onATS,onSaved,busy,expandAll}:{candidate:Candidate;drive:Drive|null;driveId:string;collegeTimezone:string;checked:boolean;onSelect:(selected:boolean)=>void;onReport:()=>void;onATS:()=>void;onSaved:()=>void;busy:boolean;expandAll?:boolean}){
@@ -2131,7 +2138,7 @@ export default function DriveManagement({
       />
     );
   return (
-    <section className={`space-y-5 drive-tab-${tab}${tab === "results" ? " result-reference-page" : ""}`}>
+    <section className={`placement-drives-scheme placement-scheme pd-drive-detail space-y-5 drive-tab-${tab}${tab === "results" ? " result-reference-page" : ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <button className={btn} onClick={back}>← Placement drives</button>
         <div className="flex flex-wrap items-center gap-2">

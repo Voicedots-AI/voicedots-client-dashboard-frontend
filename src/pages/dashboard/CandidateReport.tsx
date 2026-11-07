@@ -16,6 +16,9 @@ import { btn } from "./interviewAgentTypes";
 import { displayName } from "./placementDisplay";
 import { roleLabels } from "./interviewAgentTypes";
 
+import './placement-dashboard-theme.css';
+import './placement-intelligence-extension.css';
+
 type Data = Record<string, unknown>;
 type Report = Data & {
   drive_id?: string;
@@ -680,7 +683,7 @@ export default function CandidateReport({
 
 
   return (
-    <section className="candidate-review mx-auto max-w-[1440px] space-y-5 pb-12 text-slate-900">
+    <section className="candidate-review placement-scheme mx-auto max-w-[1440px] space-y-5 pb-12 text-slate-900">
       <ReportKeyboardShortcuts videoRef={videoRef} onNextFlag={() => jumpToAdjacentFlag(1)} />
       <style>{`
         @media (min-width: 1280px) {

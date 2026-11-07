@@ -40,3 +40,24 @@
 .pdo-grid .pdo-actions{flex:1;align-content:center;grid-auto-rows:1fr;margin-top:0}
 .pdo-grid .pdo-insights{flex:1;align-content:start}
 @media(max-width:700px){.pdo-grid>.pi-card{padding:20px}.pdo-grid>.pi-card>h2,.pdo-card-heading{min-block-size:0}.pdo-grid .pdo-chart{flex:none}.pdo-grid .pdo-actions{gap:12px}}
+
+/* Feedback and trends: coordinated palette and restrained entrance motion. */
+.pdo-experience-chart .pdo-ring {background:radial-gradient(circle,#faf7ff 0%,#fff 64%);border-radius:50%;filter:drop-shadow(0 7px 11px #7438ed12);}
+.pdo-experience-chart .pdo-ring-center strong {color:#6130c1;}
+.pdo-experience-chart .recharts-pie-sector {outline:none;transition:filter .2s ease;}
+.pdo-experience-chart .recharts-pie-sector:hover {filter:brightness(1.08) drop-shadow(0 2px 4px #7438ed25);}
+.pdo-response-count {display:block;font-size:10px!important;line-height:1.4;margin-top:2px;color:#8b7b9d!important;}
+.pdo-experience-chart .pdo-legend li {border-bottom:1px solid #eee8f8;padding-bottom:9px;}
+.pdo-experience-chart .pdo-legend li:last-child {border-bottom:0;}
+.pdo-trends-chart {background:linear-gradient(180deg,#f8f5ff80,#ffffff00);border-radius:12px;}
+.pdo-trends-chart .recharts-line-curve {filter:drop-shadow(0 2px 3px #7138dd12);}
+.pdo-trend-key {gap:12px;}
+.pdo-trend-key span {background:#f4effc;border:1px solid #ece4f8;border-radius:20px;padding:5px 9px;color:#645478;font-weight:600;}
+.pdo-trend-key i {width:16px;height:3px;border-radius:2px;}
+.pdo-trend-key span:last-child i {background:repeating-linear-gradient(90deg,#168bb8 0 5px,transparent 5px 8px)!important;}
+.dark .pdo-experience-chart .pdo-ring {background:radial-gradient(circle,#30263f,#231f31 64%);}
+.dark .pdo-experience-chart .pdo-ring-center strong {color:#cbb0ff;}
+.dark .pdo-trends-chart {background:linear-gradient(180deg,#30263f80,#231f3100);}
+.dark .pdo-trend-key span {background:#30263f;border-color:#453451;color:#d2c3e5;}
+.dark .pdo-experience-chart .pdo-legend li {border-color:#453451;}
+@media(prefers-reduced-motion:reduce) {.pdo-experience-chart .recharts-pie-sector {transition:none;}}

@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   ArrowUpRight,
+  ArrowRight,
+  CalendarDays,
+  CircleDollarSign,
+  Clock3,
+  LockKeyhole,
+  MapPin,
+  Pencil,
+  Trash2,
+  UnlockKeyhole,
+  UserCheck,
   BriefcaseBusiness,
   CalendarClock,
   LayoutGrid,
@@ -33,13 +43,16 @@ import PlacementAnalytics, { type Analytics } from "./PlacementAnalytics";
 import StaffImport from "./StaffImport";
 import { displayName, formatDateOnly, formatPlacementDateTime, PLACEMENT_TIME_ZONE } from "./placementDisplay";
 
+import './placement-dashboard-theme.css';
+import './placement-drives-theme.css';
+
 const card =
-  "rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900";
+  "pd-panel rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900";
 const input =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-indigo-500 dark:border-slate-700 dark:bg-slate-900";
+  "pd-field w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-indigo-500 dark:border-slate-700 dark:bg-slate-900";
 const button =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold disabled:opacity-50 dark:border-slate-700";
-const primary = `${button} border-indigo-600 bg-indigo-600 text-white`;
+  "pd-button inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold disabled:opacity-50 dark:border-slate-700";
+const primary = `${button} pd-primary border-indigo-600 bg-indigo-600 text-white`;
 const date = (value?: string) =>
   value && /^\d{4}-\d{2}-\d{2}$/.test(value)
     ? formatDateOnly(value)
@@ -366,7 +379,7 @@ export default function CollegeManagementPage() {
       />
     );
   return (
-    <div className="space-y-6 text-slate-900 dark:text-white">
+    <div className="placement-drives-scheme placement-scheme pd-landing space-y-6 text-slate-900 dark:text-white">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-indigo-600">
@@ -806,7 +819,7 @@ function PlacementLanding({
           </table>
         </div>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="pd-drive-card-grid grid gap-4 xl:grid-cols-2">
           {drives.map((d) => (
             <DriveCard
               key={d.id}
@@ -836,8 +849,8 @@ function Kpi({
   note: string;
 }) {
   return (
-    <article className={card}>
-      <div className="flex items-center gap-2 text-slate-500">
+    <article className={`${card} pd-kpi`}>
+      <div className="pd-kpi-label flex items-center gap-2 text-slate-500">
         {icon}
         <span className="text-xs font-semibold uppercase tracking-wide">
           {label}
@@ -868,38 +881,30 @@ function DriveCard({
   const currentStatus = effectiveStatus(drive);
   const statusTone = currentStatus === "active" ? "bg-emerald-50 text-emerald-700" : currentStatus === "scheduled" ? "bg-blue-50 text-blue-700" : currentStatus === "closed" ? "bg-slate-100 text-slate-700" : "bg-amber-50 text-amber-800";
   return (
-    <article className={`${card} transition-shadow hover:shadow-md`}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">
-            {readable(drive.drive_type || "official_placement")} · {drive.created_by_source === "placement_staff" ? "Staff-created" : "Client/admin official"}
-          </p>
-          <h3 className="mt-2 break-words text-xl font-bold">{drive.company_name}</h3>
-          <p className="mt-1 text-sm text-slate-600">{drive.role_title}</p>
-          {drive.created_by_full_name && <p className="mt-1 text-xs text-slate-500">Created by {drive.created_by_full_name}</p>}
-        </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-2">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone}`}>{readable(currentStatus)}</span>
-          {drive.is_locked && <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">Locked</span>}
-        </div>
-      </div>
-      <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-        <div><dt className="text-xs text-slate-500">Job type</dt><dd className="mt-1 font-medium">{readable(drive.job_type || "full_time")}</dd></div>
-        <div><dt className="text-xs text-slate-500">Location</dt><dd className="mt-1 font-medium">{drive.location || "Not supplied"}</dd></div>
-        <div><dt className="text-xs text-slate-500">Starts · IST</dt><dd className="mt-1 font-medium">{date(drive.window_start_at)}</dd></div>
-        <div><dt className="text-xs text-slate-500">Ends · IST</dt><dd className="mt-1 font-medium">{date(drive.window_end_at)}</dd></div>
-        <div><dt className="text-xs text-slate-500">Salary details</dt><dd className="mt-1 font-medium">{drive.salary_min_amount == null ? "Not specified" : `${drive.salary_currency || "INR"} ${Number(drive.salary_min_amount).toLocaleString()}${drive.salary_type === "range" && drive.salary_max_amount != null ? ` – ${Number(drive.salary_max_amount).toLocaleString()}` : ""} per ${drive.salary_period === "monthly" ? "month" : "year"}`}</dd></div>
-        <div><dt className="text-xs text-slate-500">Application deadline</dt><dd className="mt-1 font-medium">{date(drive.application_deadline)}</dd></div>
-        <div><dt className="text-xs text-slate-500">Met drive criteria at last evaluation</dt><dd className="mt-1 font-medium">{drive.latest_snapshot_eligible_count == null ? "Not available" : `${drive.latest_snapshot_eligible_count} students`}</dd></div>
+    <article className={`${card} pd-drive-card`}>
+      <header className="pd-company-header">
+        <span className="pd-company-monogram" aria-hidden="true">{drive.company_name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join('').toUpperCase()}</span>
+        <div className="pd-company-identity"><h3>{drive.company_name}</h3><p>{drive.role_title}</p>{drive.created_by_full_name&&<small>Created by {drive.created_by_full_name}</small>}</div>
+        <div className="pd-drive-statuses"><span className={`pd-drive-status rounded-full px-3 py-1 text-xs font-semibold ${statusTone}`}><span aria-hidden="true">●</span> {readable(currentStatus)}</span>{drive.is_locked&&<span className="pd-drive-locked"><LockKeyhole size={12}/> Locked</span>}</div>
+      </header>
+      <div className="pd-drive-tags"><span>{readable(drive.drive_type||"official_placement")}</span><span>{drive.created_by_source==="placement_staff"?"Staff-created":"Client/admin official"}</span></div>
+      <dl className="pd-drive-facts">
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><BriefcaseBusiness size={16} aria-hidden="true"/></span>Job type</dt><dd>{readable(drive.job_type||"full_time")}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><MapPin size={16} aria-hidden="true"/></span>Location</dt><dd>{drive.location||"Not supplied"}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><CircleDollarSign size={16} aria-hidden="true"/></span>Salary details</dt><dd>{drive.salary_min_amount==null?"Not specified":`${drive.salary_currency||"INR"} ${Number(drive.salary_min_amount).toLocaleString()}${drive.salary_type==="range"&&drive.salary_max_amount!=null?` – ${Number(drive.salary_max_amount).toLocaleString()}`:""} per ${drive.salary_period==="monthly"?"month":"year"}`}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><CalendarDays size={16} aria-hidden="true"/></span>Starts · IST</dt><dd>{date(drive.window_start_at)}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><Clock3 size={16} aria-hidden="true"/></span>Ends · IST</dt><dd>{date(drive.window_end_at)}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><CalendarClock size={16} aria-hidden="true"/></span>Application deadline</dt><dd>{date(drive.application_deadline)}</dd></div>
+        <div className="pd-fact pd-fact-eligibility"><dt><span className="pd-fact-icon"><UserCheck size={17} aria-hidden="true"/></span>Met drive criteria at last evaluation</dt><dd>{drive.latest_snapshot_eligible_count==null?"Not available":`${drive.latest_snapshot_eligible_count} students`}</dd></div>
       </dl>
-      <div className="mt-5 border-t border-slate-100 pt-4">
-        {assigned ? <><div className="flex items-center justify-between text-xs"><span>{completed} of {assigned} assigned interviews completed</span><strong>{progress}%</strong></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} /></div></> : <p className="text-sm text-slate-500">No students assigned yet.</p>}
+      <div className="pd-drive-progress">
+        {assigned?<><div className="pd-progress-caption"><span><CheckCircle2 size={15} aria-hidden="true"/>{completed} of {assigned} assigned interviews completed</span><strong>{progress}%</strong></div><div className="pd-progress-track" role="progressbar" aria-label="Assigned interviews completed" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><div style={{width:`${progress}%`}}/></div></>:<p>No students assigned yet.</p>}
       </div>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <button className={primary} onClick={manage}>Manage drive</button>
-        <button className={button} onClick={edit}>Edit drive</button>
-        <button className={`${button} ${drive.is_locked ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" : "border-amber-200 text-amber-700 hover:bg-amber-50"}`} onClick={toggleLock}>{drive.is_locked ? "Unlock drive" : "Lock drive"}</button>
-        <button className={`${button} border-rose-200 text-rose-700 hover:bg-rose-50`} onClick={deleteDrive}>Delete drive</button>
+      <div className="pd-drive-actions">
+        <button className={primary} onClick={manage}>Manage drive <ArrowRight size={15}/></button>
+        <button className={button} onClick={edit}><Pencil size={14}/> Edit drive</button>
+        <button className={`${button} ${drive.is_locked?"border-emerald-200 text-emerald-700 hover:bg-emerald-50":"border-amber-200 text-amber-700 hover:bg-amber-50"}`} onClick={toggleLock}>{drive.is_locked?<UnlockKeyhole size={14}/>:<LockKeyhole size={14}/>} {drive.is_locked?"Unlock drive":"Lock drive"}</button>
+        <button className={`${button} border-rose-200 text-rose-700 hover:bg-rose-50`} onClick={deleteDrive}><Trash2 size={14}/> Delete drive</button>
       </div>
     </article>
   );
