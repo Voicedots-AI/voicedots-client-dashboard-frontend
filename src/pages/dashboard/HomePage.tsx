@@ -397,7 +397,7 @@ export function HomePage() {
   return (
     <motion.div
       {...motionProps}
-      className="space-y-5 rounded-3xl bg-[#F4F9FF] p-3 sm:p-5"
+      className="home-dash space-y-5 rounded-3xl bg-[#F4F9FF] p-3 sm:p-5 dark:bg-[#081022]"
       style={{ fontFamily: "Poppins, Manrope, sans-serif" }}
     >
       {/* HEADER */}
@@ -407,20 +407,20 @@ export function HomePage() {
             {greeting}
             <span className="sr-only"> Dashboard overview</span>
           </h1>
-          <p className="mt-1 text-[14px]" style={{ color: "#6B7A99" }}>
+          <p className="mt-1 text-[14px]" style={{ color: "var(--home-muted, #6B7A99)" }}>
             Here’s what your conversations are telling you today.
           </p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           {/* Presets */}
-          <div className="flex items-center gap-1 rounded-xl bg-white p-1 shadow-sm ring-1 ring-sky-100">
+          <div className="flex items-center gap-1 rounded-xl bg-white p-1 shadow-sm ring-1 ring-sky-100 dark:bg-slate-900 dark:ring-slate-800">
             {(["7d", "15d", "30d", "all"] as Preset[]).map((p) => (
               <button
                 key={p}
                 onClick={() => handlePresetChange(p)}
                 className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#137EFD] ${
-                  preset === p ? "bg-[#137EFD] text-white shadow-sm" : "text-[#6B7A99] hover:text-[#0B1B3F]"
+                  preset === p ? "bg-[#137EFD] text-white shadow-sm" : "text-[#6B7A99] hover:text-[#0B1B3F] dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
                 {p === "30d" ? "1M" : p === "all" ? "ALL" : p.toUpperCase()}
@@ -429,7 +429,7 @@ export function HomePage() {
           </div>
 
           {/* Date range */}
-          <div className="flex items-center rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-sky-100">
+          <div className="flex items-center rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-sky-100 dark:bg-slate-900 dark:ring-slate-800">
             <DatePickerWithRange
               value={from ? { from: parseISO(from), to: to ? parseISO(to) : undefined } : undefined}
               onChange={(range: DateRange | undefined) => {
@@ -444,12 +444,12 @@ export function HomePage() {
           </div>
 
           {/* Channel filter — live (passed to /v3/kpis) */}
-          <label className="relative flex items-center rounded-xl bg-white shadow-sm ring-1 ring-sky-100">
+          <label className="relative flex items-center rounded-xl bg-white shadow-sm ring-1 ring-sky-100 dark:bg-slate-900 dark:ring-slate-800">
             <span className="sr-only">Channel</span>
             <select
               value={channel}
               onChange={(e) => setChannel(e.target.value as ChannelFilter)}
-              className="h-9 cursor-pointer appearance-none rounded-xl bg-transparent pl-4 pr-9 text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#137EFD]"
+              className="h-9 cursor-pointer appearance-none rounded-xl bg-transparent pl-4 pr-9 [&>option]:text-[#0B1B3F] text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#137EFD]"
               style={{ color: NAVY }}
             >
               {CHANNEL_OPTIONS.map((o) => (
@@ -458,7 +458,7 @@ export function HomePage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4" style={{ color: "#6B7A99" }} />
+            <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4" style={{ color: "var(--home-muted, #6B7A99)" }} />
           </label>
         </div>
       </motion.div>

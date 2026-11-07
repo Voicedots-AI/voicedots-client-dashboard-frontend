@@ -60,9 +60,11 @@ import type {
  */
 export type Trend = { text: string; up: boolean; good?: boolean; neutral?: boolean };
 
-export const NAVY = "#0B1B3F";
-const MUTED = "#6B7A99";
-const GRID = "#E6EDF8";
+// Text and line colours follow the theme: .home-dash sets these variables,
+// and the fallbacks are the light-mode values.
+export const NAVY = "var(--home-ink, #0B1B3F)";
+const MUTED = "var(--home-muted, #6B7A99)";
+const GRID = "var(--home-grid, #E6EDF8)";
 
 // Vivid brand + sentiment palette used across the Home cards.
 export const PALETTE = {
@@ -284,7 +286,7 @@ export function SentimentTrendCard({ points, loading }: { points: InsightsTimese
               <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: MUTED }} allowDecimals={false} />
               <Tooltip
                 cursor={{ fill: "rgba(19,126,253,0.07)" }}
-                contentStyle={{ borderRadius: 10, border: "none", background: NAVY, color: "#fff", fontSize: 12 }}
+                contentStyle={{ borderRadius: 10, border: "none", background: "#0B1B3F", color: "#fff", fontSize: 12 }}
                 itemStyle={{ color: "#fff" }}
                 labelStyle={{ color: "#9FD3FF" }}
               />
@@ -317,12 +319,12 @@ function Donut({
 }) {
   // An all-zero pie renders nothing; show an empty grey ring instead.
   const hasData = slices.some((s) => s.value > 0);
-  const data = hasData ? slices : [{ name: "None", value: 1, color: "#E6EDF8" }];
+  const data = hasData ? slices : [{ name: "None", value: 1, color: GRID }];
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: size, height: size }}>
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" innerRadius={innerRadius} outerRadius="100%" stroke="#fff" strokeWidth={2} isAnimationActive={false}>
+          <Pie data={data} dataKey="value" nameKey="name" innerRadius={innerRadius} outerRadius="100%" stroke="var(--home-card, #fff)" strokeWidth={2} isAnimationActive={false}>
             {data.map((s) => (
               <Cell key={s.name} fill={s.color} />
             ))}
@@ -428,7 +430,7 @@ export function TopIntentsCard({ insights, loading }: { insights: InsightsRespon
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
                     <span className="truncate">{topic.label}</span>
                   </span>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF3FB]">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF3FB] dark:bg-slate-800">
                     <div
                       className="h-full rounded-full"
                       style={{ width: `${(topic.pct / maxPct) * 100}%`, background: `linear-gradient(90deg, ${color}, ${color}aa)` }}
@@ -570,7 +572,7 @@ export function SummaryCard({ summary, loading }: { summary: InsightsSummaryResp
           </>
         }
       />
-      <div className="flex gap-4 rounded-xl bg-gradient-to-br from-[#EAF4FF] via-[#F3EEFF] to-[#FFF1F6] p-4 ring-1 ring-sky-100/70 dark:from-slate-800 dark:to-slate-800">
+      <div className="flex gap-4 rounded-xl bg-gradient-to-br from-[#EAF4FF] via-[#F3EEFF] to-[#FFF1F6] p-4 ring-1 ring-sky-100/70 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 dark:ring-slate-700">
         <IconChip icon={Sparkles} from={PALETTE.blue} to={PALETTE.purple} size="h-12 w-12" iconSize="h-6 w-6" />
         <p className="text-[13px] leading-relaxed" style={{ color: NAVY }}>
           {summary ? summary.summary : loading ? "Writing a summary of this period…" : "Summary unavailable right now."}
@@ -807,7 +809,7 @@ export function ActionsCard({ summary, loading }: { summary: InsightsSummaryResp
           {actions.map((a, i) => {
             const meta = ACTION_META[a.kind] ?? ACTION_META.other;
             return (
-              <li key={`${i}-${a.label}`} className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-[#F4F9FF]">
+              <li key={`${i}-${a.label}`} className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-[#F4F9FF] dark:hover:bg-white/5">
                 <IconChip icon={meta.icon} from={meta.color} to={meta.color} size="h-9 w-9" />
                 <span className="min-w-0 text-[13px] font-medium leading-snug" style={{ color: NAVY }}>
                   {a.label}
