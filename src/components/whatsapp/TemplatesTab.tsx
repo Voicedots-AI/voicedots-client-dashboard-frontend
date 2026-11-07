@@ -35,7 +35,7 @@ const SORTS = [
 const EDITABLE = "DRAFT";
 
 const filterSelect =
-  "rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950";
+  "rounded-xl border border-sky-100 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950";
 
 export default function Templates({
   account,
@@ -114,10 +114,10 @@ export default function Templates({
 
   return (
     <section className={`${card} overflow-hidden`}>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 p-5 dark:border-slate-800">
         <div>
           <h2 className="text-lg font-bold">Message templates</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[#6B7A99]">
             {rows.length} of {templates.length} template
             {templates.length === 1 ? "" : "s"}
           </p>
@@ -143,9 +143,9 @@ export default function Templates({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 p-4 dark:border-slate-800">
-        <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-xl bg-violet-50/70 px-3 py-2 dark:bg-slate-950">
-          <Search size={15} className="shrink-0 text-slate-400" />
+      <div className="flex flex-wrap gap-2 border-b border-sky-100 p-4 dark:border-slate-800">
+        <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-xl bg-[#EAF3FF] px-3 py-2 dark:bg-slate-950">
+          <Search size={15} className="shrink-0 text-[#9AA8C2]" />
           <input
             aria-label="Search templates"
             className="w-full min-w-0 bg-transparent text-sm outline-none"
@@ -205,12 +205,12 @@ export default function Templates({
 
       <div className="divide-y divide-slate-200 dark:divide-slate-800">
         {loading && !rows.length && (
-          <p className="p-8 text-center text-sm text-slate-500">
+          <p className="p-8 text-center text-sm text-[#6B7A99]">
             Loading templates…
           </p>
         )}
         {!loading && !rows.length && (
-          <p className="p-8 text-center text-sm text-slate-500">
+          <p className="p-8 text-center text-sm text-[#6B7A99]">
             {templates.length
               ? "No templates match these filters."
               : "Create your first template, or sync the ones already approved on your WhatsApp account."}
@@ -225,7 +225,7 @@ export default function Templates({
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="truncate font-semibold">{t.name}</h3>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-[#6B7A99]">
                     {t.language} · {t.category} · header{" "}
                     {(t.header_type || "NONE").toLowerCase()} ·{" "}
                     {t.button_count
@@ -257,14 +257,14 @@ export default function Templates({
                   This template uses features this dashboard cannot send yet.
                 </p>
               )}
-              <div className="rounded-2xl bg-violet-50/70 p-4 dark:bg-slate-950/70">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="rounded-2xl bg-[#EAF3FF] p-4 dark:bg-slate-950/70">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9AA8C2]">
                   Message content
                 </p>
-                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#33415F] dark:text-slate-200">
                   {t.body || "No message body"}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-medium text-slate-500">
+                <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-medium text-[#6B7A99]">
                   <span className="rounded-full bg-white px-2.5 py-1 dark:bg-slate-800">
                     {(t.header_type || "NONE").toLowerCase()} header
                   </span>

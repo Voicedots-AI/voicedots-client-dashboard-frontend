@@ -14,7 +14,7 @@ export function Badge({ value }: { value: string }) {
   );
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${good ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : bad ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${good ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : bad ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300" : "bg-[#EEF3FB] text-[#6B7A99] dark:bg-slate-800 dark:text-slate-300"}`}
     >
       {statusLabel(value)}
     </span>
@@ -46,8 +46,8 @@ export function Pager({
   change: (n: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-slate-200 p-4 text-sm dark:border-slate-800">
-      <span className="text-slate-500">
+    <div className="flex items-center justify-between gap-3 border-t border-sky-100 p-4 text-sm dark:border-slate-800">
+      <span className="text-[#6B7A99]">
         {total
           ? `${offset + 1}–${Math.min(offset + size, total)} of ${total}`
           : "No results"}
@@ -80,7 +80,7 @@ export function Bubble({
 }) {
   return (
     <div
-      className={`whitespace-pre-wrap break-words rounded-2xl p-4 text-sm leading-relaxed ${inbound ? "bg-slate-100 dark:bg-slate-800" : "bg-emerald-50 text-slate-800 dark:bg-emerald-950/30 dark:text-slate-100"}`}
+      className={`whitespace-pre-wrap break-words rounded-2xl p-4 text-sm leading-relaxed ${inbound ? "bg-[#EEF3FB] dark:bg-slate-800" : "bg-emerald-50 text-[#0B1B3F] dark:bg-emerald-950/30 dark:text-slate-100"}`}
     >
       {body || "Your message preview will appear here."}
     </div>

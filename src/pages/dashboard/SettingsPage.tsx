@@ -13,6 +13,13 @@ import { whatsappApi, type Template as WhatsAppTemplate, type Account as WhatsAp
 import RichEmailEditor from "@/components/email/RichEmailEditor";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { BTN, BTN_SECONDARY, CARD, ChannelHero, CommsItem, CommsShell, HeroStatus, IconChip, INPUT, LABEL, SegmentTabs, Switch } from "@/components/comms/CommsKit";
+
+const SETTINGS_TABS = [
+  ["all", "All settings"],
+  ["profile", "Profile & password", User],
+  ["messaging", "Automatic follow-ups", Send],
+] as const;
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -628,70 +635,46 @@ export default function SettingsPage() {
   const showMessaging = activeTab === "all" || activeTab === "messaging";
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 py-2">
-      
-      {/* Top Filter Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-        <button
-          type="button"
-          onClick={() => setActiveTab("all")}
-          className={cn(
-            "px-4 py-2 text-xs font-bold rounded-xl transition-all",
-            activeTab === "all"
-              ? "bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-          )}
-        >
-          All Settings
-        </button>
+    <CommsShell>
+      <CommsItem>
+        <ChannelHero
+          tone="control"
+          icon={SlidersHorizontal}
+          title="Settings"
+          description="Your profile and password, plus the follow-up email and WhatsApp message sent automatically after conversations."
+          status={
+            <HeroStatus ok={emailAutoSend || waAutoSend}>
+              {emailAutoSend && waAutoSend ? "Email and WhatsApp follow-ups are on" : emailAutoSend ? "Email follow-up is on" : waAutoSend ? "WhatsApp follow-up is on" : "Automatic follow-ups are off"}
+            </HeroStatus>
+          }
+        />
+      </CommsItem>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("profile")}
-          className={cn(
-            "px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5",
-            activeTab === "profile"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-100 dark:bg-indigo-600"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-          )}
-        >
-          <User size={14} /> Profile & Security
-        </button>
+      <CommsItem>
+        <SegmentTabs label="Settings sections" value={activeTab} onChange={setActiveTab} tabs={SETTINGS_TABS} />
+      </CommsItem>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("messaging")}
-          className={cn(
-            "px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5",
-            activeTab === "messaging"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-100 dark:bg-indigo-600"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-          )}
-        >
-          <Send size={14} /> Send Message & Brochure
-        </button>
-      </div>
+      <CommsItem className="mx-auto w-full max-w-5xl space-y-5">
 
-      <div className="space-y-8">
-        
         {/* ========================================================================= */}
-        {/* TOP SECTION 1: PROFILE INFORMATION */}
+        {/* TOP SECTION 1: Profile */}
         {/* ========================================================================= */}
         {showProfile && (
-          <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 dark:bg-slate-900 dark:border-slate-800">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">PROFILE INFORMATION</h2>
+          <section className={`${CARD} overflow-hidden`}>
+            <div className="flex items-center gap-3 border-b border-sky-100 px-5 py-4 dark:border-white/[0.06] sm:px-6">
+              <IconChip icon={User} from="#137EFD" to="#7732FD" size="h-9 w-9" iconSize="h-4 w-4" />
+              <h2 className="text-[16px] font-semibold text-[#0B1B3F] dark:text-white">Profile</h2>
             </div>
             
-            <form onSubmit={handleProfileSubmit} className="p-6 space-y-8">
+            <form onSubmit={handleProfileSubmit} className="space-y-6 p-5 sm:p-6">
               {/* Avatar Row */}
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative group">
-                  <div className="h-24 w-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#137EFD] to-[#7732FD] shadow-[0_10px_24px_rgba(19,126,253,0.28)] ring-4 ring-white dark:ring-[#0F1A33]">
                     {profilePicture ? (
                       <img src={profilePicture} alt="Avatar" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-2xl font-bold text-slate-400">{initials}</span>
+                      <span className="text-2xl font-semibold text-white">{initials}</span>
                     )}
                     <div 
                       className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -706,7 +689,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95"
+                    className={BTN}
                   >
                     Upload Photo
                   </button>
@@ -717,7 +700,7 @@ export default function SettingsPage() {
                         setProfilePicture(user?.profile_picture || "");
                         if (fileInputRef.current) fileInputRef.current.value = "";
                       }}
-                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      className={BTN_SECONDARY}
                     >
                       Reset
                     </button>
@@ -729,8 +712,8 @@ export default function SettingsPage() {
               {/* Error/Success */}
               {(profileError || profileSuccess) && (
                 <div className={cn(
-                  "p-3 rounded-lg border flex items-center gap-3 text-sm font-medium",
-                  profileError ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                  "flex items-center gap-3 rounded-xl border px-4 py-3 text-[13px] font-medium",
+                  profileError ? "bg-[#FDE4EA] border-[#F7C3D0] text-[#A62146] dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300" : "bg-[#DDF7E8] border-[#B5EBCB] text-[#0E6E3C] dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300"
                 )}>
                   {profileError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
                   <p>{profileError || profileSuccess}</p>
@@ -740,24 +723,24 @@ export default function SettingsPage() {
               {/* Fields Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">FULL NAME</label>
+                  <label className={LABEL}>Full name</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <User className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9AA8C2]" size={16} />
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      className={`${INPUT} mt-0 pl-10`}
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">EMAIL ADDRESS</label>
+                  <label className={LABEL}>Email address</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9AA8C2]" size={16} />
                     <input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      className={`${INPUT} mt-0 pl-10`}
                     />
                   </div>
                 </div>
@@ -765,8 +748,8 @@ export default function SettingsPage() {
 
               {/* Verification */}
               {((name !== user?.name) || (email !== user?.email)) && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-4">
-                  <div className="flex items-center gap-3 text-amber-800">
+                <div className="space-y-3 rounded-xl bg-[#FFF6E5] p-4 ring-1 ring-[#F6DFAE] dark:bg-amber-500/[0.07] dark:ring-amber-500/20">
+                  <div className="flex items-center gap-3 text-[#8A5A00] dark:text-amber-300">
                     <Lock size={18} />
                     <p className="text-xs font-semibold">Confirm password to update name or email</p>
                   </div>
@@ -774,17 +757,17 @@ export default function SettingsPage() {
                     type="password"
                     value={profileCurrentPassword}
                     onChange={(e) => setProfileCurrentPassword(e.target.value)}
-                    className="w-full bg-white border border-amber-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:bg-slate-900"
+                    className={INPUT}
                     placeholder="Enter current password"
                   />
                 </div>
               )}
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end border-t border-sky-100 pt-5 dark:border-white/[0.06]">
                 <button
                   type="submit"
                   disabled={isSavingProfile}
-                  className="px-8 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-indigo-600 transition-all flex items-center gap-2 shadow-lg shadow-slate-100 active:scale-95"
+                  className={BTN}
                 >
                   {isSavingProfile ? <Loader2 className="animate-spin" size={18} /> : "Save Changes"}
                 </button>
@@ -794,21 +777,21 @@ export default function SettingsPage() {
         )}
 
         {/* ========================================================================= */}
-        {/* TOP SECTION 2: SECURITY & PASSWORD */}
+        {/* TOP SECTION 2: Password */}
         {/* ========================================================================= */}
         {showProfile && (
-          <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 dark:bg-slate-900 dark:border-slate-800">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3 dark:border-slate-800">
-               <Shield className="text-indigo-600" size={18} />
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">SECURITY & PASSWORD</h2>
+          <section className={`${CARD} overflow-hidden`}>
+            <div className="flex items-center gap-3 border-b border-sky-100 px-5 py-4 dark:border-white/[0.06] sm:px-6">
+               <IconChip icon={Shield} from="#5B6B8C" to="#137EFD" size="h-9 w-9" iconSize="h-4 w-4" />
+              <h2 className="text-[16px] font-semibold text-[#0B1B3F] dark:text-white">Password</h2>
             </div>
             
-            <form onSubmit={handleSecuritySubmit} className="p-6 space-y-8">
+            <form onSubmit={handleSecuritySubmit} className="space-y-6 p-5 sm:p-6">
               {/* Error/Success */}
               {(secError || secSuccess) && (
                 <div className={cn(
-                  "p-3 rounded-lg border flex items-center gap-3 text-sm font-medium",
-                  secError ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                  "flex items-center gap-3 rounded-xl border px-4 py-3 text-[13px] font-medium",
+                  secError ? "bg-[#FDE4EA] border-[#F7C3D0] text-[#A62146] dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300" : "bg-[#DDF7E8] border-[#B5EBCB] text-[#0E6E3C] dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300"
                 )}>
                   {secError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
                   <p>{secError || secSuccess}</p>
@@ -817,51 +800,51 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">CURRENT PASSWORD</label>
+                  <label className={LABEL}>Current password</label>
                   <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9AA8C2]" size={16} />
                     <input
                       type="password"
                       value={secCurrentPassword}
                       onChange={(e) => setSecCurrentPassword(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      className={`${INPUT} mt-0 pl-10`}
                       placeholder="••••••••"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">NEW PASSWORD</label>
+                  <label className={LABEL}>New password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9AA8C2]" size={16} />
                     <input
                       type="password"
                       value={secNewPassword}
                       onChange={(e) => setSecNewPassword(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      className={`${INPUT} mt-0 pl-10`}
                       placeholder="Min. 6 chars"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">CONFIRM PASSWORD</label>
+                  <label className={LABEL}>Confirm new password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9AA8C2]" size={16} />
                     <input
                       type="password"
                       value={secConfirmPassword}
                       onChange={(e) => setSecConfirmPassword(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                      className={`${INPUT} mt-0 pl-10`}
                       placeholder="Repeat password"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end pt-4 border-t border-slate-50 dark:border-slate-800">
+              <div className="flex justify-end border-t border-sky-100 pt-5 dark:border-white/[0.06]">
                  <button
                   type="submit"
                   disabled={isSavingSecurity}
-                  className="px-8 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100 active:scale-95"
+                  className={BTN}
                 >
                   {isSavingSecurity ? <Loader2 className="animate-spin" size={18} /> : "Update Password"}
                 </button>
@@ -871,38 +854,30 @@ export default function SettingsPage() {
         )}
 
         {/* ========================================================================= */}
-        {/* BOX 1: AUTOMATED EMAIL MESSAGE & BROCHURE DISPATCH */}
+        {/* BOX 1: Automatic follow-up email DISPATCH */}
         {/* ========================================================================= */}
         {showMessaging && (
-          <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 dark:bg-slate-900 dark:border-slate-800">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+          <section className={`${CARD} overflow-hidden`}>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 px-5 py-4 dark:border-white/[0.06] sm:px-6">
               <div className="flex items-center gap-2.5">
-                <Mail className="text-indigo-600" size={18} />
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                  AUTOMATED EMAIL MESSAGE & BROCHURE
+                <IconChip icon={Mail} from="#ED5173" to="#FF8A3D" size="h-9 w-9" iconSize="h-4 w-4" />
+                <h2 className="text-[16px] font-semibold text-[#0B1B3F] dark:text-white">
+                  Automatic follow-up email
                 </h2>
               </div>
 
               {/* Enable Toggle Switch */}
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={emailAutoSend} 
-                  onChange={(e) => setEmailAutoSend(e.target.checked)} 
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
-                <span className="ml-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {emailAutoSend ? "Enabled" : "Disabled"}
-                </span>
-              </label>
+              <div className="flex items-center gap-2.5">
+                <span className="text-[12px] font-medium text-[#55648A] dark:text-slate-400">{emailAutoSend ? "On" : "Off"}</span>
+                <Switch checked={emailAutoSend} onChange={setEmailAutoSend} label="Send follow-up email automatically" />
+              </div>
             </div>
             
-            <form onSubmit={handleSaveEmailSettings} className="p-6 space-y-6">
+            <form onSubmit={handleSaveEmailSettings} className="space-y-6 p-5 sm:p-6">
               {emailStatus && (
                 <div className={cn(
-                  "p-3 rounded-lg border flex items-center gap-3 text-sm font-medium",
-                  emailStatus.type === "error" ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                  "flex items-center gap-3 rounded-xl border px-4 py-3 text-[13px] font-medium",
+                  emailStatus.type === "error" ? "bg-[#FDE4EA] border-[#F7C3D0] text-[#A62146] dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300" : "bg-[#DDF7E8] border-[#B5EBCB] text-[#0E6E3C] dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300"
                 )}>
                   {emailStatus.type === "error" ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
                   <p>{emailStatus.text}</p>
@@ -911,11 +886,11 @@ export default function SettingsPage() {
 
               {/* Trigger Event Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <label className="flex items-center justify-between text-[12px] font-medium text-[#55648A] dark:text-slate-400">
                   <span className="flex items-center gap-1.5">
                     <Zap size={14} className="text-amber-500" /> When to Send Automatically
                   </span>
-                  <span className="text-indigo-600 font-semibold text-[11px]">Conversations & Leads</span>
+                  <span className="text-[11px] font-medium text-[#137EFD]">Conversations & Leads</span>
                 </label>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -923,19 +898,19 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setEmailTriggerEvent("both")}
                     className={cn(
-                      "p-3.5 rounded-xl border text-left transition-all",
+                      "rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-[#137EFD]",
                       emailTriggerEvent === "both"
-                        ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-100 ring-2 ring-indigo-500/20"
-                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                        ? "border-[#137EFD] bg-[#F0F6FF] text-[#0B1B3F] ring-2 ring-[#137EFD]/20 dark:bg-blue-500/[0.08] dark:text-white"
+                        : "border-sky-100 bg-white text-[#28395E] hover:border-sky-200 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-white/15"
                     )}
                   >
-                    <div className="text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center justify-between text-[13px] font-semibold">
                       <span className="flex items-center gap-1.5">
-                        <Zap size={13} className="text-indigo-600" /> Every Conversation & Lead
+                        <Zap size={13} className="text-[#137EFD]" /> Every Conversation & Lead
                       </span>
-                      {emailTriggerEvent === "both" && <Check size={14} className="text-indigo-600" />}
+                      {emailTriggerEvent === "both" && <Check size={14} className="text-[#137EFD]" />}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#6B7A99] dark:text-slate-400">
                       Dispatches on <strong>any call/conversation ended</strong> (even before lead qualification) AND all captured leads.
                     </p>
                   </button>
@@ -944,19 +919,19 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setEmailTriggerEvent("conversations")}
                     className={cn(
-                      "p-3.5 rounded-xl border text-left transition-all",
+                      "rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-[#137EFD]",
                       emailTriggerEvent === "conversations"
-                        ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-100 ring-2 ring-indigo-500/20"
-                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                        ? "border-[#137EFD] bg-[#F0F6FF] text-[#0B1B3F] ring-2 ring-[#137EFD]/20 dark:bg-blue-500/[0.08] dark:text-white"
+                        : "border-sky-100 bg-white text-[#28395E] hover:border-sky-200 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-white/15"
                     )}
                   >
-                    <div className="text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center justify-between text-[13px] font-semibold">
                       <span className="flex items-center gap-1.5">
-                        <PhoneCall size={13} className="text-indigo-600" /> Every Conversation
+                        <PhoneCall size={13} className="text-[#137EFD]" /> Every Conversation
                       </span>
-                      {emailTriggerEvent === "conversations" && <Check size={14} className="text-indigo-600" />}
+                      {emailTriggerEvent === "conversations" && <Check size={14} className="text-[#137EFD]" />}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#6B7A99] dark:text-slate-400">
                       Sends immediately when <strong>any conversation or call</strong> finishes using the session email address.
                     </p>
                   </button>
@@ -965,19 +940,19 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setEmailTriggerEvent("leads")}
                     className={cn(
-                      "p-3.5 rounded-xl border text-left transition-all",
+                      "rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-[#137EFD]",
                       emailTriggerEvent === "leads"
-                        ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-100 ring-2 ring-indigo-500/20"
-                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                        ? "border-[#137EFD] bg-[#F0F6FF] text-[#0B1B3F] ring-2 ring-[#137EFD]/20 dark:bg-blue-500/[0.08] dark:text-white"
+                        : "border-sky-100 bg-white text-[#28395E] hover:border-sky-200 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-white/15"
                     )}
                   >
-                    <div className="text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center justify-between text-[13px] font-semibold">
                       <span className="flex items-center gap-1.5">
-                        <CheckCircle2 size={13} className="text-indigo-600" /> Only Qualified Leads
+                        <CheckCircle2 size={13} className="text-[#137EFD]" /> Only Qualified Leads
                       </span>
-                      {emailTriggerEvent === "leads" && <Check size={14} className="text-indigo-600" />}
+                      {emailTriggerEvent === "leads" && <Check size={14} className="text-[#137EFD]" />}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#6B7A99] dark:text-slate-400">
                       Waits until full lead qualification data is extracted and validated from the caller.
                     </p>
                   </button>
@@ -986,9 +961,9 @@ export default function SettingsPage() {
 
               {/* Subject Line */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <label className="flex items-center gap-2 text-[12px] font-medium text-[#55648A] dark:text-slate-400">
                   <span>Email Subject Line</span>
-                  <span className="text-indigo-600 font-normal lowercase">(sent as subject)</span>
+                  <span className="font-normal text-[#9AA8C2]">(sent as subject)</span>
                 </label>
                 <input
                   type="text"
@@ -996,7 +971,7 @@ export default function SettingsPage() {
                   onChange={(e) => setEmailSubject(e.target.value)}
                   placeholder="e.g. Welcome to VoiceDots - Your Information & Course Brochure"
                   required
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
+                  className={INPUT}
                 />
               </div>
 
@@ -1012,33 +987,33 @@ export default function SettingsPage() {
               </div>
 
               {/* Add Brochure (PDF Upload to Cloud) */}
-              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="space-y-2 border-t border-sky-100 pt-5 dark:border-white/[0.06]">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                    <Paperclip size={14} className="text-indigo-500" />
+                  <label className="flex items-center gap-2 text-[12px] font-medium text-[#55648A] dark:text-slate-400">
+                    <Paperclip size={14} className="text-[#137EFD]" />
                     <span>Brochure Attachment (PDF to Send to User)</span>
                   </label>
-                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                    <Cloud size={12} className="text-emerald-500" /> Stored in Cloud Storage (S3 / MinIO)
+                  <span className="flex items-center gap-1 text-[11px] text-[#6B7A99] dark:text-slate-500">
+                    <Cloud size={12} className="text-[#1FB867]" /> Stored in Cloud Storage (S3 / MinIO)
                   </span>
                 </div>
 
                 {emailBrochure ? (
-                  <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/40 dark:bg-slate-800/50 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex flex-col items-start justify-between gap-4 rounded-xl bg-[#F4F9FF] p-4 ring-1 ring-sky-100 dark:bg-white/[0.03] dark:ring-white/[0.07] sm:flex-row sm:items-center">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0 font-bold text-xs">
+                      <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-rose-500/10 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0 font-bold text-xs">
                         PDF
                       </div>
                       <div className="space-y-0.5">
                         <div className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                           <span>{emailBrochure.name || (emailBrochure as any).filename || "Brochure.pdf"}</span>
                           <span className="text-xs font-normal text-slate-400">({formatFileSize(emailBrochure.size ?? (emailBrochure as any).size_bytes)})</span>
-                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 rounded-full flex items-center gap-1">
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 rounded-full flex items-center gap-1">
                             <Check size={10} /> Cloud Uploaded
                           </span>
                         </div>
                         <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 break-all">
-                          <span className="font-semibold text-indigo-600 dark:text-indigo-400">cloud_key:</span>
+                          <span className="font-semibold text-[#137EFD] dark:text-blue-300">cloud_key:</span>
                           <span>{emailBrochure.key || (emailBrochure as any).cloud_storage_key}</span>
                         </div>
                       </div>
@@ -1048,14 +1023,14 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => emailBrochureInputRef.current?.click()}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                        className={BTN_SECONDARY}
                       >
                         Replace PDF
                       </button>
                       <button
                         type="button"
                         onClick={() => setEmailBrochure(null)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="rounded-lg p-2 text-[#9AA8C2] transition-colors hover:bg-[#FDE4EA] hover:text-[#C42D52] dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                         title="Remove attachment"
                       >
                         <Trash2 size={16} />
@@ -1065,15 +1040,15 @@ export default function SettingsPage() {
                 ) : (
                   <div 
                     onClick={() => emailBrochureInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6 text-center hover:border-indigo-400 hover:bg-indigo-50/20 dark:hover:border-indigo-600 transition-all cursor-pointer group"
+                    className="group cursor-pointer rounded-xl border-2 border-dashed border-sky-200 bg-[#F8FBFF] p-6 text-center transition-all hover:border-[#137EFD] hover:bg-[#F0F6FF] dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-[#137EFD] dark:hover:bg-blue-500/[0.05]"
                   >
-                    <div className="mx-auto h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/60 transition-colors">
-                      {isUploadingEmailBrochure ? <Loader2 size={24} className="animate-spin text-indigo-600" /> : <Upload size={24} />}
+                    <div className="mx-auto h-12 w-12 rounded-xl flex items-center justify-center bg-white text-[#9AA8C2] shadow-sm ring-1 ring-sky-100 transition-colors group-hover:text-[#137EFD] dark:bg-white/[0.05] dark:ring-white/10">
+                      {isUploadingEmailBrochure ? <Loader2 size={24} className="animate-spin text-[#137EFD]" /> : <Upload size={24} />}
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <p className="mt-3 text-[14px] font-semibold text-[#0B1B3F] dark:text-slate-200">
                       {isUploadingEmailBrochure ? "Uploading PDF directly to Cloud Storage..." : "Click or drag brochure PDF here"}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-[12px] text-[#6B7A99] dark:text-slate-500">
                       Uploads directly to Cloud Storage (MinIO / S3) — queue worker fetches by cloud key
                     </p>
                   </div>
@@ -1088,15 +1063,15 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
+              <div className="flex flex-col gap-3 border-t border-sky-100 pt-5 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between">
+                <span className="flex items-center gap-1.5 text-[12px] text-[#6B7A99] dark:text-slate-400">
                   <Info size={14} className="text-slate-400" />
                   Emails will be dispatched with the cloud-stored PDF brochure to conversations & leads.
                 </span>
                 <button
                   type="submit"
                   disabled={isSavingEmail || isUploadingEmailBrochure}
-                  className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100 active:scale-95 disabled:opacity-50"
+                  className={BTN}
                 >
                   {isSavingEmail ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
                   <span>Save Email Settings</span>
@@ -1107,38 +1082,30 @@ export default function SettingsPage() {
         )}
 
         {/* ========================================================================= */}
-        {/* BOX 2: AUTOMATED WHATSAPP TEMPLATE & BROCHURE DISPATCH */}
+        {/* BOX 2: Automatic WhatsApp follow-up DISPATCH */}
         {/* ========================================================================= */}
         {showMessaging && (
-          <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/5 dark:bg-slate-900 dark:border-slate-800">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+          <section className={`${CARD} overflow-hidden`}>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 px-5 py-4 dark:border-white/[0.06] sm:px-6">
               <div className="flex items-center gap-2.5">
-                <MessageSquare className="text-emerald-600" size={18} />
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                  AUTOMATED WHATSAPP TEMPLATE & BROCHURE
+                <IconChip icon={MessageSquare} from="#1FB867" to="#14B8A6" size="h-9 w-9" iconSize="h-4 w-4" />
+                <h2 className="text-[16px] font-semibold text-[#0B1B3F] dark:text-white">
+                  Automatic WhatsApp follow-up
                 </h2>
               </div>
 
               {/* Enable Toggle Switch */}
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={waAutoSend} 
-                  onChange={(e) => setWaAutoSend(e.target.checked)} 
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-600"></div>
-                <span className="ml-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {waAutoSend ? "Enabled" : "Disabled"}
-                </span>
-              </label>
+              <div className="flex items-center gap-2.5">
+                <span className="text-[12px] font-medium text-[#55648A] dark:text-slate-400">{waAutoSend ? "On" : "Off"}</span>
+                <Switch checked={waAutoSend} onChange={setWaAutoSend} label="Send WhatsApp follow-up automatically" />
+              </div>
             </div>
 
-            <form onSubmit={handleSaveWaSettings} className="p-6 space-y-6">
+            <form onSubmit={handleSaveWaSettings} className="space-y-6 p-5 sm:p-6">
               {waStatus && (
                 <div className={cn(
-                  "p-3 rounded-lg border flex items-center gap-3 text-sm font-medium",
-                  waStatus.type === "error" ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                  "flex items-center gap-3 rounded-xl border px-4 py-3 text-[13px] font-medium",
+                  waStatus.type === "error" ? "bg-[#FDE4EA] border-[#F7C3D0] text-[#A62146] dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300" : "bg-[#DDF7E8] border-[#B5EBCB] text-[#0E6E3C] dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300"
                 )}>
                   {waStatus.type === "error" ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
                   <p>{waStatus.text}</p>
@@ -1147,11 +1114,11 @@ export default function SettingsPage() {
 
               {/* Trigger Event Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <label className="flex items-center justify-between text-[12px] font-medium text-[#55648A] dark:text-slate-400">
                   <span className="flex items-center gap-1.5">
-                    <Zap size={14} className="text-emerald-500" /> When to Send Automatically
+                    <Zap size={14} className="text-[#1FB867]" /> When to Send Automatically
                   </span>
-                  <span className="text-emerald-600 font-semibold text-[11px]">Conversations & Leads</span>
+                  <span className="text-[11px] font-medium text-[#118A4B] dark:text-emerald-300">Conversations & Leads</span>
                 </label>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1159,19 +1126,19 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setWaTriggerEvent("both")}
                     className={cn(
-                      "p-3.5 rounded-xl border text-left transition-all",
+                      "rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-[#137EFD]",
                       waTriggerEvent === "both"
-                        ? "border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100 ring-2 ring-emerald-500/20"
-                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                        ? "border-[#1FB867] bg-[#EFFBF4] text-[#0B1B3F] ring-2 ring-[#1FB867]/20 dark:bg-emerald-500/[0.08] dark:text-white"
+                        : "border-sky-100 bg-white text-[#28395E] hover:border-sky-200 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-white/15"
                     )}
                   >
-                    <div className="text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center justify-between text-[13px] font-semibold">
                       <span className="flex items-center gap-1.5">
-                        <Zap size={13} className="text-emerald-600" /> Every Conversation & Lead
+                        <Zap size={13} className="text-[#1FB867]" /> Every Conversation & Lead
                       </span>
-                      {waTriggerEvent === "both" && <Check size={14} className="text-emerald-600" />}
+                      {waTriggerEvent === "both" && <Check size={14} className="text-[#1FB867]" />}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#6B7A99] dark:text-slate-400">
                       Sends template & brochure on <strong>any call/conversation ended</strong> (using caller number) AND all captured leads.
                     </p>
                   </button>
@@ -1180,19 +1147,19 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setWaTriggerEvent("conversations")}
                     className={cn(
-                      "p-3.5 rounded-xl border text-left transition-all",
+                      "rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-[#137EFD]",
                       waTriggerEvent === "conversations"
-                        ? "border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100 ring-2 ring-emerald-500/20"
-                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                        ? "border-[#1FB867] bg-[#EFFBF4] text-[#0B1B3F] ring-2 ring-[#1FB867]/20 dark:bg-emerald-500/[0.08] dark:text-white"
+                        : "border-sky-100 bg-white text-[#28395E] hover:border-sky-200 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-white/15"
                     )}
                   >
-                    <div className="text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center justify-between text-[13px] font-semibold">
                       <span className="flex items-center gap-1.5">
-                        <PhoneCall size={13} className="text-emerald-600" /> Every Conversation
+                        <PhoneCall size={13} className="text-[#1FB867]" /> Every Conversation
                       </span>
-                      {waTriggerEvent === "conversations" && <Check size={14} className="text-emerald-600" />}
+                      {waTriggerEvent === "conversations" && <Check size={14} className="text-[#1FB867]" />}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#6B7A99] dark:text-slate-400">
                       Sends immediately when <strong>any conversation or call</strong> concludes, directly to the caller's phone.
                     </p>
                   </button>
@@ -1201,19 +1168,19 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setWaTriggerEvent("leads")}
                     className={cn(
-                      "p-3.5 rounded-xl border text-left transition-all",
+                      "rounded-xl border p-3.5 text-left transition-all focus-visible:outline-2 focus-visible:outline-[#137EFD]",
                       waTriggerEvent === "leads"
-                        ? "border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100 ring-2 ring-emerald-500/20"
-                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                        ? "border-[#1FB867] bg-[#EFFBF4] text-[#0B1B3F] ring-2 ring-[#1FB867]/20 dark:bg-emerald-500/[0.08] dark:text-white"
+                        : "border-sky-100 bg-white text-[#28395E] hover:border-sky-200 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-white/15"
                     )}
                   >
-                    <div className="text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center justify-between text-[13px] font-semibold">
                       <span className="flex items-center gap-1.5">
-                        <CheckCircle2 size={13} className="text-emerald-600" /> Only Qualified Leads
+                        <CheckCircle2 size={13} className="text-[#1FB867]" /> Only Qualified Leads
                       </span>
-                      {waTriggerEvent === "leads" && <Check size={14} className="text-emerald-600" />}
+                      {waTriggerEvent === "leads" && <Check size={14} className="text-[#1FB867]" />}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#6B7A99] dark:text-slate-400">
                       Only sends if lead qualification was successful and contact details verified.
                     </p>
                   </button>
@@ -1222,16 +1189,16 @@ export default function SettingsPage() {
 
               {/* Select Template Dropdown */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <label className="flex items-center justify-between text-[12px] font-medium text-[#55648A] dark:text-slate-400">
                   <span>Select WhatsApp Approved Template</span>
-                  <span className="text-emerald-600 font-semibold lowercase">Meta Verified</span>
+                  <span className="text-[11px] font-medium text-[#118A4B] dark:text-emerald-300">Meta Verified</span>
                 </label>
 
                 <div className="relative">
                   <select
                     value={selectedWaTemplateId}
                     onChange={(e) => setSelectedWaTemplateId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                    className={`${INPUT} mt-0 cursor-pointer appearance-none pr-10`}
                   >
                     {waTemplates.map((tpl) => (
                       <option key={tpl.id} value={tpl.id}>
@@ -1239,21 +1206,21 @@ export default function SettingsPage() {
                       </option>
                     ))}
                   </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-[#9AA8C2]">
                     ▼
                   </div>
                 </div>
 
                 {/* Live Preview of Selected Template */}
                 {activeWaTemplate && (
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                  <div className="space-y-2 rounded-xl bg-[#F4F9FF] p-4 ring-1 ring-sky-100 dark:bg-white/[0.03] dark:ring-white/[0.07]">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-slate-500 uppercase tracking-wider">Template Preview</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      <span className="font-medium text-[#55648A] dark:text-slate-400">Template Preview</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">
                         {activeWaTemplate.status || "APPROVED"}
                       </span>
                     </div>
-                    <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-sans shadow-sm">
+                    <div className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-white p-3 text-[13px] leading-relaxed text-[#28395E] shadow-sm ring-1 ring-sky-100 dark:bg-[#0A1328] dark:text-slate-300 dark:ring-white/[0.07]">
                       {activeWaTemplate.body}
                     </div>
                   </div>
@@ -1261,28 +1228,28 @@ export default function SettingsPage() {
               </div>
 
               {/* Add Brochure for WhatsApp (PDF Upload to Cloud) */}
-              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="space-y-2 border-t border-sky-100 pt-5 dark:border-white/[0.06]">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                    <Paperclip size={14} className="text-emerald-500" />
+                  <label className="flex items-center gap-2 text-[12px] font-medium text-[#55648A] dark:text-slate-400">
+                    <Paperclip size={14} className="text-[#1FB867]" />
                     <span>Brochure Attachment (Sent Automatically With Template)</span>
                   </label>
-                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                    <Cloud size={12} className="text-emerald-500" /> Cloud Object Key Provided to Queue
+                  <span className="flex items-center gap-1 text-[11px] text-[#6B7A99] dark:text-slate-500">
+                    <Cloud size={12} className="text-[#1FB867]" /> Cloud Object Key Provided to Queue
                   </span>
                 </div>
 
                 {waBrochure ? (
-                  <div className="p-4 rounded-xl border border-emerald-100 bg-emerald-50/40 dark:bg-slate-800/50 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex flex-col items-start justify-between gap-4 rounded-xl bg-[#EFFBF4] p-4 ring-1 ring-[#CDEFDB] dark:bg-emerald-500/[0.05] dark:ring-emerald-500/15 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0 font-bold text-xs">
+                      <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0 font-bold text-xs">
                         PDF
                       </div>
                       <div className="space-y-0.5">
                         <div className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                           <span>{waBrochure.name || (waBrochure as any).filename || "Brochure.pdf"}</span>
                           <span className="text-xs font-normal text-slate-400">({formatFileSize(waBrochure.size ?? (waBrochure as any).size_bytes)})</span>
-                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 rounded-full flex items-center gap-1">
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 rounded-full flex items-center gap-1">
                             <Check size={10} /> Cloud Uploaded
                           </span>
                         </div>
@@ -1297,14 +1264,14 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => waBrochureInputRef.current?.click()}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                        className={BTN_SECONDARY}
                       >
                         Replace PDF
                       </button>
                       <button
                         type="button"
                         onClick={() => setWaBrochure(null)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="rounded-lg p-2 text-[#9AA8C2] transition-colors hover:bg-[#FDE4EA] hover:text-[#C42D52] dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                         title="Remove attachment"
                       >
                         <Trash2 size={16} />
@@ -1314,15 +1281,15 @@ export default function SettingsPage() {
                 ) : (
                   <div 
                     onClick={() => waBrochureInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6 text-center hover:border-emerald-400 hover:bg-emerald-50/20 dark:hover:border-emerald-600 transition-all cursor-pointer group"
+                    className="group cursor-pointer rounded-xl border-2 border-dashed border-sky-200 bg-[#F8FBFF] p-6 text-center transition-all hover:border-[#1FB867] hover:bg-[#EFFBF4] dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-[#1FB867] dark:hover:bg-emerald-500/[0.05]"
                   >
-                    <div className="mx-auto h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/60 transition-colors">
+                    <div className="mx-auto h-12 w-12 rounded-xl flex items-center justify-center bg-white text-[#9AA8C2] shadow-sm ring-1 ring-sky-100 transition-colors group-hover:text-[#1FB867] dark:bg-white/[0.05] dark:ring-white/10">
                       {isUploadingWaBrochure ? <Loader2 size={24} className="animate-spin text-emerald-600" /> : <Upload size={24} />}
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <p className="mt-3 text-[14px] font-semibold text-[#0B1B3F] dark:text-slate-200">
                       {isUploadingWaBrochure ? "Uploading brochure to Cloud..." : "Click or drag brochure PDF here"}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-[12px] text-[#6B7A99] dark:text-slate-500">
                       PDF document is attached to the WhatsApp template and dispatched automatically
                     </p>
                   </div>
@@ -1337,15 +1304,15 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
+              <div className="flex flex-col gap-3 border-t border-sky-100 pt-5 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between">
+                <span className="flex items-center gap-1.5 text-[12px] text-[#6B7A99] dark:text-slate-400">
                   <Info size={14} className="text-slate-400" />
                   Whenever any conversation ends or a lead is acquired, the template + brochure will be sent automatically.
                 </span>
                 <button
                   type="submit"
                   disabled={isSavingWa || isUploadingWaBrochure}
-                  className="px-6 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-100 active:scale-95 disabled:opacity-50"
+                  className={`${BTN} bg-[#1FB867] shadow-[0_6px_16px_rgba(31,184,103,0.28)] hover:bg-[#178F50]`}
                 >
                   {isSavingWa ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
                   <span>Save WhatsApp Settings</span>
@@ -1355,7 +1322,7 @@ export default function SettingsPage() {
           </section>
         )}
 
-      </div>
-    </div>
+      </CommsItem>
+    </CommsShell>
   );
 }

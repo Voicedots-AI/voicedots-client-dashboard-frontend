@@ -242,7 +242,7 @@ export default function Composer({
 
   if (staged)
     return (
-      <div className="space-y-3 rounded-2xl border border-violet-100 p-3 dark:border-slate-800">
+      <div className="space-y-3 rounded-2xl border border-sky-200 p-3 dark:border-slate-800">
         <div className="flex items-start gap-3">
           {staged.kind === "image" && staged.preview && (
             <img
@@ -253,7 +253,7 @@ export default function Composer({
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{staged.file.name}</p>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-[#6B7A99]">
               {readableSize(staged.file.size)}
               {phase !== "idle" && ` · ${PHASE_LABEL[phase]}`}
             </p>
@@ -270,7 +270,7 @@ export default function Composer({
           <button
             type="button"
             aria-label="Remove attachment"
-            className="rounded p-1 text-slate-400 hover:text-rose-600"
+            className="rounded p-1 text-[#9AA8C2] hover:text-rose-600"
             onClick={discard}
             disabled={working}
           >
@@ -280,7 +280,7 @@ export default function Composer({
         {staged.kind !== "audio" && (
           <input
             aria-label="Caption"
-            className="w-full rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 dark:border-slate-800 dark:bg-slate-900"
+            className="w-full rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#137EFD] dark:border-slate-800 dark:bg-slate-900"
             placeholder="Add a caption (optional)"
             maxLength={1024}
             value={staged.caption}
@@ -294,10 +294,10 @@ export default function Composer({
             aria-valuenow={percent}
             aria-valuemin={0}
             aria-valuemax={100}
-            className="h-1.5 overflow-hidden rounded-full bg-violet-100 dark:bg-slate-800"
+            className="h-1.5 overflow-hidden rounded-full bg-[#EAF3FF] dark:bg-slate-800"
           >
             <div
-              className="h-full bg-indigo-600 transition-[width]"
+              className="h-full bg-[#137EFD] transition-[width]"
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -310,7 +310,7 @@ export default function Composer({
         <div className="flex gap-2">
           <button
             type="button"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#137EFD] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             disabled={working || !account.ready}
             onClick={() => void sendAttachment()}
           >
@@ -342,10 +342,10 @@ export default function Composer({
           {String(Math.floor(seconds / 60)).padStart(2, "0")}:
           {String(seconds % 60).padStart(2, "0")}
         </span>
-        <span className="text-xs text-slate-500">Recording…</span>
+        <span className="text-xs text-[#6B7A99]">Recording…</span>
         <button
           type="button"
-          className="ml-auto inline-flex items-center gap-2 rounded-xl bg-indigo-700 px-3 py-2 text-sm font-semibold text-white"
+          className="ml-auto inline-flex items-center gap-2 rounded-xl bg-[#137EFD] px-3 py-2 text-sm font-semibold text-white"
           onClick={stopRecording}
         >
           <Square size={13} />
@@ -379,18 +379,18 @@ export default function Composer({
             type="button"
             aria-label="Add an attachment"
             aria-expanded={menu}
-            className="rounded-full p-3 text-slate-500 hover:bg-violet-50 dark:hover:bg-slate-800"
+            className="rounded-full p-3 text-[#6B7A99] hover:bg-[#EAF3FF] dark:hover:bg-slate-800"
             onClick={() => setMenu((open) => !open)}
           >
             <Paperclip size={18} />
           </button>
           {menu && (
-            <div className="absolute bottom-14 left-0 z-10 w-44 overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
+            <div className="absolute bottom-14 left-0 z-10 w-44 overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
               {ATTACHMENTS.map((option) => (
                 <button
                   key={option.id}
                   type="button"
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-violet-50 dark:hover:bg-slate-800"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-[#EAF3FF] dark:hover:bg-slate-800"
                   onClick={() => {
                     picking.current = option;
                     setMenu(false);
@@ -398,7 +398,7 @@ export default function Composer({
                     window.setTimeout(() => picker.current?.click(), 0);
                   }}
                 >
-                  <option.icon size={16} className="text-indigo-600" />
+                  <option.icon size={16} className="text-[#137EFD]" />
                   {option.label}
                 </button>
               ))}
@@ -407,7 +407,7 @@ export default function Composer({
         </div>
         <textarea
           aria-label={`Reply to ${thread.contact_name || thread.destination}`}
-          className="max-h-40 min-h-[44px] w-full flex-1 resize-y rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-400 dark:border-slate-800 dark:bg-slate-900"
+          className="max-h-40 min-h-[44px] w-full flex-1 resize-y rounded-2xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#137EFD] dark:border-slate-800 dark:bg-slate-900"
           rows={2}
           maxLength={4096}
           placeholder="Write a reply…"
@@ -426,7 +426,7 @@ export default function Composer({
             type="submit"
             aria-label="Send reply"
             disabled={busy || !account.ready}
-            className="shrink-0 rounded-full bg-indigo-700 p-3 text-white disabled:opacity-40"
+            className="shrink-0 rounded-full bg-[#137EFD] p-3 text-white disabled:opacity-40"
           >
             {busy ? (
               <Loader2 size={16} className="animate-spin" />
@@ -439,7 +439,7 @@ export default function Composer({
             type="button"
             aria-label="Record a voice message"
             disabled={!account.ready}
-            className="shrink-0 rounded-full bg-indigo-700 p-3 text-white disabled:opacity-40"
+            className="shrink-0 rounded-full bg-[#137EFD] p-3 text-white disabled:opacity-40"
             onClick={() => void startRecording()}
           >
             <Mic size={16} />

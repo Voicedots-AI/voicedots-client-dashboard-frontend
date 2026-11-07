@@ -1,19 +1,63 @@
-import { useEffect, useState, useCallback, useDeferredValue } from "react";
+import { useEffect, useState, useCallback, useDeferredValue, useRef } from "react";
 import { format, parseISO } from "date-fns";
-import {
-  Phone,
-  Search,
-  Loader2,
-  Download,
-  Trash2,
-} from "lucide-react";
+import { CheckCircle2, Download, Loader2, Percent, Phone, Search, Trash2, UserPlus, Users } from "lucide-react";
 import leadsApi from "@/api/leads";
 import { LeadDetailsDrawer } from "@/components/LeadDetailsDrawer";
-import { LeadsKpi } from "@/components/leadsKpi";
 import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import type { Lead } from "@/types/lead.types";
 import { useAuth } from "@/context/AuthContext";
-import { UI } from "@/ui/colors";
+import {
+  CARD,
+  ChannelHero,
+  CommsItem,
+  CommsShell,
+  EmptyState,
+  HeroButton,
+  HeroStatus,
+  INPUT,
+  Notice,
+  Pager,
+  SegmentTabs,
+  StatTile,
+} from "@/components/comms/CommsKit";
+
+type StatusFilter = "" | "Qualified" | "Follow Up" | "Unqualified";
+
+const STATUS_TABS = [
+  ["", "All leads"],
+  ["Qualified", "Qualified"],
+  ["Follow Up", "Follow up"],
+  ["Unqualified", "Unqualified"],
+] as const;
+
+const initials = (name?: string | null) =>
+  (name ?? "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase() || "?";
+
+/* Avatar hue is stable per lead so the list is scannable. */
+const AVATAR_GRADIENTS = [
+  ["#7732FD", "#A779FF"],
+  ["#137EFD", "#5AB8FF"],
+  ["#F27198", "#FF8FA3"],
+  ["#14B8A6", "#6FE0C8"],
+  ["#FF8A3D", "#FFB27A"],
+];
+const avatarFor = (key: string) => AVATAR_GRADIENTS[[...key].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_GRADIENTS.length];
+
+function LeadStatus({ value }: { value?: string }) {
+  const cls =
+    value === "Qualified"
+      ? "bg-[#DDF7E8] text-[#118A4B] dark:bg-emerald-500/10 dark:text-emerald-300"
+      : value === "Unqualified"
+        ? "bg-[#FFF1DA] text-[#A86A00] dark:bg-amber-500/10 dark:text-amber-300"
+        : "bg-[#EFE6FF] text-[#6A2EE0] dark:bg-violet-500/10 dark:text-violet-300";
+  return <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${cls}`}>{value || "Follow Up"}</span>;
+}
 
 export function LeadsPage() {
   const { user } = useAuth();
@@ -25,53 +69,77 @@ export function LeadsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
     qualified: 0,
     page: 1,
     limit: 20,
-    pages: 0
+    pages: 0,
   });
   const deferredSearch = useDeferredValue(search.trim());
 
-  const fetchLeads = useCallback(async (isExport = false) => {
-    if (!user?.agent_id && !isExport) return;
-    if (!isExport) setLoading(true);
-    if (!isExport) setLoadError("");
-    try {
-      const response = await leadsApi.getLeads({
-        agentId: user?.agent_id,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        status: statusFilter || undefined,
-        search: deferredSearch || undefined,
-        page: isExport ? 1 : page,
-        limit: isExport ? 10000 : 20,
-      });
-      if (isExport) return response.data;
-      setLeads(response.data);
-      setPagination(response.pagination);
-    } catch (err) {
-      console.error("Failed to fetch leads:", err);
-      if (!isExport) setLoadError("Leads could not be loaded. Please retry.");
-    } finally {
-      if (!isExport) setLoading(false);
-    }
-  }, [user?.agent_id, startDate, endDate, statusFilter, deferredSearch, page]);
+  const fetchLeads = useCallback(
+    async (isExport = false) => {
+      if (!user?.agent_id && !isExport) return;
+      if (!isExport) setLoading(true);
+      if (!isExport) setLoadError("");
+      try {
+        const response = await leadsApi.getLeads({
+          agentId: user?.agent_id,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          status: statusFilter || undefined,
+          search: deferredSearch || undefined,
+          page: isExport ? 1 : page,
+          limit: isExport ? 10000 : 20,
+        });
+        if (isExport) return response.data;
+        setLeads(response.data);
+        setPagination(response.pagination);
+      } catch (err) {
+        console.error("Failed to fetch leads:", err);
+        if (!isExport) setLoadError("Leads couldn't be loaded. Check your connection and retry.");
+      } finally {
+        if (!isExport) setLoading(false);
+      }
+    },
+    [user?.agent_id, startDate, endDate, statusFilter, deferredSearch, page]
+  );
 
-  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
-  useEffect(() => { setPage(1); }, [startDate, endDate, statusFilter, search]);
+  useEffect(() => {
+    setPage(1);
+  }, [startDate, endDate, statusFilter, search]);
+
+  // Close the export menu on outside click / Escape.
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setExportMenuOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [exportMenuOpen]);
 
   const handleDeleteLead = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this lead?")) return;
+    if (!window.confirm("Delete this lead? This can't be undone.")) return;
     try {
       await leadsApi.deleteLead(conversationId, user?.agent_id);
-      setLeads(prev => prev.filter(l => l.conversation_id !== conversationId));
+      setLeads((prev) => prev.filter((l) => l.conversation_id !== conversationId));
       if (selectedLead?.conversation_id === conversationId) {
         setDrawerOpen(false);
         setSelectedLead(null);
@@ -93,10 +161,13 @@ export function LeadsPage() {
     };
 
     const headers = ["Name", "Phone", "Email", "Description", "Status", "Date"].join(",");
-    const rows = [...leadsToExport].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-      .map(l => [escapeCsv(l.name), escapeCsv(l.mobile || l.phone), escapeCsv(l.email), escapeCsv(l.business_description || l.summary), escapeCsv(l.status), formatDt(l.created_at)].join(","));
+    const rows = [...leadsToExport]
+      .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+      .map((l) =>
+        [escapeCsv(l.name), escapeCsv(l.mobile || l.phone), escapeCsv(l.email), escapeCsv(l.business_description || l.summary), escapeCsv(l.status), formatDt(l.created_at)].join(",")
+      );
 
-    const blob = new Blob(["\uFEFF" + [headers, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["﻿" + [headers, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -106,191 +177,234 @@ export function LeadsPage() {
     document.body.removeChild(link);
   };
 
+  const exportAll = async () => {
+    setExporting(true);
+    try {
+      const all = await fetchLeads(true);
+      if (all) generateDownload(all as Lead[], "leads_all.csv");
+    } finally {
+      setExporting(false);
+      setExportMenuOpen(false);
+    }
+  };
+
+  const rate = pagination.total > 0 ? Math.round((pagination.qualified / pagination.total) * 100) : 0;
+  const openLead = (lead: Lead) => {
+    setSelectedLead(lead);
+    setDrawerOpen(true);
+  };
+
   return (
     <>
-      <div className={`flex flex-col gap-6 transition-[margin] duration-300 ${drawerOpen ? "lg:mr-[420px]" : ""}`}>
-        <div className="flex flex-col items-center md:items-end md:flex-row md:justify-between gap-4 mb-4">
-          <div className="text-center md:text-left">
-            <h1 className="text-3xl font-bold tracking-tight leading-tight" style={{ color: UI.colors.text.primary }}>
-              Leads
-            </h1>
-            <p className="text-base font-medium" style={{ color: UI.colors.text.secondary }}>
-              Captured automatically by your AI avatar
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 px-2">
-            <DatePickerWithRange
-              value={
-                startDate
-                  ? { from: parseISO(startDate), to: endDate ? parseISO(endDate) : undefined }
-                  : undefined
+      <div className={`transition-[margin] duration-300 ${drawerOpen ? "lg:mr-[420px]" : ""}`}>
+        <CommsShell>
+          <CommsItem>
+            <ChannelHero
+              tone="leads"
+              icon={UserPlus}
+              title="Leads"
+              description="Contacts your assistant captured during conversations, with the details it qualified them on."
+              status={
+                <HeroStatus ok={pagination.total > 0}>
+                  {loading ? "Counting leads…" : `${pagination.total.toLocaleString()} captured · ${pagination.qualified.toLocaleString()} qualified`}
+                </HeroStatus>
               }
-              onChange={(range) => {
-                setStartDate(range?.from ? format(range.from, "yyyy-MM-dd") : "");
-                setEndDate(range?.to ? format(range.to, "yyyy-MM-dd") : "");
-              }}
-              onClear={() => { setStartDate(""); setEndDate(""); }}
-              showClear={Boolean(startDate || endDate)}
-              label="Date Range"
-              className="w-full md:w-auto"
-            />
-
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`h-11 px-4 rounded-xl border text-sm outline-none font-bold shadow-sm min-w-[130px] transition-all hover:border-slate-300 ${statusFilter === "Qualified" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800" : statusFilter === "Unqualified" ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800" : statusFilter === "Follow Up" ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800" : "bg-white text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"}`}>
-              <option value="">All Status</option>
-              <option value="Qualified">Qualified</option>
-              <option value="Unqualified">Unqualified</option>
-              <option value="Follow Up">Follow Up</option>
-            </select>
-
-            <div className="relative min-w-[200px] flex-1 md:flex-none">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input placeholder="Search leads..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:ring-2 focus:ring-slate-100 shadow-sm transition-all hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800 dark:ring-slate-800" />
-            </div>
-
-            {statusFilter && (
-              <button onClick={() => { setStatusFilter(""); }} className="text-sm text-red-500 font-bold hover:text-red-600 transition-colors px-1">Clear Status</button>
-            )}
-
-            <div className="relative">
-              <button 
-                onClick={() => setExportMenuOpen(!exportMenuOpen)} 
-                disabled={leads.length === 0} 
-                className="flex items-center justify-center gap-2.5 h-11 px-5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 shadow-lg shadow-indigo-100 active:scale-95"
-              >
-                <Download size={18} />
-                <span>Export</span>
-              </button>
-              {exportMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 dark:bg-slate-900 dark:border-slate-800">
-                  <button onClick={() => { generateDownload(leads, "leads_current.csv"); setExportMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors border-b border-slate-50 dark:text-slate-300">Current Page</button>
-                  <button onClick={async () => { const all = await fetchLeads(true); if (all) generateDownload(all as Lead[], "leads_all.csv"); setExportMenuOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors dark:text-slate-300">All Leads</button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {!loading && <LeadsKpi totalLeads={pagination.total} qualifiedLeads={pagination.qualified} />}
-
-        <div className="space-y-3 pr-1">
-          {loading ? (
-            <div className="flex justify-center items-center py-24">
-              <Loader2 className="animate-spin text-indigo-400" size={32} />
-            </div>
-          ) : loadError ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center font-semibold text-red-700">{loadError}</div>
-          ) : leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 bg-white border border-dashed border-slate-200 rounded-3xl gap-4 dark:bg-slate-900 dark:border-slate-800">
-              <div className="p-4 rounded-full bg-slate-50 text-slate-300">
-                <Search size={32} />
-              </div>
-              <p className="text-slate-500 font-bold">No leads found</p>
-            </div>
-          ) : (
-            leads.map((lead) => (
-              <div
-                key={lead.conversation_id}
-                onClick={() => { setSelectedLead(lead); setDrawerOpen(true); }}
-                className="group flex items-center bg-white border border-slate-100 rounded-2xl px-5 py-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-100/50 hover:-translate-y-0.5 gap-6 dark:bg-slate-900 dark:border-slate-800"
-              >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 flex items-center justify-center text-sm font-black shrink-0 text-slate-600 shadow-sm group-hover:from-indigo-50 group-hover:to-white group-hover:border-indigo-200 transition-colors dark:border-slate-800 dark:text-slate-400">
-                    {(lead.name ?? "?").split(" ").map(n => n[0]).join("").toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold truncate text-slate-900 text-base mb-0.5 group-hover:text-indigo-600 transition-colors dark:text-slate-100">
-                      {lead.name ?? "Unknown"}
-                    </p>
-                    <p className="text-[13px] font-medium text-slate-400 truncate">
-                      {lead.email ?? "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="hidden lg:flex items-center gap-10 text-sm text-slate-600 w-[350px] shrink-0 dark:text-slate-400">
-                  <div className="flex items-center gap-2.5 w-[140px] shrink-0">
-                    <div className="p-1.5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
-                      <Phone size={14} />
-                    </div>
-                    <span className="truncate font-bold text-slate-700 dark:text-slate-300">{lead.mobile || lead.phone || "—"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-400 font-bold tracking-tight whitespace-nowrap">
-                    {lead.created_at ? new Date(lead.created_at).toLocaleString(undefined, {
-                      dateStyle: 'medium',
-                      timeStyle: 'short'
-                    }) : "—"}
-                  </div>
-                </div>
-
-                <div className="w-[130px] flex justify-center shrink-0">
-                  <span className={`text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-xl font-black shadow-sm ${
-                    lead.status === "Qualified" 
-                      ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
-                      : lead.status === "Unqualified" 
-                      ? "bg-amber-50 text-amber-600 border border-amber-100" 
-                      : "bg-indigo-50 text-indigo-600 border border-indigo-100"
-                  }`}>
-                    {lead.status}
-                  </span>
-                </div>
-
-                <div className="w-10 flex justify-end shrink-0">
-                  <button 
-                    onClick={(e) => handleDeleteLead(e, lead.conversation_id)} 
-                    className="w-10 h-10 rounded-xl border border-slate-100 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 hover:border-red-100 transition-all opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 dark:border-slate-800"
+              actions={
+                <div ref={exportRef} className="relative">
+                  <HeroButton
+                    primary
+                    tone="leads"
+                    aria-haspopup="menu"
+                    aria-expanded={exportMenuOpen}
+                    onClick={() => setExportMenuOpen((v) => !v)}
+                    disabled={leads.length === 0}
                   >
-                    <Trash2 size={18} />
-                  </button>
+                    {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                    Export CSV
+                  </HeroButton>
+                  {exportMenuOpen && (
+                    <div role="menu" className={`${CARD} absolute left-0 top-full z-50 mt-2 w-52 p-1 text-[#0B1B3F] dark:text-slate-100`}>
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => {
+                          generateDownload(leads, "leads_current.csv");
+                          setExportMenuOpen(false);
+                        }}
+                        className="w-full rounded-lg px-3 py-2.5 text-left text-[13px] font-medium hover:bg-[#F4F9FF] dark:hover:bg-white/[0.06]"
+                      >
+                        This page
+                        <span className="block text-[11px] font-normal text-[#6B7A99] dark:text-slate-400">{leads.length} leads</span>
+                      </button>
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={exportAll}
+                        className="w-full rounded-lg px-3 py-2.5 text-left text-[13px] font-medium hover:bg-[#F4F9FF] dark:hover:bg-white/[0.06]"
+                      >
+                        All matching leads
+                        <span className="block text-[11px] font-normal text-[#6B7A99] dark:text-slate-400">{pagination.total.toLocaleString()} leads</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              }
+            />
+          </CommsItem>
 
-        {!loading && pagination.pages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 sm:py-6 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden dark:bg-slate-900 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">Page <span className="text-indigo-600">{pagination.page}</span> of <span className="text-indigo-600">{pagination.pages}</span></p>
-              <div className="h-4 w-px bg-slate-200 mx-2"></div>
-              <p className="text-[10px] sm:text-xs font-bold text-slate-400">Total <span className="text-slate-900 font-black dark:text-slate-100">{pagination.total}</span> leads</p>
+          <CommsItem className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatTile label="Total leads" value={loading ? "—" : pagination.total.toLocaleString()} icon={Users} from="#7732FD" to="#A779FF" foot="In this view" />
+            <StatTile
+              label="Qualified"
+              value={loading ? "—" : pagination.qualified.toLocaleString()}
+              icon={CheckCircle2}
+              from="#1FB867"
+              to="#6FE0A0"
+              foot="Ready for follow-up"
+              footTone="up"
+            />
+            <StatTile label="Qualification rate" value={loading ? "—" : `${rate}%`} icon={Percent} from="#F27198" to="#FF8FA3" foot="Qualified ÷ captured" />
+          </CommsItem>
+
+          {/* FILTERS */}
+          <CommsItem className={`${CARD} flex flex-col gap-3 p-3 sm:p-4 xl:flex-row xl:items-center xl:justify-between`}>
+            <SegmentTabs label="Lead status" value={statusFilter} onChange={setStatusFilter} tabs={STATUS_TABS} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label className="relative block min-w-0 sm:w-64">
+                <span className="sr-only">Search leads</span>
+                <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 mt-0.5 -translate-y-1/2 text-[#9AA8C2]" />
+                <input placeholder="Search name, email or phone" value={search} onChange={(e) => setSearch(e.target.value)} className={`${INPUT} mt-0 pl-10`} />
+              </label>
+              <DatePickerWithRange
+                value={startDate ? { from: parseISO(startDate), to: endDate ? parseISO(endDate) : undefined } : undefined}
+                onChange={(range) => {
+                  setStartDate(range?.from ? format(range.from, "yyyy-MM-dd") : "");
+                  setEndDate(range?.to ? format(range.to, "yyyy-MM-dd") : "");
+                }}
+                onClear={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                showClear={Boolean(startDate || endDate)}
+                label="Date Range"
+                className="w-full sm:w-auto [&_label]:sr-only"
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <button 
-                disabled={page <= 1} 
-                onClick={() => setPage(p => Math.max(1, p - 1))} 
-                className="flex items-center justify-center px-4 h-9 bg-indigo-600 text-white rounded-xl text-[10px] sm:text-xs font-black uppercase transition-all hover:bg-indigo-700 shadow-lg shadow-indigo-100 disabled:opacity-40"
-              >
-                Prev
-              </button>
-              <div className="flex items-center gap-1">
-                {[...Array(pagination.pages)].map((_, i) => {
-                  const pNum = i + 1;
-                  if (pNum === 1 || pNum === pagination.pages || (pNum >= page - 1 && pNum <= page + 1)) {
-                    return <button key={pNum} onClick={() => setPage(pNum)} className={`w-9 h-9 flex items-center justify-center rounded-xl text-[10px] sm:text-xs font-black transition-all ${page === pNum ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" : "bg-white border border-slate-200 text-slate-400 hover:text-slate-900 dark:bg-slate-900 dark:border-slate-800 dark:hover:text-slate-100"}`}>{pNum}</button>;
-                  }
-                  if (pNum === 2 || pNum === pagination.pages - 1) return <span key={pNum} className="text-slate-300 font-bold px-1">.</span>;
-                  return null;
-                })}
+          </CommsItem>
+
+          {/* LIST */}
+          <CommsItem>
+            {loading ? (
+              <div className={`${CARD} flex items-center justify-center gap-2 py-24 text-[13px] text-[#6B7A99] dark:text-slate-400`}>
+                <Loader2 className="animate-spin text-[#7732FD]" size={20} /> Loading leads…
               </div>
-              <button 
-                disabled={page >= pagination.pages} 
-                onClick={() => setPage(p => Math.min(pagination.pages, p + 1))} 
-                className="flex items-center justify-center px-4 h-9 bg-indigo-600 text-white rounded-xl text-[10px] sm:text-xs font-black uppercase transition-all hover:bg-indigo-700 shadow-lg shadow-indigo-100 disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+            ) : loadError ? (
+              <Notice tone="error">
+                {loadError}{" "}
+                <button type="button" onClick={() => fetchLeads()} className="font-semibold underline">
+                  Retry
+                </button>
+              </Notice>
+            ) : leads.length === 0 ? (
+              <EmptyState
+                icon={Search}
+                tone="leads"
+                title={search || statusFilter || startDate ? "No leads match these filters" : "No leads yet"}
+                text={
+                  search || statusFilter || startDate
+                    ? "Try a wider date range, another status, or a different search."
+                    : "When a caller shares their details with the assistant, they'll appear here."
+                }
+              />
+            ) : (
+              <div className={`${CARD} overflow-hidden`}>
+                <div className="hidden grid-cols-[minmax(0,1fr)_170px_190px_120px_44px] gap-4 border-b border-sky-100 px-5 py-3 text-[11px] font-medium uppercase tracking-wide text-[#6B7A99] dark:border-white/[0.06] dark:text-slate-500 lg:grid">
+                  <span>Lead</span>
+                  <span>Phone</span>
+                  <span>Captured</span>
+                  <span>Status</span>
+                  <span className="sr-only">Actions</span>
+                </div>
+                <ul className="divide-y divide-sky-100/80 dark:divide-white/[0.06]">
+                  {leads.map((lead) => {
+                    const [a, b] = avatarFor(lead.conversation_id);
+                    const active = drawerOpen && selectedLead?.conversation_id === lead.conversation_id;
+                    return (
+                      <li key={lead.conversation_id}>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openLead(lead)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              openLead(lead);
+                            }
+                          }}
+                          className={`group grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 outline-none transition-colors focus-visible:bg-[#F4F9FF] sm:px-5 lg:grid-cols-[minmax(0,1fr)_170px_190px_120px_44px] lg:gap-4 ${
+                            active ? "bg-[#F4F0FF] dark:bg-violet-500/[0.08]" : "hover:bg-[#F8FBFF] dark:hover:bg-white/[0.03] dark:focus-visible:bg-white/[0.05]"
+                          }`}
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
+                              style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}
+                            >
+                              {initials(lead.name)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate text-[14px] font-semibold text-[#0B1B3F] dark:text-white">{lead.name ?? "Unknown caller"}</p>
+                              <p className="truncate text-[12px] text-[#6B7A99] dark:text-slate-400">{lead.email ?? "No email shared"}</p>
+                            </div>
+                          </div>
+                          <span className="hidden items-center gap-2 text-[13px] tabular-nums text-[#0B1B3F] dark:text-slate-200 lg:flex">
+                            <Phone size={14} className="shrink-0 text-[#9AA8C2]" />
+                            <span className="truncate">{lead.mobile || lead.phone || "—"}</span>
+                          </span>
+                          <span className="hidden text-[12px] text-[#6B7A99] dark:text-slate-400 lg:block">
+                            {lead.created_at ? new Date(lead.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—"}
+                          </span>
+                          <span className="justify-self-end lg:justify-self-start">
+                            <LeadStatus value={lead.status} />
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`Delete lead ${lead.name ?? ""}`}
+                            onClick={(e) => handleDeleteLead(e, lead.conversation_id)}
+                            className="hidden h-9 w-9 items-center justify-center rounded-lg text-[#9AA8C2] opacity-0 transition hover:bg-[#FDE4EA] hover:text-[#C42D52] focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-rose-500/10 dark:hover:text-rose-300 lg:flex"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </CommsItem>
+
+          {!loading && (
+            <CommsItem>
+              <Pager page={pagination.page} pages={pagination.pages} onPage={setPage} total={pagination.total} noun="leads" />
+            </CommsItem>
+          )}
+        </CommsShell>
       </div>
 
       <LeadDetailsDrawer
         lead={selectedLead}
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onUpdateLead={(updated) => { setLeads(prev => prev.map(l => l.conversation_id === updated.conversation_id ? updated : l)); setSelectedLead(updated); }}
-        onDeleteLead={(id) => { setLeads(prev => prev.filter(l => l.conversation_id !== id)); setDrawerOpen(false); setSelectedLead(null); }}
+        onUpdateLead={(updated) => {
+          setLeads((prev) => prev.map((l) => (l.conversation_id === updated.conversation_id ? updated : l)));
+          setSelectedLead(updated);
+        }}
+        onDeleteLead={(id) => {
+          setLeads((prev) => prev.filter((l) => l.conversation_id !== id));
+          setDrawerOpen(false);
+          setSelectedLead(null);
+        }}
       />
     </>
   );
