@@ -1,36 +1,49 @@
-import { Info, Ticket as TicketIcon } from "lucide-react";
+import { AlertTriangle, Clock3, Inbox, Ticket as TicketIcon, UserCheck } from "lucide-react";
+import { CARD, ChannelHero, CommsItem, CommsShell, EmptyState, HeroStatus, IconChip, SectionHeader } from "@/components/comms/CommsKit";
+
+/* What each ticket stage will hold once support ticketing is switched on. */
+const STAGES = [
+  { icon: Inbox, title: "Raised", text: "The assistant opens a ticket when a caller reports a problem it can't resolve.", from: "#FF8A3D", to: "#F0A500" },
+  { icon: UserCheck, title: "Assigned", text: "Your team picks it up, with the call transcript attached.", from: "#137EFD", to: "#33B0E6" },
+  { icon: Clock3, title: "Resolved", text: "Close it with a note; the caller can be followed up on WhatsApp or email.", from: "#1FB867", to: "#14B8A6" },
+] as const;
 
 export function TicketsPage() {
-    return (
-        <section className="flex flex-col gap-6">
-            <header>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 md:text-3xl">
-                    Support Tickets
-                </h1>
-                <p className="mt-1 text-sm text-gray-500">
-                    Manage user inquiries and reported issues
-                </p>
-            </header>
+  return (
+    <CommsShell>
+      <CommsItem>
+        <ChannelHero
+          tone="support"
+          icon={TicketIcon}
+          title="Support tickets"
+          description="Issues your callers report to the assistant, tracked from the first message to the fix."
+          status={<HeroStatus ok={false}>Not enabled for this account yet</HeroStatus>}
+        />
+      </CommsItem>
 
-            <div
-                role="status"
-                className="flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-sm text-indigo-800 dark:border-indigo-900 dark:bg-indigo-900/20 dark:text-indigo-300"
-            >
-                <Info size={18} className="mt-0.5 shrink-0" />
-                <div>
-                    <p className="font-semibold">Support ticketing is not enabled yet</p>
-                    <p className="mt-1">
-                        Tickets raised by the assistant will appear here once the support service
-                        is available for your account.
-                    </p>
-                </div>
+      <CommsItem className={`${CARD} p-5 sm:p-6`}>
+        <SectionHeader title="How tickets will work" description="Three stages, each linked to the conversation that started it." />
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {STAGES.map(({ icon, title, text, from, to }) => (
+            <div key={title} className="flex gap-3 rounded-xl bg-[#F4F9FF] p-4 dark:bg-white/[0.03]">
+              <IconChip icon={icon} from={from} to={to} size="h-10 w-10" iconSize="h-[18px] w-[18px]" />
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-[#0B1B3F] dark:text-white">{title}</p>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-[#6B7A99] dark:text-slate-400">{text}</p>
+              </div>
             </div>
+          ))}
+        </div>
+      </CommsItem>
 
-            <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-12 text-center text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-400">
-                <TicketIcon className="mb-3 h-10 w-10 text-gray-300 dark:text-slate-600" />
-                <p className="font-medium">Ticket management will be available here</p>
-                <p className="mt-1 text-sm">This page will show tickets when support ticketing is enabled.</p>
-            </div>
-        </section>
-    );
+      <CommsItem>
+        <EmptyState
+          icon={AlertTriangle}
+          tone="support"
+          title="No tickets to show"
+          text="Tickets raised by the assistant will appear here once support ticketing is enabled. Contact the VoiceDots team to turn it on."
+        />
+      </CommsItem>
+    </CommsShell>
+  );
 }

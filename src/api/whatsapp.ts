@@ -135,6 +135,10 @@ export type Analytics = {
   delivery_rate: number | null;
   read_rate: number | null;
   counts: Record<string, number>;
+  /** Inbound messages received on this number. */
+  received?: number;
+  /** Chats whose latest message came from the contact. */
+  awaiting_reply?: number;
 };
 export type Preview = {
   total: number;

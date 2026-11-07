@@ -27,17 +27,21 @@ const conversationsApi = {
     endDate?: string,
     source?: string,
     search?: string,
-    category?: string
+    category?: string,
+    includeContact?: boolean,
+    direction?: "inbound" | "outbound"
   ): Promise<GetConversationsListResult> => {
     const version = getApiVersion(agentId);
-    
-    const params: Record<string, string | number | undefined> = {};
+
+    const params: Record<string, string | number | boolean | undefined> = {};
+    if (includeContact && version === "v3") params.include_contact = true;
     if (agentId) params.agent_id = agentId;
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     if (source && source !== "all") params.source = source;
     if (search?.trim()) params.search = search.trim();
     if (category) params.category = category;
+    if (direction && version === "v3") params.direction = direction;
     
     if (version === "v3") {
       params.page = page;

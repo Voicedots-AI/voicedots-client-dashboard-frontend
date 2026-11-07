@@ -54,7 +54,7 @@ import { Field, Badge, Pager, TemplateSelect } from "./WhatsAppUi";
 import Messages from "./MessagesTab";
 import CampaignAudienceSelector, { type SelectedContact } from "@/components/campaigns/CampaignAudienceSelector";
 
-const label = "text-[10px] font-medium uppercase tracking-wider text-slate-500";
+const label = "text-[10px] font-medium uppercase tracking-wider text-[#6B7A99]";
 const rate = (value?: number | null) => (value == null ? "—" : `${value}%`);
 function csvCell(value: string) {
   return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -111,7 +111,7 @@ function SampleDownload({
     <button
       type="button"
       onClick={download}
-      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-300"
+      className="inline-flex items-center gap-1 text-xs font-medium text-[#137EFD] dark:text-[#5AB8FF]"
     >
       <Download size={13} />
       Download {template ? "template CSV" : "sample CSV"}
@@ -273,14 +273,14 @@ export default function Campaigns({
         className={`${card} flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6`}
       >
         <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-violet-100 p-3 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+          <span className="rounded-xl bg-[#EAF3FF] p-3 text-[#137EFD] dark:bg-indigo-950 dark:text-[#5AB8FF]">
             <Megaphone size={23} />
           </span>
           <div>
             <h2 className="text-xl font-semibold tracking-tight">
               WhatsApp Campaigns
             </h2>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            <p className="mt-1 text-xs leading-relaxed text-[#6B7A99]">
               Send personalized template messages to your applicants and
               students.
             </p>
@@ -302,10 +302,10 @@ export default function Campaigns({
           <section className={`${card} space-y-6 p-6`}>
             <div className="flex items-center justify-between border-b pb-4 dark:border-slate-800">
               <div>
-                <h3 className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                <h3 className="text-lg font-bold tracking-tight text-[#0B1B3F] dark:text-slate-100">
                   New WhatsApp Campaign
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#6B7A99]">
                   Target Leads, registered college students by branch/class, or upload an Excel sheet.
                 </p>
               </div>
@@ -313,7 +313,7 @@ export default function Campaigns({
                 type="button"
                 aria-label="Close campaign setup"
                 onClick={() => setCreating(false)}
-                className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="rounded-lg p-1.5 hover:bg-[#EEF3FB] dark:hover:bg-slate-800"
               >
                 <X size={18} />
               </button>
@@ -346,8 +346,8 @@ export default function Campaigns({
 
               {/* TEMPLATE PREVIEW BANNER */}
               {selectedTemplate && (
-                <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3.5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
-                  <div className="mb-1 flex items-center justify-between font-semibold text-indigo-700 dark:text-indigo-400">
+                <div className="rounded-xl border border-sky-200 bg-[#EAF3FF] p-3.5 text-xs text-[#33415F] dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
+                  <div className="mb-1 flex items-center justify-between font-semibold text-[#137EFD] dark:text-[#5AB8FF]">
                     <span>Template: {selectedTemplate.name} ({selectedTemplate.category})</span>
                     <Badge value={selectedTemplate.status} />
                   </div>
@@ -357,7 +357,7 @@ export default function Campaigns({
 
               {/* WHOM TO SEND (AUDIENCE TARGET) */}
               <div className="space-y-3">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6B7A99]">
                   WHOM TO SEND (AUDIENCE TARGET)
                 </label>
 
@@ -379,12 +379,12 @@ export default function Campaigns({
                 />
 
                 {/* STAGED RECIPIENTS SUMMARY BADGE */}
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/40">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-[#EAF3FF] p-3 text-xs dark:border-slate-800 dark:bg-slate-900/40">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-indigo-700 dark:text-indigo-300">
+                    <span className="font-semibold text-[#137EFD] dark:text-[#5AB8FF]">
                       Selected Audience Total:
                     </span>
-                    <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 font-bold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                    <span className="rounded-full bg-[#EAF3FF] px-2.5 py-0.5 font-bold text-[#0B1B3F] dark:bg-indigo-950 dark:text-[#5AB8FF]">
                       {stagedContacts.length + (manualNumbers ? manualNumbers.split(/[\n,]/).filter((x) => x.trim().length >= 7).length : 0)} contact(s) staged
                     </span>
                     {stagedFile && (
@@ -408,8 +408,8 @@ export default function Campaigns({
                 </div>
 
                 {/* MANUAL NUMBERS ACCORDION */}
-                <details className="rounded-xl border border-slate-200 p-3 text-xs dark:border-slate-800">
-                  <summary className="cursor-pointer font-medium text-slate-600 hover:text-indigo-600 dark:text-slate-400">
+                <details className="rounded-xl border border-sky-100 p-3 text-xs dark:border-slate-800">
+                  <summary className="cursor-pointer font-medium text-[#6B7A99] hover:text-[#137EFD] dark:text-[#9AA8C2]">
                     ▸ Or type/paste raw phone numbers manually
                   </summary>
                   <div className="mt-3 space-y-2">
@@ -418,9 +418,9 @@ export default function Campaigns({
                       value={manualNumbers}
                       onChange={(e) => setManualNumbers(e.target.value)}
                       placeholder="+919876543210, +919812345678 (comma or line separated)"
-                      className="w-full rounded-xl border border-slate-200 bg-white p-3 font-mono text-xs outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900"
+                      className="w-full rounded-xl border border-sky-100 bg-white p-3 font-mono text-xs outline-none focus:border-[#137EFD] dark:border-slate-800 dark:bg-slate-900"
                     />
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-[#9AA8C2]">
                       Include country code (+91 for India) for all phone numbers.
                     </p>
                   </div>
@@ -428,8 +428,8 @@ export default function Campaigns({
               </div>
 
               {/* CAMPAIGN TIMER & DELIVERY SCHEDULE */}
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <div className="space-y-3 rounded-2xl border border-sky-100 bg-[#F4F9FF] p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                <p className="text-xs font-semibold text-[#0B1B3F] dark:text-slate-200">
                   Campaign Timer & Delivery Schedule
                 </p>
                 <div className="flex flex-wrap items-center gap-6 text-xs">
@@ -439,17 +439,17 @@ export default function Campaigns({
                       name="campaign-timer-mode"
                       checked={scheduleMode === "now"}
                       onChange={() => setScheduleMode("now")}
-                      className="text-indigo-600"
+                      className="text-[#137EFD]"
                     />
                     <span>Send Immediately</span>
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 font-medium text-indigo-700 dark:text-indigo-300">
+                  <label className="flex cursor-pointer items-center gap-2 font-medium text-[#137EFD] dark:text-[#5AB8FF]">
                     <input
                       type="radio"
                       name="campaign-timer-mode"
                       checked={scheduleMode === "timer"}
                       onChange={() => setScheduleMode("timer")}
-                      className="text-indigo-600"
+                      className="text-[#137EFD]"
                     />
                     <Clock size={14} />
                     <span>Run on Timer (Schedule Date & Time)</span>
@@ -458,7 +458,7 @@ export default function Campaigns({
 
                 {scheduleMode === "timer" && (
                   <div className="max-w-md space-y-1.5 pt-2">
-                    <label className="block text-[11px] font-medium text-slate-500">
+                    <label className="block text-[11px] font-medium text-[#6B7A99]">
                       Select campaign run date & time:
                     </label>
                     <input
@@ -467,9 +467,9 @@ export default function Campaigns({
                       value={scheduledTime}
                       min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
                       onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+                      className="w-full rounded-xl border border-sky-100 bg-white p-2.5 text-xs outline-none focus:border-[#137EFD] dark:border-slate-700 dark:bg-slate-900"
                     />
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-[#9AA8C2]">
                       The campaign will be queued and sent out automatically at this scheduled time.
                     </p>
                   </div>
@@ -481,7 +481,7 @@ export default function Campaigns({
                 <button
                   type="submit"
                   disabled={busy || !templateId || !name.trim()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#137EFD] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0F6AD8] disabled:opacity-50"
                 >
                   {busy ? (
                     <Loader2 className="animate-spin" size={16} />
@@ -496,7 +496,7 @@ export default function Campaigns({
                   {stagedContacts.length > 0 && ` (${stagedContacts.length} recipients)`}
                 </button>
 
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-[#9AA8C2]">
                   Messages use your connected WhatsApp Business sender. Meta delivery limits apply.
                 </p>
               </div>
@@ -520,12 +520,12 @@ export default function Campaigns({
             <h2 className="text-xl font-semibold tracking-tight">
               Recent campaigns & delivery analytics
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-[#6B7A99]">
               Provider-reported delivery and read receipts across your
               campaigns.
             </p>
           </div>
-          <div className="flex flex-wrap gap-1 rounded-full bg-violet-100/60 p-1 dark:bg-slate-900">
+          <div className="flex flex-wrap gap-1 rounded-full bg-[#EAF3FF] p-1 dark:bg-slate-900">
             {[
               ["all", "All"],
               ["completed", "Completed"],
@@ -539,7 +539,7 @@ export default function Campaigns({
                   setOffset(0);
                 }}
                 aria-pressed={filter === key}
-                className={`rounded-full px-3 py-1.5 text-xs ${filter === key ? "bg-white font-semibold text-indigo-700 shadow-sm dark:bg-indigo-700 dark:text-white" : "text-slate-500"}`}
+                className={`rounded-full px-3 py-1.5 text-xs ${filter === key ? "bg-white font-semibold text-[#137EFD] shadow-sm dark:bg-[#137EFD] dark:text-white" : "text-[#6B7A99]"}`}
               >
                 {title}
               </button>
@@ -552,7 +552,7 @@ export default function Campaigns({
               title: "Messages sent",
               value: analytics?.sent.toLocaleString() ?? "—",
               icon: Send,
-              color: "text-indigo-700",
+              color: "text-[#137EFD]",
             },
             {
               title: "Delivery rate",
@@ -564,7 +564,7 @@ export default function Campaigns({
               title: "Read rate",
               value: rate(analytics?.read_rate),
               icon: Eye,
-              color: "text-indigo-700",
+              color: "text-[#137EFD]",
             },
           ].map(({ title, value, icon: Icon, color }) => (
             <div
@@ -574,12 +574,12 @@ export default function Campaigns({
               <div>
                 <p className={label}>{title}</p>
                 <p
-                  className={`mt-2 text-2xl font-semibold ${color} dark:text-indigo-300`}
+                  className={`mt-2 text-2xl font-semibold ${color} dark:text-[#5AB8FF]`}
                 >
                   {value}
                 </p>
               </div>
-              <span className="rounded-full bg-violet-50 p-3 text-indigo-600 dark:bg-indigo-950">
+              <span className="rounded-full bg-[#EAF3FF] p-3 text-[#137EFD] dark:bg-indigo-950">
                 <Icon size={18} />
               </span>
             </div>
@@ -588,7 +588,7 @@ export default function Campaigns({
         <div className={`${card} overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[750px] text-left text-sm">
-              <thead className="bg-violet-50/80 dark:bg-slate-950">
+              <thead className="bg-[#EAF3FF] dark:bg-slate-950">
                 <tr>
                   {[
                     "Campaign name",
@@ -603,7 +603,7 @@ export default function Campaigns({
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-4 text-[10px] font-medium uppercase tracking-wider text-slate-500"
+                      className="px-4 py-4 text-[10px] font-medium uppercase tracking-wider text-[#6B7A99]"
                     >
                       {h}
                     </th>
@@ -614,11 +614,11 @@ export default function Campaigns({
                 {campaigns.items.map((c) => (
                   <tr
                     key={c.id}
-                    className={`border-t border-violet-50 dark:border-slate-800 ${selected === c.id ? "bg-violet-50/50 dark:bg-indigo-950/20" : ""}`}
+                    className={`border-t border-violet-50 dark:border-slate-800 ${selected === c.id ? "bg-[#EAF3FF] dark:bg-indigo-950/20" : ""}`}
                   >
                     <td className="max-w-[260px] px-4 py-5">
                       <button
-                        className="flex items-center gap-2 text-left font-medium hover:text-indigo-600"
+                        className="flex items-center gap-2 text-left font-medium hover:text-[#137EFD]"
                         onClick={() => {
                           setSelected(c.id);
                           setCreating(false);
@@ -628,12 +628,12 @@ export default function Campaigns({
                           });
                         }}
                       >
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600" />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#137EFD]" />
                         {c.name}
                       </button>
                     </td>
                     <td className="max-w-[160px] px-4 py-5">
-                      <span className="break-words rounded bg-violet-50 px-1.5 py-1 text-[11px] dark:bg-indigo-950">
+                      <span className="break-words rounded bg-[#EAF3FF] px-1.5 py-1 text-[11px] dark:bg-indigo-950">
                         {c.template_name ||
                           templates.find((t) => t.id === c.template_id)?.name ||
                           "Template"}
@@ -652,7 +652,7 @@ export default function Campaigns({
                       <div className="space-y-1">
                         <Badge value={c.status} />
                         {c.scheduled_for && (
-                          <div className="flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400">
+                          <div className="flex items-center gap-1 text-[10px] text-[#137EFD] dark:text-[#5AB8FF]">
                             <Clock size={11} />
                             <span>{new Date(c.scheduled_for).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                           </div>
@@ -690,13 +690,13 @@ export default function Campaigns({
             </table>
             {!campaigns.total && (
               <div className="p-12 text-center">
-                <Megaphone className="mx-auto mb-3 text-indigo-300" size={30} />
+                <Megaphone className="mx-auto mb-3 text-[#5AB8FF]" size={30} />
                 <p className="font-medium">
                   {filter === "all"
                     ? "Your first campaign starts here"
                     : "No campaigns in this view"}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-[#6B7A99]">
                   Create a draft to add recipients, map your template, and
                   preview messages.
                 </p>
@@ -710,7 +710,7 @@ export default function Campaigns({
             change={setOffset}
           />
         </div>
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-[#9AA8C2]">
           Delivery rate = delivered ÷ sent. Read rate = read ÷ delivered.
           Accepted messages are awaiting a sent receipt; read receipts may be
           unavailable.
@@ -730,11 +730,11 @@ function Metric({
     <div>
       <div className="mb-1.5 flex justify-between gap-2 text-xs">
         <span>{count}</span>
-        <span className="text-[10px] text-slate-400">{rate(percentage)}</span>
+        <span className="text-[10px] text-[#9AA8C2]">{rate(percentage)}</span>
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-violet-100 dark:bg-slate-800">
+      <div className="h-1 overflow-hidden rounded-full bg-[#EAF3FF] dark:bg-slate-800">
         <div
-          className="h-full rounded-full bg-indigo-600"
+          className="h-full rounded-full bg-[#137EFD]"
           style={{ width: `${percentage ?? 0}%` }}
         />
       </div>
@@ -854,7 +854,7 @@ function CampaignEditor({
   ];
   if (!campaign)
     return (
-      <section className={`${card} p-8 text-sm text-slate-500`}>
+      <section className={`${card} p-8 text-sm text-[#6B7A99]`}>
         Loading campaign…
       </section>
     );
@@ -897,14 +897,14 @@ function CampaignEditor({
             aria-current={step === i ? "step" : undefined}
           >
             <span
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs ${i < step ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" : i === step ? "bg-indigo-700 text-white shadow-md" : "bg-violet-50 text-slate-400 dark:bg-slate-800"}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs ${i < step ? "bg-[#EAF3FF] text-[#137EFD] dark:bg-indigo-950 dark:text-[#5AB8FF]" : i === step ? "bg-[#137EFD] text-white shadow-md" : "bg-[#EAF3FF] text-[#9AA8C2] dark:bg-slate-800"}`}
             >
               {i < step ? <Check size={14} /> : i + 1}
             </span>
             <span>
               <span className="block text-xs font-medium">{s.name}</span>
               <span
-                className={`text-[9px] uppercase tracking-wider ${i === step ? "text-indigo-600 dark:text-indigo-300" : "text-slate-400"}`}
+                className={`text-[9px] uppercase tracking-wider ${i === step ? "text-[#137EFD] dark:text-[#5AB8FF]" : "text-[#9AA8C2]"}`}
               >
                 {i < step
                   ? "Complete"
@@ -923,7 +923,7 @@ function CampaignEditor({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold">{campaign.name}</h3>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[#6B7A99]">
                 {campaign.total_contacts} recipients ·{" "}
                 {campaign.progress_percent}% processed
               </p>
@@ -958,9 +958,9 @@ function CampaignEditor({
               )}
             </div>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-violet-100 dark:bg-slate-800">
+          <div className="h-2 overflow-hidden rounded-full bg-[#EAF3FF] dark:bg-slate-800">
             <div
-              className="h-full rounded-full bg-indigo-700"
+              className="h-full rounded-full bg-[#137EFD]"
               style={{ width: `${campaign.progress_percent}%` }}
             />
           </div>
@@ -972,7 +972,7 @@ function CampaignEditor({
             ))}
             {/* FIXED: Removed stray /> here */}
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[#9AA8C2]">
             Submission progress is separate from delivery. Receipts continue
             updating after the campaign finishes.
           </p>
@@ -986,7 +986,7 @@ function CampaignEditor({
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="rounded-lg bg-violet-50 p-2 text-indigo-600 dark:bg-indigo-950">
+                  <span className="rounded-lg bg-[#EAF3FF] p-2 text-[#137EFD] dark:bg-indigo-950">
                     <FileSpreadsheet size={20} />
                   </span>
                   <div>
@@ -1005,24 +1005,24 @@ function CampaignEditor({
                   {
                     title: result ? "Rows reviewed" : "Saved audience",
                     value: result?.total_rows ?? campaign.total_contacts,
-                    tone: "bg-violet-50 dark:bg-slate-800",
+                    tone: "bg-[#EAF3FF] dark:bg-slate-800",
                   },
                   {
                     title: result ? "Accepted" : "Recipients",
                     value: result?.accepted ?? campaign.total_contacts,
-                    tone: "bg-indigo-100/80 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300",
+                    tone: "bg-[#EAF3FF] text-[#0B1B3F] dark:bg-indigo-950 dark:text-[#5AB8FF]",
                   },
                   {
                     title: "Rejected",
                     value: result?.invalid_count ?? "—",
                     tone: result?.invalid_count
                       ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                      : "bg-violet-50 dark:bg-slate-800",
+                      : "bg-[#EAF3FF] dark:bg-slate-800",
                   },
                   {
                     title: "Duplicates",
                     value: result?.duplicate_count ?? "—",
-                    tone: "bg-violet-50 dark:bg-slate-800",
+                    tone: "bg-[#EAF3FF] dark:bg-slate-800",
                   },
                 ].map((stat) => (
                   <div
@@ -1063,7 +1063,7 @@ function CampaignEditor({
                   }}
                 />
               </div>
-              <details className="rounded-xl border border-violet-100 p-4 dark:border-slate-800">
+              <details className="rounded-xl border border-sky-200 p-4 dark:border-slate-800">
                 <summary className="cursor-pointer text-sm font-medium">
                   Add a recipient manually
                 </summary>
@@ -1126,7 +1126,7 @@ function CampaignEditor({
                 </form>
               </details>
               {result && (
-                <div role="status" className="text-xs text-slate-500">
+                <div role="status" className="text-xs text-[#6B7A99]">
                   {result.accepted} added · {result.rejected_count} rejected
                   {result.rejected.length > 0 && (
                     <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto text-rose-600">
@@ -1140,15 +1140,15 @@ function CampaignEditor({
                 </div>
               )}
               <details>
-                <summary className="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-300">
+                <summary className="cursor-pointer text-xs font-medium text-[#137EFD] dark:text-[#5AB8FF]">
                   Review {campaign.total_contacts} saved recipients
                 </summary>
                 <div className="mt-3 overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr>
-                        <th className="p-2 font-medium text-slate-500">Name</th>
-                        <th className="p-2 font-medium text-slate-500">
+                        <th className="p-2 font-medium text-[#6B7A99]">Name</th>
+                        <th className="p-2 font-medium text-[#6B7A99]">
                           Number
                         </th>
                         <th>
@@ -1189,7 +1189,7 @@ function CampaignEditor({
                   change={setOffset}
                 />
               </details>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-[#9AA8C2]">
                 Use country codes for international numbers. Bare 10-digit
                 numbers use +91.
               </p>
@@ -1199,7 +1199,7 @@ function CampaignEditor({
               className={`${card} scroll-mt-24 space-y-5 p-5 sm:p-6`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="rounded-full bg-violet-100 px-2 py-1 text-[10px] text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                <span className="rounded-full bg-[#EAF3FF] px-2 py-1 text-[10px] text-[#137EFD] dark:bg-indigo-950 dark:text-[#5AB8FF]">
                   {template?.category || "TEMPLATE"}
                 </span>
                 {template && <Badge value={template.status} />}
@@ -1215,15 +1215,15 @@ function CampaignEditor({
                 }}
               />
 
-              <div className="rounded-xl bg-violet-50 p-4 dark:bg-slate-950">
+              <div className="rounded-xl bg-[#EAF3FF] p-4 dark:bg-slate-950">
                 <p className={label}>Template message</p>
-                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#6B7A99] dark:text-slate-300">
                   {template?.body || "Select a template to begin."}
                 </p>
               </div>
               <div>
                 <h3 className="text-sm font-semibold">Data association</h3>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-[#6B7A99]">
                   Only what this template requires is shown. Match each to a CSV
                   column or a fixed value.
                 </p>
@@ -1235,14 +1235,14 @@ function CampaignEditor({
                 if (!group.length) return null;
                 return (
                   <div key={section} className="space-y-2">
-                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[#6B7A99]">
                       {section}
                     </h4>
                     {group.map((field) =>
                       field.kind === "media" ? (
                         <div
                           key={field.slot}
-                          className="rounded-xl bg-violet-50/70 p-3 dark:bg-slate-950"
+                          className="rounded-xl bg-[#EAF3FF] p-3 dark:bg-slate-950"
                         >
                           <p className="mb-2 text-xs font-medium">
                             {field.label} — one file for the whole campaign
@@ -1263,14 +1263,14 @@ function CampaignEditor({
                       ) : (
                         <div
                           key={field.slot}
-                          className="grid items-center gap-2 rounded-xl bg-violet-50/70 p-3 sm:grid-cols-[120px_20px_1fr] dark:bg-slate-950"
+                          className="grid items-center gap-2 rounded-xl bg-[#EAF3FF] p-3 sm:grid-cols-[120px_20px_1fr] dark:bg-slate-950"
                         >
-                          <code className="break-all text-xs text-indigo-700 dark:text-indigo-300">
+                          <code className="break-all text-xs text-[#137EFD] dark:text-[#5AB8FF]">
                             {field.label}
                           </code>
                           <ArrowRightLeft
                             size={13}
-                            className="hidden text-slate-400 sm:block"
+                            className="hidden text-[#9AA8C2] sm:block"
                           />
                           <div className="grid min-w-0 grid-cols-[105px_1fr] gap-2">
                             <select
@@ -1321,7 +1321,7 @@ function CampaignEditor({
                 );
               })}
               {template && !(template.slot_fields || []).length && (
-                <p className="rounded-xl bg-violet-50/70 p-3 text-xs text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                <p className="rounded-xl bg-[#EAF3FF] p-3 text-xs text-[#6B7A99] dark:bg-slate-950 dark:text-slate-300">
                   This template does not require any variable mapping.
                 </p>
               )}
@@ -1368,7 +1368,7 @@ function CampaignEditor({
                   <Smartphone size={17} className="text-emerald-600" />
                   Recipient previews
                 </h3>
-                <span className="rounded-full bg-violet-50 px-2 py-1 text-[9px] text-slate-500 dark:bg-slate-800">
+                <span className="rounded-full bg-[#EAF3FF] px-2 py-1 text-[9px] text-[#6B7A99] dark:bg-slate-800">
                   {preview
                     ? `${preview.previews.length} of ${preview.total}`
                     : "Awaiting validation"}
@@ -1378,11 +1378,11 @@ function CampaignEditor({
                 <div className="mt-4 grid items-start gap-4 sm:grid-cols-[minmax(0,1fr)_260px]">
                   <dl className="space-y-1.5 text-xs">
                     <div className="flex gap-2">
-                      <dt className="text-slate-400">Template</dt>
+                      <dt className="text-[#9AA8C2]">Template</dt>
                       <dd className="font-medium">{template.name}</dd>
                     </div>
                     <div className="flex gap-2">
-                      <dt className="text-slate-400">Recipients</dt>
+                      <dt className="text-[#9AA8C2]">Recipients</dt>
                       <dd className="font-medium">
                         {preview ? preview.valid : (result?.accepted ?? 0)}
                       </dd>
@@ -1390,7 +1390,7 @@ function CampaignEditor({
                     {(template.slot_fields || []).length ? (
                       (template.slot_fields || []).map((f) => (
                         <div key={f.slot} className="flex gap-2">
-                          <dt className="text-slate-400">{f.label}</dt>
+                          <dt className="text-[#9AA8C2]">{f.label}</dt>
                           <dd className="font-medium">
                             →{" "}
                             {mapping[f.slot]?.source === "media"
@@ -1400,7 +1400,7 @@ function CampaignEditor({
                         </div>
                       ))
                     ) : (
-                      <div className="text-slate-500">
+                      <div className="text-[#6B7A99]">
                         This template does not require variable mapping.
                       </div>
                     )}
@@ -1417,26 +1417,26 @@ function CampaignEditor({
                     {preview.previews.map((p) => (
                       <article
                         key={p.destination}
-                        className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950"
+                        className="rounded-xl bg-[#F4F9FF] p-3 dark:bg-slate-950"
                       >
                         <div className="mb-3 flex items-center justify-between gap-2">
                           <span className="truncate text-xs font-medium">
                             {p.contact_name || "Recipient"}
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-[#9AA8C2]">
                             {p.destination}
                           </span>
                         </div>
-                        <p className="whitespace-pre-wrap break-words rounded-lg bg-white p-3 text-xs leading-relaxed text-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                        <p className="whitespace-pre-wrap break-words rounded-lg bg-white p-3 text-xs leading-relaxed text-[#6B7A99] dark:bg-slate-800 dark:text-slate-200">
                           {p.body}
                         </p>
-                        <p className="mt-2 text-right text-[9px] text-slate-400">
+                        <p className="mt-2 text-right text-[9px] text-[#9AA8C2]">
                           Preview · not sent
                         </p>
                       </article>
                     ))}
                   </div>
-                  <p className="mt-4 text-[11px] text-slate-500">
+                  <p className="mt-4 text-[11px] text-[#6B7A99]">
                     All {preview.total} recipients validated. Showing up to 10
                     previews.
                   </p>
@@ -1467,7 +1467,7 @@ function CampaignEditor({
                   <p className="text-sm font-medium">
                     See exactly what you’ll send
                   </p>
-                  <p className="mx-auto mt-2 max-w-[220px] text-xs leading-relaxed text-slate-400">
+                  <p className="mx-auto mt-2 max-w-[220px] text-xs leading-relaxed text-[#9AA8C2]">
                     Add recipients and map your variables, then validate to
                     generate personalized previews.
                   </p>
@@ -1479,7 +1479,7 @@ function CampaignEditor({
               className={`${card} scroll-mt-24 space-y-5 p-5 sm:p-6`}
             >
               <h3 className="flex items-center gap-2 text-sm font-semibold">
-                <Rocket size={18} className="text-indigo-600" />
+                <Rocket size={18} className="text-[#137EFD]" />
                 Campaign confirmation
               </h3>
               <Field label="Campaign name">
@@ -1493,26 +1493,26 @@ function CampaignEditor({
                   />
   
               </Field>
-              <dl className="space-y-3 rounded-xl bg-violet-50 p-4 text-xs dark:bg-slate-950">
+              <dl className="space-y-3 rounded-xl bg-[#EAF3FF] p-4 text-xs dark:bg-slate-950">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-slate-500">Saved recipients</dt>
+                  <dt className="text-[#6B7A99]">Saved recipients</dt>
                   <dd className="font-semibold">{campaign.total_contacts}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-slate-500">Ready to send</dt>
-                  <dd className="font-semibold text-indigo-700 dark:text-indigo-300">
+                  <dt className="text-[#6B7A99]">Ready to send</dt>
+                  <dd className="font-semibold text-[#137EFD] dark:text-[#5AB8FF]">
                     {preview ? preview.valid : "Validate first"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-slate-500">Sending method</dt>
+                  <dt className="text-[#6B7A99]">Sending method</dt>
                   <dd>Queued delivery</dd>
                 </div>
               </dl>
 
               {/* CAMPAIGN TIMER / RUN SCHEDULE */}
-              <div className="space-y-3 rounded-xl border border-violet-100 bg-violet-50/20 p-4 dark:border-slate-800 dark:bg-slate-950/40">
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <div className="space-y-3 rounded-xl border border-sky-200 bg-[#EAF3FF] p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                <p className="text-xs font-semibold text-[#0B1B3F] dark:text-slate-200">
                   Campaign Timer & Schedule
                 </p>
                 <div className="flex flex-wrap gap-4 text-xs">
@@ -1522,7 +1522,7 @@ function CampaignEditor({
                       name={`campaign-schedule-${id}`}
                       checked={scheduleMode === "now"}
                       onChange={() => setScheduleMode("now")}
-                      className="text-indigo-600"
+                      className="text-[#137EFD]"
                     />
                     <span>Run Immediately</span>
                   </label>
@@ -1532,16 +1532,16 @@ function CampaignEditor({
                       name={`campaign-schedule-${id}`}
                       checked={scheduleMode === "timer"}
                       onChange={() => setScheduleMode("timer")}
-                      className="text-indigo-600"
+                      className="text-[#137EFD]"
                     />
-                    <span className="flex items-center gap-1 font-medium text-indigo-700 dark:text-indigo-300">
+                    <span className="flex items-center gap-1 font-medium text-[#137EFD] dark:text-[#5AB8FF]">
                       <Clock size={13} /> Schedule with Timer
                     </span>
                   </label>
                 </div>
                 {scheduleMode === "timer" && (
                   <div className="space-y-1.5 pt-1">
-                    <label className="block text-[11px] font-medium text-slate-500">
+                    <label className="block text-[11px] font-medium text-[#6B7A99]">
                       Run campaign at date & time:
                     </label>
                     <input
@@ -1550,16 +1550,16 @@ function CampaignEditor({
                       value={scheduledTime}
                       min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
                       onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+                      className="w-full rounded-xl border border-sky-100 bg-white p-2.5 text-xs outline-none focus:border-[#137EFD] dark:border-slate-700 dark:bg-slate-900"
                     />
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-[#9AA8C2]">
                       The campaign will be queued and sent out automatically at this scheduled time.
                     </p>
                   </div>
                 )}
               </div>
 
-              <label className="flex items-start gap-2.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+              <label className="flex items-start gap-2.5 text-xs leading-relaxed text-[#6B7A99] dark:text-slate-300">
                 <input
                   type="checkbox"
                   className="mt-0.5 shrink-0"
@@ -1597,7 +1597,7 @@ function CampaignEditor({
                 Send campaign
                 {preview?.valid ? ` (${preview.valid} recipients)` : ""}
               </button>
-              <p className="text-[10px] leading-relaxed text-slate-400">
+              <p className="text-[10px] leading-relaxed text-[#9AA8C2]">
                 Messages use your connected sender. Provider limits apply;
                 delivery is tracked after submission.
               </p>

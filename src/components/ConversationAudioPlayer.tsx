@@ -83,7 +83,7 @@ export function ConversationAudioPlayer({
     `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
     return (
-    <div className="w-full max-w-[420px]">
+    <div className="w-full min-w-0 flex-1">
       <div
         ref={containerRef}
         className="mb-2 w-full"
@@ -95,18 +95,18 @@ export function ConversationAudioPlayer({
           <button
             onClick={togglePlay}
             disabled={!ready}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-black text-white disabled:opacity-40"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#137EFD] text-white shadow-[0_6px_14px_rgba(19,126,253,0.3)] disabled:opacity-40"
           >
             {playing ? <Pause size={14} /> : <Play size={14} />}
           </button>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-700 dark:bg-slate-800 dark:text-slate-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#F4F9FF] px-2.5 py-1 text-[11px] text-[#55648A] ring-1 ring-sky-100 dark:bg-slate-800 dark:text-slate-300">
               <Clock size={12} />
               Start: <span className="font-medium">{startTime}</span>
             </span>
 
-            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-700 dark:bg-slate-800 dark:text-slate-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#F4F9FF] px-2.5 py-1 text-[11px] text-[#55648A] ring-1 ring-sky-100 dark:bg-slate-800 dark:text-slate-300">
               <Clock size={12} />
               End: <span className="font-medium">{endTime}</span>
             </span>
@@ -124,7 +124,7 @@ export function ConversationAudioPlayer({
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-gray-500">
+          <span className="text-[#6B7A99]">
             {format(current)} / {format(duration)}
           </span>
           <MoreHorizontal size={14} className="opacity-60" />

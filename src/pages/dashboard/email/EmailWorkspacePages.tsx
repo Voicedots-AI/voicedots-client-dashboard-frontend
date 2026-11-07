@@ -1,22 +1,115 @@
-import { useEffect, useState } from "react";
-import { Inbox, MailPlus, Send, Sparkles, Link2, Loader2, Paperclip, RefreshCw, Clock, Calendar, Users, GraduationCap, CheckCircle2, Trash2, AlertCircle } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Inbox, MailPlus, Send, Sparkles, Link2, Loader2, Paperclip, RefreshCw, Clock, Calendar, CheckCircle2, Trash2, AlertCircle, Copy, Eye, FileText, Plus, Save, type LucideIcon } from "lucide-react";
+import { BTN, BTN_DANGER, BTN_SECONDARY, CARD, EmptyState, INPUT, LABEL, SectionHeader } from "@/components/comms/CommsKit";
 import CampaignAudienceSelector, { type SelectedContact } from "@/components/campaigns/CampaignAudienceSelector";
 import emailApi, { type EmailAccount, type EmailTemplate, type EmailThread, type EmailThreadDetail } from "@/api/emailApi";
 
 type ThreadResponse = { threads: EmailThread[] };
 
-function Empty({ icon: Icon, title, text }: { icon: typeof Inbox; title: string; text: string }) {
-  return <div className="rounded-2xl border border-dashed border-violet-200 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900"><Icon className="mx-auto text-indigo-600" size={30} /><h2 className="mt-4 font-bold">{title}</h2><p className="mt-2 text-sm text-slate-500">{text}</p></div>;
+function Empty({ icon, title, text, children }: { icon: LucideIcon; title: string; text: string; children?: ReactNode }) {
+  return <EmptyState icon={icon} tone="mail" title={title} text={text}>{children}</EmptyState>;
 }
+
+const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "");
+
+/** Two-letter monogram from an address like "Asha Rao <asha@x.com>". */
+const monogram = (from: string) => {
+  const name = from.replace(/<.*>/, "").trim() || from;
+  return name.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+};
 
 export function InboxPage() {
   const [state, setState] = useState<ThreadResponse | null>(null);
   const [selected, setSelected] = useState<EmailThreadDetail | null>(null);
   const [notice, setNotice] = useState("");
+  const [sending, setSending] = useState(false);
   useEffect(() => { emailApi.threads().then(setState).catch(() => setState({ threads: [] })); }, []);
-  if (!state) return <Empty icon={Loader2} title="Loading inbox" text="Your connected mailbox is being prepared." />;
-  if (!state.threads?.length) return <Empty icon={Inbox} title="No conversations yet" text="Connect an account or sync your mailbox to see conversations." />;
-  return <div className="grid gap-5 lg:grid-cols-[320px_1fr]"><div className="rounded-2xl border bg-white dark:border-slate-800 dark:bg-slate-900">{state.threads.map((x) => <button type="button" onClick={() => emailApi.thread(x.id).then(setSelected)} key={x.id} className="block w-full border-b p-4 text-left last:border-0 dark:border-slate-800"><b>{x.subject || "(No subject)"}</b><p className="text-xs text-slate-500">{x.participants?.join(", ")} · {x.unread_count} unread</p></button>)}</div>{selected ? <div className="space-y-4 rounded-2xl border bg-white p-5 dark:border-slate-800 dark:bg-slate-900"><h2 className="font-bold">{selected.subject || "(No subject)"}</h2>{selected.messages.map(item => <article key={item.id} className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800"><div className="mb-2 text-xs text-slate-500">{item.from} · {item.status}</div><div className="whitespace-pre-wrap text-sm">{item.body_text}</div></article>)}<form onSubmit={async event => { event.preventDefault(); const form = new FormData(event.currentTarget); await emailApi.reply(selected.id, { body_text: form.get("body"), body_html: "", idempotency_key: crypto.randomUUID(), attachment_ids: [] }); setNotice("Reply queued."); event.currentTarget.reset(); }} className="space-y-3"><textarea name="body" required rows={5} placeholder="Reply" className="w-full rounded-xl border p-3"/><button className="rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white">Reply</button>{notice && <span className="ml-3 text-sm text-slate-500">{notice}</span>}</form></div> : <Empty icon={Inbox} title="Select a conversation" text="Choose a thread to view messages and reply." />}</div>;
+  if (!state) return <div className={`${CARD} flex items-center justify-center gap-2 py-20 text-[13px] text-[#6B7A99] dark:text-slate-400`}><Loader2 size={18} className="animate-spin text-[#ED5173]" /> Loading inbox…</div>;
+  if (!state.threads?.length) return <Empty icon={Inbox} title="No conversations yet" text="Connect a Gmail account in Settings, or sync it, to see conversations here." />;
+
+  const sendReply = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selected) return;
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
+    setSending(true);
+    setNotice("");
+    try {
+      await emailApi.reply(selected.id, { body_text: form.get("body"), body_html: "", idempotency_key: crypto.randomUUID(), attachment_ids: [] });
+      setNotice("Reply queued.");
+      formEl.reset();
+    } catch {
+      setNotice("Reply couldn't be sent. Try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <ul className={`${CARD} h-fit max-h-[70vh] divide-y divide-sky-100/80 overflow-y-auto p-1.5 dark:divide-white/[0.06]`} aria-label="Conversations">
+        {state.threads.map((x) => {
+          const active = selected?.id === x.id;
+          const unread = x.unread_count > 0;
+          return (
+            <li key={x.id}>
+              <button
+                type="button"
+                aria-current={active ? "true" : undefined}
+                onClick={() => { setNotice(""); emailApi.thread(x.id).then(setSelected); }}
+                className={`flex w-full gap-3 rounded-xl p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[#137EFD] ${active ? "bg-[#FFF0F3] dark:bg-rose-500/[0.08]" : "hover:bg-[#F8FBFF] dark:hover:bg-white/[0.03]"}`}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ED5173] to-[#FF8A3D] text-[12px] font-semibold text-white">{monogram(x.participants?.[0] || "?")}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className={`truncate text-[13px] ${unread ? "font-semibold text-[#0B1B3F] dark:text-white" : "font-medium text-[#28395E] dark:text-slate-300"}`}>{x.subject || "(No subject)"}</span>
+                    {unread && <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#ED5173] px-1.5 text-[10px] font-semibold text-white">{x.unread_count}</span>}
+                  </span>
+                  <span className="block truncate text-[12px] text-[#6B7A99] dark:text-slate-400">{x.participants?.join(", ")}</span>
+                  {x.latest_message_at && <span className="block text-[11px] text-[#9AA8C2] dark:text-slate-500">{when(x.latest_message_at)}</span>}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {selected ? (
+        <section className={`${CARD} min-w-0 space-y-4 p-4 sm:p-5`}>
+          <h2 className="text-[17px] font-semibold text-[#0B1B3F] dark:text-white">{selected.subject || "(No subject)"}</h2>
+          <div className="space-y-3">
+            {selected.messages.map((item) => {
+              const outgoing = item.direction === "outbound";
+              return (
+                <article key={item.id} className={`rounded-xl p-4 ring-1 ${outgoing ? "bg-[#F4F9FF] ring-sky-100 dark:bg-blue-500/[0.06] dark:ring-blue-500/15" : "bg-white ring-sky-100/80 dark:bg-white/[0.02] dark:ring-white/[0.07]"}`}>
+                  <div className="mb-2 flex flex-wrap items-center gap-x-2 text-[12px] text-[#6B7A99] dark:text-slate-400">
+                    <span className="font-semibold text-[#0B1B3F] dark:text-slate-200">{item.from}</span>
+                    {when(item.sent_at || item.received_at) && <span>· {when(item.sent_at || item.received_at)}</span>}
+                    <span className="ml-auto rounded-full bg-[#EEF3FB] px-2 py-0.5 text-[10px] font-semibold capitalize text-[#55648A] dark:bg-white/[0.06] dark:text-slate-300">{item.status}</span>
+                  </div>
+                  <div className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-[#28395E] dark:text-slate-300">{item.body_text}</div>
+                </article>
+              );
+            })}
+          </div>
+          <form onSubmit={sendReply} className="space-y-3 border-t border-sky-100 pt-4 dark:border-white/[0.06]">
+            <label className={LABEL}>
+              Reply
+              <textarea name="body" required rows={5} placeholder="Write your reply…" className={INPUT} />
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="submit" disabled={sending} className={BTN}>
+                {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Send reply
+              </button>
+              {notice && <span className="text-[13px] text-[#6B7A99] dark:text-slate-400">{notice}</span>}
+            </div>
+          </form>
+        </section>
+      ) : (
+        <Empty icon={Inbox} title="Select a conversation" text="Choose a thread on the left to read it and reply." />
+      )}
+    </div>
+  );
 }
 
 export function SingleEmailPage() {
@@ -96,17 +189,17 @@ export function SingleEmailPage() {
   const selectedTemplate = templates.find((t) => t.current_version_id === selectedTemplateId || t.id === selectedTemplateId);
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="border-b pb-3 dark:border-slate-800">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Compose Single Email</h2>
-        <p className="text-xs text-slate-500">Send an immediate 1-to-1 email or apply an approved template.</p>
+    <form onSubmit={submit} className={`${CARD} space-y-5 p-5 sm:p-6`}>
+      <div className="border-b border-sky-100 pb-4 dark:border-white/[0.06]">
+        <h2 className="text-[17px] font-semibold text-[#0B1B3F] dark:text-white">Compose an email</h2>
+        <p className="mt-0.5 text-[13px] text-[#6B7A99] dark:text-slate-400">Send an immediate 1-to-1 email or apply an approved template.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">From Account *</label>
+          <label className={LABEL}>From Account *</label>
           <select
-            className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+            className={INPUT}
             disabled={!accounts.length}
             value={selectedAccount}
             onChange={(e) => setSelectedAccount(e.target.value)}
@@ -124,9 +217,9 @@ export function SingleEmailPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">Choose Template (Optional)</label>
+          <label className={LABEL}>Choose Template (Optional)</label>
           <select
-            className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+            className={INPUT}
             value={selectedTemplateId}
             onChange={(e) => handleTemplateChange(e.target.value)}
           >
@@ -141,11 +234,11 @@ export function SingleEmailPage() {
       </div>
 
       {selectedTemplate && selectedTemplate.version && (
-        <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
-          <div className="mb-1 flex items-center justify-between font-semibold text-indigo-700 dark:text-indigo-400">
+        <div className="rounded-xl bg-[#F4F9FF] p-3 text-xs text-[#28395E] ring-1 ring-sky-100 dark:bg-white/[0.03] dark:text-slate-300 dark:ring-white/[0.07]">
+          <div className="mb-1 flex items-center justify-between font-semibold text-[#0F5FC4] dark:text-blue-300">
             <span>Template: {selectedTemplate.name}</span>
             {selectedTemplate.version.variables && selectedTemplate.version.variables.length > 0 && (
-              <span className="rounded bg-indigo-100 px-2 py-0.5 text-[11px] text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+              <span className="rounded-md bg-[#E3EEFF] px-2 py-0.5 font-mono text-[11px] text-[#0F5FC4] dark:bg-blue-500/10 dark:text-blue-300">
                 Variables: {selectedTemplate.version.variables.map((v) => `{{${v}}}`).join(", ")}
               </span>
             )}
@@ -154,7 +247,7 @@ export function SingleEmailPage() {
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">Recipient Email *</label>
+        <label className={LABEL}>Recipient Email *</label>
         <input
           name="to"
           type="email"
@@ -162,25 +255,25 @@ export function SingleEmailPage() {
           placeholder="applicant@example.com"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+          className={INPUT}
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">Subject *</label>
+        <label className={LABEL}>Subject *</label>
         <input
           name="subject"
           required
           placeholder="Email Subject"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+          className={INPUT}
         />
       </div>
 
       {selectedTemplate?.version?.variables && selectedTemplate.version.variables.length > 0 && (
         <div>
-          <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label className={LABEL}>
             Template Variables (JSON)
           </label>
           <textarea
@@ -188,24 +281,24 @@ export function SingleEmailPage() {
             rows={2}
             value={variablesJson}
             onChange={(e) => setVariablesJson(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white p-3 font-mono text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+            className={`${INPUT} font-mono text-xs`}
           />
         </div>
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">Message Body</label>
+        <label className={LABEL}>Message Body</label>
         <textarea
           name="body"
           rows={7}
           placeholder="Write your email body here..."
           value={bodyText}
           onChange={(e) => setBodyText(e.target.value)}
-          className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+          className={INPUT}
         />
       </div>
 
-      <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 text-xs hover:border-indigo-400 dark:border-slate-700">
+      <label className="block cursor-pointer rounded-xl border border-dashed border-sky-200 bg-[#F8FBFF] p-3 text-xs transition hover:border-[#137EFD] dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-[#137EFD]">
         <Paperclip className="mr-2 inline text-slate-400" size={16} />
         <span className="font-medium text-slate-700 dark:text-slate-300">Attachments</span>
         <input name="attachments" type="file" multiple className="ml-3 text-xs" />
@@ -215,13 +308,13 @@ export function SingleEmailPage() {
         <button
           type="submit"
           disabled={busy || !accounts.length}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+          className={BTN}
         >
           {busy ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
           Send Email
         </button>
         {message && (
-          <p className={`text-xs font-medium ${message.startsWith("✓") ? "text-emerald-600" : "text-rose-600"}`}>
+          <p className={`text-xs font-medium ${message.startsWith("✓") ? "text-[#118A4B] dark:text-emerald-300" : "text-[#C42D52] dark:text-rose-300"}`}>
             {message}
           </p>
         )}
@@ -230,7 +323,117 @@ export function SingleEmailPage() {
   );
 }
 
-export function TemplatesPage() { const [items,setItems]=useState<EmailTemplate[]>([]); const [selected,setSelected]=useState<EmailTemplate|null>(null); const [preview,setPreview]=useState<Record<string,string>|null>(null); const load=()=>emailApi.templates().then(setItems); useEffect(()=>{void load()},[]); const save=async(e:React.FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=new FormData(e.currentTarget);const p={name:f.get("name"),category:f.get("category"),subject:f.get("subject"),body_text:f.get("body_text"),body_html:f.get("body_html")}; if (selected) await emailApi.updateTemplate(selected.id,p); else await emailApi.createTemplate(p);setSelected(null);await load()}; return <div className="grid gap-5 lg:grid-cols-[300px_1fr]"><div className="space-y-2">{items.map(t=><button key={t.id} onClick={()=>emailApi.template(t.id).then(setSelected)} className="block w-full rounded-xl border bg-white p-4 text-left"><b>{t.name}</b><p className="text-xs text-slate-500">{t.category}</p></button>)}</div><form onSubmit={save} className="space-y-3 rounded-2xl border bg-white p-5"><h2 className="font-bold">{selected?"Edit template":"New template"}</h2><input name="name" key={selected?.id+"name"} defaultValue={selected?.name} required placeholder="Template name" className="w-full rounded-xl border p-3"/><input name="category" key={selected?.id+"category"} defaultValue={selected?.category||"general"} className="w-full rounded-xl border p-3"/><input name="subject" key={selected?.id+"subject"} defaultValue={selected?.version?.subject} required placeholder="Subject with {{variables}}" className="w-full rounded-xl border p-3"/><textarea name="body_text" key={selected?.id+"text"} defaultValue={selected?.version?.body_text} rows={8} className="w-full rounded-xl border p-3"/><textarea name="body_html" key={selected?.id+"html"} defaultValue={selected?.version?.body_html} rows={8} className="w-full rounded-xl border p-3 font-mono text-sm"/><div className="flex gap-2"><button className="rounded-xl bg-indigo-600 px-4 py-2 text-white">Save version</button>{selected&&<button type="button" onClick={async()=>{await emailApi.duplicateTemplate(selected.id);await load()}} className="rounded-xl border px-4 py-2">Duplicate</button>}<button type="button" onClick={async()=>setPreview(await emailApi.previewTemplate({subject:new FormData(document.querySelector('form')!).get('subject'),body_text:"",body_html:"",variables:{}}))} className="rounded-xl border px-4 py-2">Preview</button></div>{selected?.version&&<p className="text-xs text-slate-500">Version {selected.version.version} · Variables: {selected.version.variables.join(", ")||"none"}</p>}{preview&&<pre>{JSON.stringify(preview,null,2)}</pre>}</form></div> }
+export function TemplatesPage() {
+  const [items, setItems] = useState<EmailTemplate[]>([]);
+  const [selected, setSelected] = useState<EmailTemplate | null>(null);
+  const [preview, setPreview] = useState<Record<string, string> | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+  const load = () => emailApi.templates().then(setItems);
+  useEffect(() => { void load(); }, []);
+
+  const save = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const p = { name: f.get("name"), category: f.get("category"), subject: f.get("subject"), body_text: f.get("body_text"), body_html: f.get("body_html") };
+    setSaving(true);
+    setNotice("");
+    try {
+      if (selected) await emailApi.updateTemplate(selected.id, p);
+      else await emailApi.createTemplate(p);
+      setNotice(selected ? "New version saved." : "Template created.");
+      setSelected(null);
+      setPreview(null);
+      await load();
+    } catch {
+      setNotice("The template couldn't be saved. Check the fields and try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const runPreview = async (form: HTMLFormElement | null) => {
+    if (!form) return;
+    const f = new FormData(form);
+    setPreview(await emailApi.previewTemplate({ subject: f.get("subject"), body_text: f.get("body_text") || "", body_html: f.get("body_html") || "", variables: {} }));
+  };
+
+  const k = selected?.id ?? "new";
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <aside className={`${CARD} h-fit p-2`} aria-label="Templates">
+        <button
+          type="button"
+          onClick={() => { setSelected(null); setPreview(null); setNotice(""); }}
+          className={`mb-1 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-colors ${!selected ? "bg-[#E3EEFF] text-[#0F5FC4] dark:bg-blue-500/10 dark:text-blue-300" : "text-[#137EFD] hover:bg-[#F4F9FF] dark:hover:bg-white/[0.04]"}`}
+        >
+          <Plus size={15} /> New template
+        </button>
+        {items.length === 0 ? (
+          <p className="px-3 py-6 text-center text-[12px] text-[#6B7A99] dark:text-slate-400">No templates yet. Create your first one.</p>
+        ) : (
+          <ul className="space-y-0.5">
+            {items.map((t) => {
+              const active = selected?.id === t.id;
+              return (
+                <li key={t.id}>
+                  <button
+                    type="button"
+                    aria-current={active ? "true" : undefined}
+                    onClick={() => { setPreview(null); setNotice(""); emailApi.template(t.id).then(setSelected); }}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[#137EFD] ${active ? "bg-[#FFF0F3] dark:bg-rose-500/[0.08]" : "hover:bg-[#F4F9FF] dark:hover:bg-white/[0.04]"}`}
+                  >
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? "bg-gradient-to-br from-[#ED5173] to-[#FF8A3D] text-white" : "bg-[#EEF3FB] text-[#6B7A99] dark:bg-white/[0.06] dark:text-slate-400"}`}>
+                      <FileText size={15} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold text-[#0B1B3F] dark:text-slate-200">{t.name}</span>
+                      <span className="block truncate text-[11px] capitalize text-[#6B7A99] dark:text-slate-500">{t.category || "General"}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </aside>
+
+      <form onSubmit={save} className={`${CARD} min-w-0 space-y-4 p-5 sm:p-6`}>
+        <SectionHeader
+          title={selected ? "Edit template" : "New template"}
+          description={selected?.version ? `Version ${selected.version.version} · Variables: ${selected.version.variables.map((v) => `{{${v}}}`).join(", ") || "none"}` : "Use {{variable}} placeholders in the subject and body."}
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className={LABEL}>Template name<input name="name" key={k + "name"} defaultValue={selected?.name} required placeholder="e.g. Admission follow-up" className={INPUT} /></label>
+          <label className={LABEL}>Category<input name="category" key={k + "category"} defaultValue={selected?.category || "general"} className={INPUT} /></label>
+        </div>
+        <label className={LABEL}>Subject<input name="subject" key={k + "subject"} defaultValue={selected?.version?.subject} required placeholder="Hi {{name}}, your application update" className={INPUT} /></label>
+        <label className={LABEL}>Plain-text body<textarea name="body_text" key={k + "text"} defaultValue={selected?.version?.body_text} rows={8} className={INPUT} /></label>
+        <label className={LABEL}>HTML body <span className="font-normal text-[#9AA8C2]">(optional)</span><textarea name="body_html" key={k + "html"} defaultValue={selected?.version?.body_html} rows={6} className={`${INPUT} font-mono text-xs`} /></label>
+        <div className="flex flex-wrap items-center gap-2 border-t border-sky-100 pt-4 dark:border-white/[0.06]">
+          <button type="submit" disabled={saving} className={BTN}>{saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}{selected ? "Save new version" : "Create template"}</button>
+          <button type="button" onClick={(e) => runPreview(e.currentTarget.form)} className={BTN_SECONDARY}><Eye size={15} /> Preview</button>
+          {selected && <button type="button" onClick={async () => { await emailApi.duplicateTemplate(selected.id); await load(); setNotice("Template duplicated."); }} className={BTN_SECONDARY}><Copy size={15} /> Duplicate</button>}
+          {notice && <span className="text-[13px] text-[#6B7A99] dark:text-slate-400">{notice}</span>}
+        </div>
+        {preview && (
+          <div className="rounded-xl bg-[#F4F9FF] p-4 ring-1 ring-sky-100 dark:bg-white/[0.03] dark:ring-white/[0.07]">
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[#6B7A99] dark:text-slate-500">Preview</p>
+            {typeof preview.subject === "string" ? (
+              <>
+                <p className="text-[14px] font-semibold text-[#0B1B3F] dark:text-white">{preview.subject}</p>
+                <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-[#28395E] dark:text-slate-300">{preview.body_text}</p>
+              </>
+            ) : (
+              <pre className="whitespace-pre-wrap break-words font-mono text-[12px] text-[#28395E] dark:text-slate-300">{JSON.stringify(preview, null, 2)}</pre>
+            )}
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
 export function CampaignsPage() {
   const [items, setItems] = useState<Array<Record<string, any>>>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -371,38 +574,38 @@ export function CampaignsPage() {
       {/* HEADER */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h2 className="text-[17px] font-semibold text-[#0B1B3F] dark:text-white">
             Email Campaigns
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="mt-0.5 text-[13px] text-[#6B7A99] dark:text-slate-400">
             Schedule and dispatch template campaigns to Leads, registered college students, or uploaded contact lists.
           </p>
         </div>
       </div>
 
       {notice && (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+        <div className="flex items-center gap-2 rounded-xl bg-[#DDF7E8] px-4 py-3 text-[13px] font-medium text-[#0E6E3C] ring-1 ring-[#B5EBCB] dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
           <CheckCircle2 size={16} />
           <span>{notice}</span>
         </div>
       )}
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
+        <div className="flex items-center gap-2 rounded-xl bg-[#FDE4EA] px-4 py-3 text-[13px] font-medium text-[#A62146] ring-1 ring-[#F7C3D0] dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
           <AlertCircle size={16} />
           <span>{error}</span>
         </div>
       )}
 
       {/* NEW CAMPAIGN FORM */}
-      <form onSubmit={handleCreateAndRunCampaign} className="space-y-5 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+      <form onSubmit={handleCreateAndRunCampaign} className={`${CARD} space-y-5 p-5 sm:p-6`}>
+        <h3 className="text-[16px] font-semibold text-[#0B1B3F] dark:text-white">
           New Email Campaign
         </h3>
 
         {/* STEP 1: CAMPAIGN DETAILS & SENDER */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className={LABEL}>
               Campaign Name *
             </label>
             <input
@@ -410,19 +613,19 @@ export function CampaignsPage() {
               value={campaignName}
               onChange={(e) => setCampaignName(e.target.value)}
               placeholder="e.g. Campus Placement Drive Reminder"
-              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+              className={INPUT}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className={LABEL}>
               Email Template *
             </label>
             <select
               required
               value={selectedTemplateId}
               onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+              className={INPUT}
             >
               <option value="">Choose an email template</option>
               {templates.map((t) => (
@@ -434,7 +637,7 @@ export function CampaignsPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className={LABEL}>
               Sender Name *
             </label>
             <input
@@ -442,12 +645,12 @@ export function CampaignsPage() {
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
               placeholder="Verified Sender Name (e.g. Placement Cell)"
-              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+              className={INPUT}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className={LABEL}>
               Sender Email *
             </label>
             <input
@@ -456,7 +659,7 @@ export function CampaignsPage() {
               value={senderEmail}
               onChange={(e) => setSenderEmail(e.target.value)}
               placeholder="Verified Brevo/Gmail sender email"
-              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+              className={INPUT}
             />
           </div>
         </div>
@@ -466,11 +669,11 @@ export function CampaignsPage() {
           const tpl = templates.find((t) => t.current_version_id === selectedTemplateId || t.id === selectedTemplateId);
           if (!tpl || !tpl.version) return null;
           return (
-            <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-4 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
-              <div className="mb-2 flex items-center justify-between font-semibold text-indigo-700 dark:text-indigo-400">
+            <div className="rounded-xl bg-[#F4F9FF] p-4 text-xs text-[#28395E] ring-1 ring-sky-100 dark:bg-white/[0.03] dark:text-slate-300 dark:ring-white/[0.07]">
+              <div className="mb-2 flex items-center justify-between font-semibold text-[#0F5FC4] dark:text-blue-300">
                 <span>Selected Template: {tpl.name} ({tpl.category})</span>
                 {tpl.version.variables && tpl.version.variables.length > 0 && (
-                  <span className="rounded bg-indigo-100 px-2 py-0.5 text-[11px] text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                  <span className="rounded-md bg-[#E3EEFF] px-2 py-0.5 font-mono text-[11px] text-[#0F5FC4] dark:bg-blue-500/10 dark:text-blue-300">
                     Variables: {tpl.version.variables.map((v) => `{{${v}}}`).join(", ")}
                   </span>
                 )}
@@ -478,7 +681,7 @@ export function CampaignsPage() {
               <div className="font-medium text-slate-900 dark:text-slate-100">
                 <span className="text-slate-500">Subject:</span> {tpl.version.subject}
               </div>
-              <p className="mt-1.5 max-h-24 overflow-y-auto whitespace-pre-wrap rounded-lg bg-white/70 p-2 text-slate-600 dark:bg-slate-900/60 dark:text-slate-400">
+              <p className="mt-1.5 max-h-24 overflow-y-auto whitespace-pre-wrap rounded-lg bg-white/70 p-2 text-slate-600 dark:bg-black/20 dark:text-slate-400">
                 {tpl.version.body_text}
               </p>
             </div>
@@ -487,7 +690,7 @@ export function CampaignsPage() {
 
         {/* STEP 2: AUDIENCE SELECTOR (LEADS, COLLEGE STUDENTS BY DEGREE/BRANCH, UPLOAD EXCEL SHEET) */}
         <div className="pt-2">
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+          <label className="mb-2 block text-[12px] font-medium text-[#55648A] dark:text-slate-400">
             Whom to Send (Audience Target)
           </label>
           <CampaignAudienceSelector
@@ -509,12 +712,12 @@ export function CampaignsPage() {
         </div>
 
         {/* AUDIENCE STAGING SUMMARY */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-violet-50/60 p-4 text-xs dark:bg-slate-950">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F4F9FF] p-4 text-xs ring-1 ring-sky-100 dark:bg-white/[0.03] dark:ring-white/[0.07]">
           <div>
             <span className="font-semibold text-slate-800 dark:text-slate-200">
               Selected Audience Total:
             </span>{" "}
-            <span className="font-bold text-indigo-700 dark:text-indigo-300">
+            <span className="font-semibold text-[#0F5FC4] dark:text-blue-300">
               {stagedContacts.length} contact(s) staged
             </span>
             {stagedFile && (
@@ -535,7 +738,7 @@ export function CampaignsPage() {
         </div>
 
         {/* MANUAL EMAIL PASTE (FALLBACK) */}
-        <details className="rounded-xl border border-slate-200 p-3 text-xs dark:border-slate-800">
+        <details className="rounded-xl p-3 text-xs ring-1 ring-sky-100 dark:ring-white/[0.07]">
           <summary className="cursor-pointer font-medium text-slate-600 dark:text-slate-400">
             Or type/paste raw emails manually
           </summary>
@@ -544,12 +747,12 @@ export function CampaignsPage() {
             value={manualRecipients}
             onChange={(e) => setManualRecipients(e.target.value)}
             placeholder="john@example.com, jane@example.com, or one email per line"
-            className="mt-2 w-full rounded-xl border border-slate-300 p-2.5 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+            className={`${INPUT} mt-2`}
           />
         </details>
 
         {/* STEP 3: CAMPAIGN TIMER & SCHEDULE */}
-        <div className="space-y-3 rounded-xl border border-violet-100 bg-violet-50/20 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+        <div className="space-y-3 rounded-xl bg-[#F4F9FF] p-4 ring-1 ring-sky-100 dark:bg-white/[0.03] dark:ring-white/[0.07]">
           <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
             Campaign Timer & Delivery Schedule
           </label>
@@ -560,7 +763,7 @@ export function CampaignsPage() {
                 name="email-schedule-mode"
                 checked={scheduleMode === "now"}
                 onChange={() => setScheduleMode("now")}
-                className="text-indigo-600"
+                className="accent-[#137EFD]"
               />
               <span className="font-medium text-slate-700 dark:text-slate-300">Send Immediately</span>
             </label>
@@ -570,9 +773,9 @@ export function CampaignsPage() {
                 name="email-schedule-mode"
                 checked={scheduleMode === "timer"}
                 onChange={() => setScheduleMode("timer")}
-                className="text-indigo-600"
+                className="accent-[#137EFD]"
               />
-              <span className="flex items-center gap-1 font-semibold text-indigo-700 dark:text-indigo-300">
+              <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                 <Clock size={14} /> Run on Timer (Schedule Date & Time)
               </span>
             </label>
@@ -589,7 +792,7 @@ export function CampaignsPage() {
                 value={scheduledFor}
                 min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
                 onChange={(e) => setScheduledFor(e.target.value)}
-                className="w-full max-w-sm rounded-xl border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
+                className={`${INPUT} max-w-sm dark:[color-scheme:dark]`}
               />
               <p className="text-[10px] text-slate-400">
                 Emails will be rendered with personal template variables and sent automatically when the timer reaches this time.
@@ -603,7 +806,7 @@ export function CampaignsPage() {
           <button
             type="submit"
             disabled={busy || !campaignName.trim() || !selectedTemplateId || (totalSelectedRecipients === 0 && !stagedFile)}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+            className={BTN}
           >
             {busy ? (
               <Loader2 className="animate-spin" size={16} />
@@ -620,11 +823,11 @@ export function CampaignsPage() {
 
       {/* RECENT CAMPAIGNS LIST */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+        <h3 className="text-[16px] font-semibold text-[#0B1B3F] dark:text-white">
           Recent Email Campaigns
         </h3>
         {items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500 dark:border-slate-800">
+          <div className={`${CARD} p-8 text-center text-[13px] text-[#6B7A99] dark:text-slate-400`}>
             No email campaigns created yet.
           </div>
         ) : (
@@ -632,28 +835,28 @@ export function CampaignsPage() {
             {items.map((c) => (
               <div
                 key={c.id}
-                className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className={`${CARD} flex flex-col justify-between p-4`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-slate-900 dark:text-slate-100">
+                    <h4 className="font-semibold text-[#0B1B3F] dark:text-white">
                       {c.name}
                     </h4>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                         c.status === "scheduled"
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                          ? "bg-[#FFF1DA] text-[#A86A00] dark:bg-amber-500/10 dark:text-amber-300"
                           : c.status === "running"
-                          ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300"
+                          ? "bg-[#E3EEFF] text-[#0F5FC4] dark:bg-blue-500/10 dark:text-blue-300"
                           : c.status === "completed"
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                          : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                          ? "bg-[#DDF7E8] text-[#118A4B] dark:bg-emerald-500/10 dark:text-emerald-300"
+                          : "bg-[#EEF3FB] text-[#55648A] dark:bg-white/[0.06] dark:text-slate-300"
                       }`}
                     >
                       {c.status}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-[#6B7A99] dark:text-slate-400">
                     Sender: <span className="font-medium text-slate-700 dark:text-slate-300">{c.sender_email}</span>
                   </p>
                   {c.scheduled_for && (
@@ -664,7 +867,7 @@ export function CampaignsPage() {
                   )}
                 </div>
 
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-500 dark:border-slate-800">
+                <div className="mt-4 flex items-center justify-between border-t border-sky-100 pt-3 text-[11px] text-[#6B7A99] dark:border-white/[0.06] dark:text-slate-400">
                   <span>Transport: Brevo</span>
                   <div className="flex gap-2">
                     {c.status === "scheduled" && (
@@ -702,10 +905,65 @@ export function CampaignsPage() {
     </div>
   );
 }
-export function AutomationsPage() { return <Empty icon={Sparkles} title="No Email automations" text="Build a trigger, condition, delay and template-based action." />; }
+export function AutomationsPage() {
+  return <Empty icon={Sparkles} title="No email automations yet" text="Automations will send a template after a trigger — like a call ending — with an optional condition and delay." />;
+}
 
 export function EmailSettingsPage() {
-  const [accounts, setAccounts] = useState<EmailAccount[] | null>(null); const load = () => emailApi.accounts().then(setAccounts).catch(() => setAccounts([])); useEffect(() => { void load(); }, []);
-  const connect = async (provider: "google" | "microsoft") => { const result = await emailApi.connect(provider); window.location.assign(result.authorization_url); };
-  return <div className="space-y-5"><div className="flex flex-wrap gap-3">{!accounts?.length && <button onClick={() => connect("google")} className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white"><Link2 className="mr-2 inline" size={16} />Connect Gmail</button>}</div>{!accounts?.length ? <Empty icon={Link2} title="No Gmail account connected" text="Connect the pilot Gmail mailbox securely using OAuth. VoiceDots never receives your password." /> : accounts.map(a => <div key={a.id} className="flex items-center justify-between rounded-2xl border bg-white p-5 dark:border-slate-800 dark:bg-slate-900"><div><b>{a.email_address}</b><p className="text-xs capitalize text-slate-500">Gmail · {a.status}{a.last_sync_at ? ` · synced ${new Date(a.last_sync_at).toLocaleString()}` : ""}</p></div><div className="flex gap-3">{a.status === "connected" ? <><button onClick={async () => { await emailApi.sync(a.id); }} className="text-sm font-semibold text-indigo-600"><RefreshCw className="mr-1 inline" size={14}/>Sync</button><button onClick={async () => { await emailApi.disconnect(a.id); load(); }} className="text-sm font-semibold text-red-600">Disconnect</button></> : <button onClick={async () => { const result = await emailApi.reconnect(a.id); window.location.assign(result.authorization_url); }} className="text-sm font-semibold text-indigo-600">Reconnect Gmail</button>}</div></div>)}</div>;
+  const [accounts, setAccounts] = useState<EmailAccount[] | null>(null);
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const load = () => emailApi.accounts().then(setAccounts).catch(() => setAccounts([]));
+  useEffect(() => { void load(); }, []);
+  const connect = async (provider: "google" | "microsoft") => {
+    const result = await emailApi.connect(provider);
+    window.location.assign(result.authorization_url);
+  };
+
+  if (accounts === null) return <div className={`${CARD} flex items-center justify-center gap-2 py-20 text-[13px] text-[#6B7A99] dark:text-slate-400`}><Loader2 size={18} className="animate-spin text-[#ED5173]" /> Loading accounts…</div>;
+
+  if (!accounts.length) {
+    return (
+      <Empty icon={Link2} title="No Gmail account connected" text="Connect your mailbox securely with Google sign-in. VoiceDots never sees your password.">
+        <button type="button" onClick={() => connect("google")} className={BTN}><Link2 size={15} /> Connect Gmail</button>
+      </Empty>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {accounts.map((a) => {
+        const ok = a.status === "connected";
+        return (
+          <div key={a.id} className={`${CARD} flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between`}>
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#ED5173] to-[#FF8A3D] text-white"><Inbox size={20} /></span>
+              <div className="min-w-0">
+                <p className="truncate text-[14px] font-semibold text-[#0B1B3F] dark:text-white">{a.email_address}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-[#6B7A99] dark:text-slate-400">
+                  <span className={`inline-flex items-center gap-1.5 font-semibold capitalize ${ok ? "text-[#118A4B] dark:text-emerald-300" : "text-[#A86A00] dark:text-amber-300"}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />{a.status}
+                  </span>
+                  {a.last_sync_at && <span>· Last synced {when(a.last_sync_at)}</span>}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {ok ? (
+                <>
+                  <button type="button" disabled={syncing === a.id} onClick={async () => { setSyncing(a.id); try { await emailApi.sync(a.id); await load(); } finally { setSyncing(null); } }} className={BTN_SECONDARY}>
+                    <RefreshCw size={14} className={syncing === a.id ? "animate-spin" : ""} /> Sync now
+                  </button>
+                  <button type="button" onClick={async () => { await emailApi.disconnect(a.id); load(); }} className={BTN_DANGER}>Disconnect</button>
+                </>
+              ) : (
+                <button type="button" onClick={async () => { const result = await emailApi.reconnect(a.id); window.location.assign(result.authorization_url); }} className={BTN}>
+                  <Link2 size={15} /> Reconnect Gmail
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }

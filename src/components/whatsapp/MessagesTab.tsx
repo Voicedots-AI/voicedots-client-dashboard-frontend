@@ -39,7 +39,7 @@ function initials(name: string) {
 function Avatar({ name, large = false }: { name: string; large?: boolean }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-indigo-600 font-semibold text-white ${large ? "h-16 w-16 text-xl" : "h-10 w-10 text-sm"}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-[#137EFD] font-semibold text-white ${large ? "h-16 w-16 text-xl" : "h-10 w-10 text-sm"}`}
     >
       {initials(name)}
     </span>
@@ -127,19 +127,19 @@ export default function Messages({
       )}
       <div className="grid min-h-[650px] lg:h-[calc(100dvh-250px)] lg:min-h-[620px] lg:grid-cols-[260px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)]">
         <aside
-          className={`flex min-h-0 flex-col border-r border-violet-100 dark:border-slate-800 ${mobileOpen ? "hidden lg:flex" : ""}`}
+          className={`flex min-h-0 flex-col border-r border-sky-200 dark:border-slate-800 ${mobileOpen ? "hidden lg:flex" : ""}`}
         >
           <div className="space-y-4 p-4">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">
                 {campaignId ? "Recipients" : "Conversations"}
               </h2>
-              <span className="rounded-full bg-violet-50 px-2 py-1 text-xs text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+              <span className="rounded-full bg-[#EAF3FF] px-2 py-1 text-xs text-[#137EFD] dark:bg-indigo-950 dark:text-[#5AB8FF]">
                 {threads.total}
               </span>
             </div>
-            <label className="flex items-center gap-2 rounded-xl bg-violet-50/70 px-3 py-2.5 dark:bg-slate-950">
-              <Search size={15} className="shrink-0 text-slate-400" />
+            <label className="flex items-center gap-2 rounded-xl bg-[#EAF3FF] px-3 py-2.5 dark:bg-slate-950">
+              <Search size={15} className="shrink-0 text-[#9AA8C2]" />
               <input
                 aria-label="Search conversations"
                 className="min-w-0 w-full bg-transparent text-sm outline-none"
@@ -152,18 +152,18 @@ export default function Messages({
                 }}
               />
             </label>
-            <p className="text-xs font-medium text-indigo-600 dark:text-indigo-300">
+            <p className="text-xs font-medium text-[#137EFD] dark:text-[#5AB8FF]">
               All {campaignId ? "campaign recipients" : "conversations"}
             </p>
           </div>
           <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-2">
             {loading && (
-              <p className="p-4 text-sm text-slate-500">
+              <p className="p-4 text-sm text-[#6B7A99]">
                 Loading conversations…
               </p>
             )}
             {!loading && !threads.total && (
-              <p className="p-5 text-center text-sm text-slate-500">
+              <p className="p-5 text-center text-sm text-[#6B7A99]">
                 {search
                   ? "No matching conversations."
                   : "Your messages and replies will appear here."}
@@ -178,7 +178,7 @@ export default function Messages({
                   setSelected(t);
                   setMobileOpen(true);
                 }}
-                className={`w-full rounded-2xl p-3 text-left transition-colors ${current?.destination === t.destination ? "bg-violet-100/80 dark:bg-indigo-950/60" : "hover:bg-violet-50 dark:hover:bg-slate-800"}`}
+                className={`w-full rounded-2xl p-3 text-left transition-colors ${current?.destination === t.destination ? "bg-[#EAF3FF] dark:bg-indigo-950/60" : "hover:bg-[#EAF3FF] dark:hover:bg-slate-800"}`}
               >
                 <div className="flex items-center gap-2.5">
                   <Avatar name={t.contact_name || t.destination} />
@@ -187,24 +187,24 @@ export default function Messages({
                       <span className="truncate text-sm font-semibold">
                         {t.contact_name || t.destination}
                       </span>
-                      <time className="shrink-0 text-[10px] text-slate-500">
+                      <time className="shrink-0 text-[10px] text-[#6B7A99]">
                         {new Date(t.last_at).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
                         })}
                       </time>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-slate-500">
+                    <p className="mt-0.5 text-[11px] text-[#6B7A99]">
                       {t.destination}
                     </p>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2">
-                  <p className="min-w-0 flex-1 truncate text-xs text-slate-500">
+                  <p className="min-w-0 flex-1 truncate text-xs text-[#6B7A99]">
                     {t.direction === "outbound" ? "You: " : ""}
                     {t.body}
                   </p>
-                  <ChevronRight size={13} className="text-indigo-400" />
+                  <ChevronRight size={13} className="text-[#5AB8FF]" />
                 </div>
               </button>
             ))}
@@ -229,11 +229,11 @@ export default function Messages({
             deleted={dropThread}
           />
         ) : (
-          <div className="hidden items-center justify-center p-10 text-center text-slate-400 lg:flex">
+          <div className="hidden items-center justify-center p-10 text-center text-[#9AA8C2] lg:flex">
             <div>
               <MessageCircle
                 size={38}
-                className="mx-auto mb-3 text-indigo-300"
+                className="mx-auto mb-3 text-[#5AB8FF]"
               />
               <p>Select a conversation to read its messages.</p>
             </div>
@@ -299,7 +299,7 @@ function Conversation({
       className={`min-h-0 min-w-0 xl:grid-cols-[minmax(0,1fr)_210px] xl:grid ${mobileOpen ? "grid h-[calc(100dvh-240px)] min-h-[580px] grid-cols-1 lg:h-auto" : "hidden lg:grid lg:grid-cols-1"}`}
     >
       <div className="flex min-h-0 min-w-0 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-violet-100 px-4 py-4 dark:border-slate-800">
+        <header className="flex items-center justify-between gap-3 border-b border-sky-200 px-4 py-4 dark:border-slate-800">
           <div className="flex min-w-0 items-center gap-3">
             <button
               className="lg:hidden"
@@ -313,20 +313,20 @@ function Conversation({
               <h3 className="truncate text-sm font-semibold">
                 {thread.contact_name || thread.destination}
               </h3>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-[#6B7A99]">
                 {thread.destination}
               </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden rounded-full bg-violet-50 px-3 py-1 text-[11px] text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300 sm:block">
+            <span className="hidden rounded-full bg-[#EAF3FF] px-3 py-1 text-[11px] text-[#137EFD] dark:bg-indigo-950 dark:text-[#5AB8FF] sm:block">
               WhatsApp
             </span>
             <button
               type="button"
               aria-label={`Delete chat with ${thread.contact_name || thread.destination}`}
               disabled={removing}
-              className="rounded-full p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 dark:hover:bg-rose-950/40"
+              className="rounded-full p-2 text-[#9AA8C2] hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 dark:hover:bg-rose-950/40"
               onClick={async () => {
                 if (
                   !window.confirm(
@@ -367,7 +367,7 @@ function Conversation({
             <Pager offset={offset} total={messages.total} change={setOffset} />
           )}{" "}
           {!ordered.length && !error && (
-            <p className="text-center text-sm text-slate-400">
+            <p className="text-center text-sm text-[#9AA8C2]">
               Loading messages…
             </p>
           )}
@@ -384,13 +384,13 @@ function Conversation({
                   new Date(previous.created_at).toDateString() !==
                     new Date(m.created_at).toDateString()) && (
                   <div className="mb-5 text-center">
-                    <span className="rounded-full bg-white px-3 py-1.5 text-[10px] text-slate-500 dark:bg-slate-800">
+                    <span className="rounded-full bg-white px-3 py-1.5 text-[10px] text-[#6B7A99] dark:bg-slate-800">
                       {day}
                     </span>
                   </div>
                 )}
                 <article
-                  className={`max-w-[90%] rounded-2xl p-4 text-sm shadow-sm sm:max-w-[82%] ${m.direction === "outbound" ? "ml-auto rounded-tr-sm bg-indigo-700 text-white" : "rounded-tl-sm bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-100"}`}
+                  className={`max-w-[90%] rounded-2xl p-4 text-sm shadow-sm sm:max-w-[82%] ${m.direction === "outbound" ? "ml-auto rounded-tr-sm bg-[#137EFD] text-white" : "rounded-tl-sm bg-white text-[#33415F] dark:bg-slate-800 dark:text-slate-100"}`}
                 >
                   {m.media && (
                     <div className="mb-2">
@@ -411,7 +411,7 @@ function Conversation({
                       </p>
                     )}
                   <div
-                    className={`mt-3 flex flex-wrap items-center justify-end gap-2 text-[10px] ${m.direction === "outbound" ? "text-indigo-100" : "text-slate-400"}`}
+                    className={`mt-3 flex flex-wrap items-center justify-end gap-2 text-[10px] ${m.direction === "outbound" ? "text-indigo-100" : "text-[#9AA8C2]"}`}
                   >
                     <button
                       type="button"
@@ -479,11 +479,11 @@ function Conversation({
             );
           })}
         </div>
-        <footer className="space-y-3 border-t border-violet-100 p-4 dark:border-slate-800">
+        <footer className="space-y-3 border-t border-sky-200 p-4 dark:border-slate-800">
           {notice && (
             <p
               role="status"
-              className="text-sm text-indigo-600 dark:text-indigo-300"
+              className="text-sm text-[#137EFD] dark:text-[#5AB8FF]"
             >
               {notice}
             </p>
@@ -497,7 +497,7 @@ function Conversation({
                 sent={() => setOffset(0)}
               />
               {windowLeft(messages.window_closes_at) && (
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-[#6B7A99]">
                   {windowLeft(messages.window_closes_at)} · Enter sends,
                   Shift+Enter adds a line
                 </p>
@@ -508,72 +508,72 @@ function Conversation({
             <button
               disabled={!account.ready}
               onClick={() => setCompose(true)}
-              className="flex w-full items-center justify-between gap-3 rounded-2xl bg-violet-50 px-4 py-3 text-left dark:bg-indigo-950/40 disabled:opacity-50"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl bg-[#EAF3FF] px-4 py-3 text-left dark:bg-indigo-950/40 disabled:opacity-50"
             >
               <span>
-                <span className="block text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                <span className="block text-xs font-semibold text-[#137EFD] dark:text-[#5AB8FF]">
                   Use an approved template
                 </span>
-                <span className="mt-1 block text-xs text-slate-500">
+                <span className="mt-1 block text-xs text-[#6B7A99]">
                   {messages.window_open
                     ? "Send a personalized follow-up to this recipient"
                     : "The 24-hour reply window is closed, so only an approved template can reach this recipient"}
                 </span>
               </span>
-              <span className="rounded-full bg-indigo-700 p-2.5 text-white">
+              <span className="rounded-full bg-[#137EFD] p-2.5 text-white">
                 <Send size={16} />
               </span>
             </button>
           ) : (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#6B7A99]">
               Open Inbox to send a template follow-up.
             </p>
           )}
         </footer>
       </div>
-      <aside className="hidden overflow-y-auto border-l border-violet-100 p-5 dark:border-slate-800 xl:block">
+      <aside className="hidden overflow-y-auto border-l border-sky-200 p-5 dark:border-slate-800 xl:block">
         <div className="space-y-3 py-3 text-center">
           <Avatar name={thread.contact_name || thread.destination} large />
           <h3 className="break-words font-semibold">
             {thread.contact_name || "WhatsApp contact"}
           </h3>
-          <span className="inline-flex rounded-full bg-violet-50 px-3 py-1 text-[10px] font-medium text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
+          <span className="inline-flex rounded-full bg-[#EAF3FF] px-3 py-1 text-[10px] font-medium text-[#137EFD] dark:bg-indigo-950 dark:text-[#5AB8FF]">
             Recipient profile
           </span>
         </div>
-        <div className="mt-5 space-y-5 rounded-2xl bg-violet-50/70 p-4 dark:bg-slate-950">
-          <h4 className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <div className="mt-5 space-y-5 rounded-2xl bg-[#EAF3FF] p-4 dark:bg-slate-950">
+          <h4 className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#6B7A99]">
             <UserRound size={13} />
             Contact details
           </h4>
           <dl className="space-y-4 text-xs">
             <div>
-              <dt className="text-slate-400">WhatsApp number</dt>
+              <dt className="text-[#9AA8C2]">WhatsApp number</dt>
               <dd className="mt-1 break-all font-medium">
                 {thread.destination}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-400">
+              <dt className="text-[#9AA8C2]">
                 Messages{campaignId ? " in campaign" : ""}
               </dt>
               <dd className="mt-1 font-medium">{thread.message_count}</dd>
             </div>
             <div>
-              <dt className="text-slate-400">Latest activity</dt>
+              <dt className="text-[#9AA8C2]">Latest activity</dt>
               <dd className="mt-1">
                 {new Date(thread.last_at).toLocaleString()}
               </dd>
             </div>
             <div>
-              <dt className="mb-2 text-slate-400">Latest message status</dt>
+              <dt className="mb-2 text-[#9AA8C2]">Latest message status</dt>
               <dd>
                 <Badge value={thread.status} />
               </dd>
             </div>
           </dl>
         </div>
-        <p className="mt-5 text-[11px] leading-relaxed text-slate-400">
+        <p className="mt-5 text-[11px] leading-relaxed text-[#9AA8C2]">
           Details reflect this sender’s message history. Delivery and read
           receipts update when reported by WhatsApp.
         </p>
@@ -612,7 +612,7 @@ function TemplateDialog({
     <dialog
       ref={ref}
       onClose={close}
-      className="m-auto max-h-[90dvh] w-[min(1000px,95vw)] overflow-y-auto rounded-3xl bg-[#f8f7ff] p-5 text-slate-900 backdrop:bg-slate-950/50 dark:bg-slate-950 dark:text-slate-100"
+      className="m-auto max-h-[90dvh] w-[min(1000px,95vw)] overflow-y-auto rounded-3xl bg-[#f8f7ff] p-5 text-[#0B1B3F] backdrop:bg-slate-950/50 dark:bg-slate-950 dark:text-slate-100"
     >
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-semibold">Template follow-up</h3>

@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Bot, CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, Loader2, Phone, Plus, RefreshCw, ShieldCheck, Sparkles, Square, Upload, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AlertTriangle, ArrowLeft, Bot, CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, Gauge, LayoutDashboard, Loader2, Megaphone, Phone, PhoneCall, PhoneOutgoing, Plus, RefreshCw, ShieldCheck, Sparkles, Square, Timer, Upload, Users, type LucideIcon } from 'lucide-react';
 import { phoneAgentsApi, type ClientPhoneAgent } from '@/api/phoneAgents';
 import { outboundCallsApi, type AiHealth, type OutboundAgent, type OutboundCallStatus } from '@/api/outboundCalls';
 import { outboundBatchesApi, type BatchDetails, type BatchFilters, type BatchSummary, type BatchUploadResult } from '@/api/outboundBatches';
 import { OutboundCallTracker } from '@/components/calling/OutboundCallTracker';
 import CallingOverviewTab from '@/components/calling/CallingOverviewTab';
+import { BTN, BTN_SECONDARY, CARD, ChannelHero, CommsItem, CommsShell, HeroButton, HeroSelect, HeroStatus, IconChip, INPUT, SectionHeader, SegmentTabs } from '@/components/comms/CommsKit';
 
-const card = 'rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900';
-const input = 'mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-3 dark:border-slate-700';
 const consentText = 'I confirm every recipient in this file consented to receive this call and the campaign complies with applicable calling rules.';
 const OUTCOMES = ['Interested', 'Follow-up requested', 'Not interested', 'Connected — inconclusive', 'No response', 'Call not lifted', 'Call not connected'];
 const CALL_STATUSES = ['connected', 'failed', 'queued', 'dialing', 'pending', 'blocked', 'skipped'];
@@ -22,14 +21,20 @@ const formatDate = (value?: string) => value ? new Date(value).toLocaleDateStrin
 const statusLabel = (value: string) => value === 'failed' ? 'Call not connected' : value.replaceAll('_', ' ');
 
 function StatusBadge({ value }: { value: string }) {
-  const tone = value === 'completed' || value === 'connected' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-    : value === 'failed' || value === 'blocked' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
-      : value === 'running' || value === 'queued' || value === 'dialing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${tone}`}>{statusLabel(value)}</span>;
+  const tone = value === 'completed' || value === 'connected' ? 'bg-[#DDF7E8] text-[#118A4B] dark:bg-emerald-950 dark:text-emerald-300'
+    : value === 'failed' || value === 'blocked' ? 'bg-[#FDE4EA] text-[#C42D52] dark:bg-rose-950 dark:text-rose-300'
+      : value === 'running' || value === 'queued' || value === 'dialing' ? 'bg-[#E3EEFF] text-[#0F5FC4] dark:bg-blue-950 dark:text-blue-300'
+        : 'bg-[#EEF3FB] text-[#55648A] dark:bg-slate-800 dark:text-slate-300';
+  const live = value === 'running' || value === 'dialing';
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${tone}`}>
+      {live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current motion-reduce:animate-none" />}
+      {statusLabel(value)}
+    </span>
+  );
 }
 function Metric({ label, value }: { label: string; value: string | number }) {
-  return <div><div className="text-xs text-slate-500">{label}</div><div className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{value}</div></div>;
+  return <div className="rounded-xl bg-[#F4F9FF] px-2 py-2 dark:bg-slate-950"><div className="text-[15px] font-semibold tabular-nums">{value}</div><div className="text-[11px] text-[#6B7A99]">{label}</div></div>;
 }
 
 export default function CallingPage() {
@@ -101,241 +106,165 @@ export default function CallingPage() {
   const exportReport = async () => { if (!details) return; setBusy(true); try { await outboundBatchesApi.downloadReport(details.id, details.campaign_name, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Report could not be exported.')); } finally { setBusy(false); } };
   const exportCampaign = async () => { if (!selectedCampaign) return; setBusy(true); try { await outboundBatchesApi.downloadCampaignReport(selectedCampaign, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Campaign report could not be exported.')); } finally { setBusy(false); } };
 
+
+  const openCreate = () => { setTab('campaigns'); setSelectedCampaign(null); setShowCreate(true); };
+  const lineStatus = ready
+    ? `Outbound line ready${config?.did ? `, caller ID ${config.did}` : ''}${capacity ? `, ${capacity} parallel calls` : ''}`
+    : reasons[0] || 'Outbound calling is not set up for this agent.';
+
   return (
-    <div className="space-y-6">
-      {agents.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-              Phone agent
-            </label>
-            <select
-              className="min-w-64 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 shadow-sm outline-none transition-all hover:border-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              value={selected?.id || ''}
-              onChange={(event) => setSelectedId(event.target.value)}
-            >
-              {agents.map((agent) => (
-                <option key={agent.id} value={agent.id}>
-                  {agent.display_name}
-                </option>
-              ))}
-            </select>
-          </div>
+    <CommsShell>
+      <CommsItem>
+        <ChannelHero
+          tone="voice"
+          icon={PhoneCall}
+          title="AI Calling"
+          description="Your voice agent answers enquiries and calls students back. Review every conversation, run outbound campaigns, or place a single call."
+          status={<HeroStatus ok={ready}>{lineStatus}</HeroStatus>}
+          controls={agents.length > 0 ? (
+            <HeroSelect label="Phone agent" value={selected?.id || ''} onChange={setSelectedId}>
+              {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.display_name}</option>)}
+            </HeroSelect>
+          ) : undefined}
+          actions={<>
+            <HeroButton primary onClick={openCreate}><Plus size={16} />New campaign</HeroButton>
+            <HeroButton onClick={() => setTab('single')}><Phone size={15} />Place a call</HeroButton>
+          </>}
+        />
+      </CommsItem>
+
+      {message && (
+        <div role="status" className={`${CARD} flex items-start justify-between gap-3 px-4 py-3 text-sm text-[#33415F] dark:text-slate-200`}>
+          <span>{message}</span>
+          <button type="button" aria-label="Dismiss message" onClick={() => setMessage('')} className="rounded-md px-1.5 text-[#6B7A99] hover:text-[#0B1B3F]">×</button>
         </div>
       )}
-
-      {message && <div className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">{message}</div>}
 
       {activeCall && (
-        <OutboundCallTracker
-          call={activeCall}
-          contactName={activeCall.contact_name || name}
-          destination={number}
-          onClose={() => setActiveCall(null)}
-        />
+        <OutboundCallTracker call={activeCall} contactName={activeCall.contact_name || name} destination={number} onClose={() => setActiveCall(null)} />
       )}
 
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
-        {([
-          ['overview', 'Overview'],
-          ['campaigns', 'Campaigns'],
-          ['single', 'Single call'],
-        ] as const).map(([value, label]) => (
-          <button
-            key={value}
-            onClick={() => setTab(value)}
-            className={`border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
-              tab === value
-                ? 'border-violet-600 text-violet-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'overview' ? (
-        <CallingOverviewTab
-          agentId={selected?.phone_agent_id || selected?.id}
-          batches={batches}
-          onOpenNewCampaign={() => {
-            setTab('campaigns');
-            setShowCreate(true);
-          }}
-          onOpenSingleCall={() => setTab('single')}
+      <CommsItem>
+        <SegmentTabs
+          label="AI Calling sections"
+          value={tab}
+          onChange={setTab}
+          tabs={[['overview', 'Overview', LayoutDashboard], ['campaigns', 'Campaigns', Megaphone], ['single', 'Single call', Phone]] as const}
         />
-      ) : tab === 'single' ? (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <section className={`${card} p-5`}>
-            <div className="flex items-center gap-2">
-              <Phone className="text-violet-600" />
-              <h2 className="text-lg font-bold">Place an outbound call</h2>
-            </div>
-            <div className="mt-5 space-y-4">
-              <label className="block text-sm font-medium">
-                Contact name
-                <input
-                  className={input}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Customer name"
-                />
-              </label>
-              <label className="block text-sm font-medium">
-                Phone number
-                <input
-                  className={input}
-                  value={number}
-                  onChange={(event) => setNumber(event.target.value)}
-                  placeholder="+919876543210"
-                />
-                <span className="mt-1 block text-xs text-slate-500">Include country code in E.164 format.</span>
-              </label>
-              <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={singleConsent}
-                  onChange={(event) => setSingleConsent(event.target.checked)}
-                />
+      </CommsItem>
+
+      <CommsItem>
+        {tab === 'overview' ? (
+          <CallingOverviewTab agentId={selected?.phone_agent_id || selected?.id} batches={batches} onOpenNewCampaign={openCreate} onOpenSingleCall={() => setTab('single')} />
+        ) : tab === 'single' ? (
+          <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+            <section className={`${CARD} p-5 sm:p-6`}>
+              <SectionHeader title="Place an outbound call" description="The agent calls right away and the call appears in Overview when it ends." />
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <label className="block text-[13px] font-medium text-[#33415F] dark:text-slate-300">
+                  Contact name
+                  <input className={INPUT} value={name} onChange={(event) => setName(event.target.value)} placeholder="Customer name" />
+                </label>
+                <label className="block text-[13px] font-medium text-[#33415F] dark:text-slate-300">
+                  Phone number
+                  <input className={INPUT} value={number} onChange={(event) => setNumber(event.target.value)} placeholder="+919876543210" inputMode="tel" />
+                  <span className="mt-1 block text-xs font-normal text-[#6B7A99]">Include the country code, for example +91.</span>
+                </label>
+              </div>
+              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#F4F9FF] p-3.5 text-sm ring-1 ring-sky-100 dark:bg-slate-950 dark:ring-slate-700">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#137EFD]" checked={singleConsent} onChange={(event) => setSingleConsent(event.target.checked)} />
                 <span>I confirm this recipient consented to receive this call.</span>
               </label>
-              <button
-                onClick={placeCall}
-                disabled={calling || !ready}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 p-3 font-semibold text-white disabled:opacity-50"
-              >
-                {calling ? <Loader2 className="animate-spin" size={18} /> : <Phone size={18} />}
-                Start outbound call
+              <button onClick={placeCall} disabled={calling || !ready} className={`${BTN} mt-5 h-12 w-full`}>
+                {calling ? <Loader2 className="animate-spin" size={18} /> : <PhoneOutgoing size={18} />}
+                Start call
               </button>
-              {!ready && <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">Selected agent is not configured for outbound calls. Please select an outbound agent from the dropdown above.</p>}
-            </div>
-          </section>
-          <section className={`${card} p-5`}>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="text-violet-600" />
-              <h2 className="text-lg font-bold">Call safeguards</h2>
-            </div>
-            <dl className="mt-5 space-y-4 text-sm">
-              <div>
-                <dt className="text-slate-500">Daily call limit</dt>
-                <dd className="font-semibold">{config?.daily_limit ?? '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Maximum duration</dt>
-                <dd className="font-semibold">
-                  {config ? `${Math.round(config.max_duration_seconds / 60)} minutes` : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Caller ID</dt>
-                <dd className="font-semibold">{config?.did || 'Not assigned'}</dd>
-              </div>
-            </dl>
-          </section>
-        </div>
-      ) : !selectedCampaign ? (
-        <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold">Campaigns</h2>
-              <p className="text-sm text-slate-500">Open a campaign to view its upload history and call results.</p>
-            </div>
-            <div className="flex gap-2">
-              <button title="Refresh" onClick={loadBatches} className="rounded-xl border p-2.5">
-                <RefreshCw size={17} />
-              </button>
-              <button
-                onClick={() => setShowCreate((value) => !value)}
-                className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white"
-              >
-                <Plus size={17} />New campaign
-              </button>
-            </div>
-          </div>
-          {showCreate && (
-            <CreateCampaign
-              campaignName={campaignName}
-              setCampaignName={setCampaignName}
-              setFile={setFile}
-              batchConsent={batchConsent}
-              setBatchConsent={setBatchConsent}
-              uploadResult={uploadResult}
-              uploadBatch={uploadBatch}
-              startBatch={startBatch}
-              busy={busy}
-              ready={ready}
-              file={file}
-            />
-          )}
-          {campaigns.length ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {campaigns.map((campaign) => (
-                <button
-                  key={campaign.name}
-                  onClick={() => {
-                    setSelectedCampaign(campaign.name);
-                    setDetails(null);
-                  }}
-                  className={`${card} group p-5 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="rounded-xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-                      <Phone size={22} />
+              {!ready && <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">This agent can’t place outbound calls yet. Choose an outbound agent in the panel above.</p>}
+            </section>
+            <section className={`${CARD} p-5 sm:p-6`}>
+              <SectionHeader title="Call safeguards" description="Limits set by your administrator." />
+              <dl className="mt-5 space-y-3">
+                {[
+                  { icon: Gauge, from: '#137EFD', to: '#5AB8FF', label: 'Daily call limit', value: config?.daily_limit ?? '—' },
+                  { icon: Timer, from: '#7732FD', to: '#A779FF', label: 'Longest call', value: config ? `${Math.round(config.max_duration_seconds / 60)} minutes` : '—' },
+                  { icon: ShieldCheck, from: '#1FB867', to: '#6FE0A0', label: 'Caller ID', value: config?.did || 'Not assigned' },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-center gap-3 rounded-xl bg-[#F4F9FF] p-3 dark:bg-slate-950">
+                    <IconChip icon={row.icon} from={row.from} to={row.to} size="h-9 w-9" iconSize="h-4 w-4" />
+                    <div>
+                      <dt className="text-[12px] text-[#6B7A99]">{row.label}</dt>
+                      <dd className="text-[15px] font-semibold tabular-nums">{row.value}</dd>
                     </div>
-                    <StatusBadge value={campaign.status} />
                   </div>
-                  <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{campaign.name}</h3>
-                  <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-                    <CalendarDays size={15} />Last activity {formatDate(campaign.latest)}
-                  </div>
-                  <div className="my-5 grid grid-cols-3 gap-3 border-y border-slate-100 py-4 dark:border-slate-800">
-                    <Metric label="Candidates" value={campaign.total.toLocaleString()} />
-                    <Metric label="Completed" value={campaign.completed.toLocaleString()} />
-                    <Metric label="Runs" value={campaign.batches.length} />
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">
-                      {campaign.failed} call not connected · {campaign.pending} pending
-                    </span>
-                    <span className="flex items-center gap-1 font-semibold text-violet-600">
-                      View campaign <ChevronRight size={16} className="transition group-hover:translate-x-1" />
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className={`${card} p-12 text-center text-slate-500`}>
-              <FileSpreadsheet className="mx-auto mb-3" />
-              <p className="font-semibold">No campaigns yet</p>
-              <p className="mt-1 text-sm">Create the first campaign from a consented contact sheet.</p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <CampaignDetails
-          activeCampaign={activeCampaign}
-          selectedCampaign={selectedCampaign}
-          details={details}
-          setDetails={setDetails}
-          setSelectedCampaign={setSelectedCampaign}
-          openRun={openRun}
-          outcome={outcome}
-          setOutcome={setOutcome}
-          callStatus={callStatus}
-          setCallStatus={setCallStatus}
-          search={search}
-          setSearch={setSearch}
-          page={page}
-          setPage={setPage}
-          busy={busy}
-          exportReport={exportReport}
-          exportCampaign={exportCampaign}
-          cancelBatch={cancelBatch}
-        />
-      )}
+                ))}
+              </dl>
+            </section>
+          </div>
+        ) : !selectedCampaign ? (
+          <div className="space-y-5">
+            <SectionHeader title="Campaigns" description="Open a campaign to see each upload and how every call went.">
+              <button title="Refresh campaigns" aria-label="Refresh campaigns" onClick={loadBatches} className={`${BTN_SECONDARY} h-10 w-10 px-0`}><RefreshCw size={16} /></button>
+              <button onClick={() => setShowCreate((value) => !value)} className={`${BTN} h-10`}><Plus size={17} />{showCreate ? 'Close' : 'New campaign'}</button>
+            </SectionHeader>
+            {showCreate && (
+              <CreateCampaign campaignName={campaignName} setCampaignName={setCampaignName} setFile={setFile} batchConsent={batchConsent} setBatchConsent={setBatchConsent} uploadResult={uploadResult} uploadBatch={uploadBatch} startBatch={startBatch} busy={busy} ready={ready} file={file} />
+            )}
+            {campaigns.length ? (
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {campaigns.map((campaign) => {
+                  const pct = campaign.total ? Math.round((campaign.completed / campaign.total) * 100) : 0;
+                  return (
+                    <button
+                      key={campaign.name}
+                      onClick={() => { setSelectedCampaign(campaign.name); setDetails(null); }}
+                      className={`${CARD} group p-5 text-left transition hover:ring-[#137EFD]/40 focus-visible:outline-2 focus-visible:outline-[#137EFD]`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <IconChip icon={PhoneOutgoing} from="#137EFD" to="#7732FD" />
+                        <StatusBadge value={campaign.status} />
+                      </div>
+                      <h3 className="mt-4 truncate text-[18px] font-semibold">{campaign.name}</h3>
+                      <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[#6B7A99]"><CalendarDays size={14} />Last activity {formatDate(campaign.latest)}</div>
+                      <div className="mt-5 flex items-end justify-between">
+                        <span className="text-[30px] font-semibold leading-none tabular-nums">{pct}%</span>
+                        <span className="text-[12px] text-[#6B7A99]">{campaign.completed.toLocaleString()} of {campaign.total.toLocaleString()} reached</span>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#E6EDF8] dark:bg-slate-800">
+                        <div className="h-full rounded-full bg-gradient-to-r from-[#137EFD] to-[#7732FD]" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                        <Metric label="Runs" value={campaign.batches.length} />
+                        <Metric label="Not connected" value={campaign.failed.toLocaleString()} />
+                        <Metric label="Waiting" value={campaign.pending.toLocaleString()} />
+                      </div>
+                      <span className="mt-4 flex items-center justify-end gap-1 text-[13px] font-semibold text-[#137EFD]">
+                        View campaign <ChevronRight size={16} className="transition group-hover:translate-x-0.5" />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState icon={FileSpreadsheet} title="No campaigns yet" text="Upload a contact sheet of people who agreed to be called, and the agent will work through it.">
+                <button onClick={() => setShowCreate(true)} className={BTN}><Plus size={16} />New campaign</button>
+              </EmptyState>
+            )}
+          </div>
+        ) : (
+          <CampaignDetails activeCampaign={activeCampaign} selectedCampaign={selectedCampaign} details={details} setDetails={setDetails} setSelectedCampaign={setSelectedCampaign} openRun={openRun} outcome={outcome} setOutcome={setOutcome} callStatus={callStatus} setCallStatus={setCallStatus} search={search} setSearch={setSearch} page={page} setPage={setPage} busy={busy} exportReport={exportReport} exportCampaign={exportCampaign} cancelBatch={cancelBatch} />
+        )}
+      </CommsItem>
+    </CommsShell>
+  );
+}
+
+function EmptyState({ icon: Icon, title, text, children }: { icon: LucideIcon; title: string; text: string; children?: ReactNode }) {
+  return (
+    <div className={`${CARD} flex flex-col items-center px-6 py-12 text-center`}>
+      <IconChip icon={Icon} from="#137EFD" to="#7732FD" size="h-12 w-12" />
+      <p className="mt-4 text-[15px] font-semibold">{title}</p>
+      <p className="mt-1 max-w-sm text-[13px] text-[#6B7A99]">{text}</p>
+      {children && <div className="mt-5">{children}</div>}
     </div>
   );
 }
@@ -355,77 +284,46 @@ type CreateProps = {
 };
 function CreateCampaign(p: CreateProps) {
   return (
-    <section className={`${card} p-5`}>
-      <div className="flex items-center gap-2">
-        <Upload className="text-violet-600" />
-        <h2 className="text-lg font-bold">Create campaign</h2>
-      </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <label className="text-sm font-medium">
+    <section className={`${CARD} p-5 sm:p-6`}>
+      <SectionHeader title="Create campaign" description="Name it, upload the contact sheet, then review before any call goes out.">
+        <button type="button" onClick={() => void outboundBatchesApi.downloadTemplate()} className={`${BTN_SECONDARY} text-[13px]`}><Download size={15} />Excel template</button>
+      </SectionHeader>
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <label className="text-[13px] font-medium text-[#33415F] dark:text-slate-300">
           Campaign name
-          <input
-            className={input}
-            value={p.campaignName}
-            onChange={(e) => p.setCampaignName(e.target.value)}
-            placeholder="e.g. MBA Outbound"
-            maxLength={120}
-          />
+          <input className={INPUT} value={p.campaignName} onChange={(e) => p.setCampaignName(e.target.value)} placeholder="e.g. MBA outbound" maxLength={120} />
         </label>
-        <div className="text-sm font-medium">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span>Contact sheet (.csv or .xlsx)</span>
-            <button
-              type="button"
-              onClick={() => void outboundBatchesApi.downloadTemplate()}
-              className="flex items-center gap-1.5 rounded-lg border border-violet-200 px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30"
-            >
-              <Download size={15} />Download Excel template
-            </button>
-          </div>
-          <input
-            type="file"
-            accept=".csv,.xlsx"
-            className={input}
-            onChange={(e) => p.setFile(e.target.files?.[0] || null)}
-          />
-          <span className="mt-1 block text-xs font-normal text-slate-500">
-            Name and Phone are required. The example row is skipped automatically.
+        <label className="text-[13px] font-medium text-[#33415F] dark:text-slate-300">
+          Contact sheet (.csv or .xlsx)
+          <span className={`${INPUT} flex cursor-pointer items-center gap-2 focus-within:ring-2 focus-within:ring-[#137EFD]`}>
+            <Upload size={16} className="shrink-0 text-[#137EFD]" />
+            <span className="truncate text-[#6B7A99]">{p.file ? p.file.name : 'Choose a file'}</span>
+            <input type="file" accept=".csv,.xlsx" className="sr-only" onChange={(e) => p.setFile(e.target.files?.[0] || null)} />
           </span>
-        </div>
+          <span className="mt-1 block text-xs font-normal text-[#6B7A99]">Name and Phone are required. The example row is skipped.</span>
+        </label>
       </div>
-      <label className="mt-4 flex items-start gap-3 rounded-xl border p-3 text-sm">
-        <input
-          type="checkbox"
-          className="mt-1"
-          checked={p.batchConsent}
-          onChange={(e) => p.setBatchConsent(e.target.checked)}
-        />
+      <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#F4F9FF] p-3.5 text-sm ring-1 ring-sky-100 dark:bg-slate-950 dark:ring-slate-700">
+        <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#137EFD]" checked={p.batchConsent} onChange={(e) => p.setBatchConsent(e.target.checked)} />
         <span>{consentText}</span>
       </label>
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={p.uploadBatch}
-          disabled={p.busy || !p.ready || !p.file || !p.batchConsent || !p.campaignName.trim()}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 font-semibold text-white disabled:opacity-50"
-        >
+      <div className="mt-5 flex justify-end">
+        <button onClick={p.uploadBatch} disabled={p.busy || !p.ready || !p.file || !p.batchConsent || !p.campaignName.trim()} className={`${BTN} h-11`}>
           {p.busy ? <Loader2 className="animate-spin" size={18} /> : <FileSpreadsheet size={18} />}
-          Upload & validate
+          Upload and check contacts
         </button>
       </div>
       {p.uploadResult && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
-          <div>
-            <strong>{p.uploadResult.accepted} contacts ready</strong>
-            <div className="text-sm text-slate-600 dark:text-slate-300">
-              {p.uploadResult.rejected_count} rejected · daily limit {p.uploadResult.daily_limit}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-[#EAF3FF] to-[#F1EBFF] p-4 ring-1 ring-sky-100 dark:from-slate-800 dark:to-slate-800 dark:ring-slate-700">
+          <div className="flex items-center gap-3">
+            <IconChip icon={CheckCircle2} from="#1FB867" to="#6FE0A0" size="h-10 w-10" />
+            <div>
+              <strong className="text-[15px]">{p.uploadResult.accepted} contacts ready to call</strong>
+              <div className="text-[13px] text-[#6B7A99]">{p.uploadResult.rejected_count} rejected, daily limit {p.uploadResult.daily_limit}</div>
             </div>
           </div>
-          <button
-            onClick={() => p.startBatch(p.uploadResult!.id)}
-            disabled={p.busy}
-            className="rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white disabled:opacity-50"
-          >
-            Start campaign
+          <button onClick={() => p.startBatch(p.uploadResult!.id)} disabled={p.busy} className={`${BTN} bg-[#1FB867] shadow-[0_6px_16px_rgba(31,184,103,0.3)] hover:bg-[#18A35A]`}>
+            <PhoneOutgoing size={16} />Start campaign
           </button>
         </div>
       )}
@@ -454,88 +352,61 @@ type DetailProps = {
   cancelBatch: (id: string) => void;
 };
 function CampaignDetails(p: DetailProps) {
+  const runs = p.activeCampaign?.batches || [];
   return (
     <div className="space-y-5">
-      <button
-        onClick={() => {
-          p.setSelectedCampaign(null);
-          p.setDetails(null);
-        }}
-        className="flex items-center gap-2 text-sm font-semibold text-violet-600"
-      >
-        <ArrowLeft size={17} />All campaigns
+      <button onClick={() => { p.setSelectedCampaign(null); p.setDetails(null); }} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#137EFD] hover:underline">
+        <ArrowLeft size={16} />All campaigns
       </button>
-      <section className={`${card} p-5`}>
+      <section className={`${CARD} p-5 sm:p-6`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-950">
-              <Phone size={22} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">{p.activeCampaign?.name || p.selectedCampaign}</h2>
-              <p className="text-sm text-slate-500">
-                {p.activeCampaign?.batches.length || 0} campaign runs · {p.activeCampaign?.total.toLocaleString() || 0} candidates
-              </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <IconChip icon={PhoneOutgoing} from="#137EFD" to="#7732FD" size="h-12 w-12" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-[20px] font-semibold">{p.activeCampaign?.name || p.selectedCampaign}</h2>
+                <StatusBadge value={p.activeCampaign?.status || 'draft'} />
+              </div>
+              <p className="text-[13px] text-[#6B7A99]">{runs.length} {runs.length === 1 ? 'run' : 'runs'}, {p.activeCampaign?.total.toLocaleString() || 0} contacts</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              aria-label="Campaign export outcome"
-              className="rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm dark:border-slate-700"
-              value={p.outcome}
-              onChange={(e) => {
-                p.setOutcome(e.target.value);
-                p.setPage(1);
-              }}
-            >
+            <select aria-label="Outcome to export" className={`${INPUT} mt-0 w-auto py-2`} value={p.outcome} onChange={(e) => { p.setOutcome(e.target.value); p.setPage(1); }}>
               <option value="">All outcomes</option>
-              {OUTCOMES.map((v) => (
-                <option key={v} value={v}>{v}</option>
-              ))}
+              {OUTCOMES.map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
-            <button
-              onClick={p.exportCampaign}
-              disabled={p.busy}
-              className="flex items-center gap-2 rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
+            <button onClick={p.exportCampaign} disabled={p.busy} className={BTN}>
               <Download size={16} />{p.outcome ? `Export ${p.outcome}` : 'Export campaign'}
             </button>
-            <StatusBadge value={p.activeCampaign?.status || 'draft'} />
           </div>
         </div>
       </section>
-      <div>
-        <h3 className="font-bold">Campaign history</h3>
-        <p className="text-sm text-slate-500">Each card is an uploaded contact-list run within this campaign.</p>
-      </div>
+      <SectionHeader title="Runs" description="Each run is one uploaded contact sheet. Open one to see every call." />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {p.activeCampaign?.batches.map((batch, index) => (
-          <button
-            key={batch.id}
-            onClick={() => p.openRun(batch)}
-            className={`${card} p-4 text-left transition hover:border-violet-300 ${
-              p.details?.id === batch.id ? 'ring-2 ring-violet-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Run {p.activeCampaign!.batches.length - index}
-              </span>
-              <StatusBadge value={batch.status} />
-            </div>
-            <div className="mt-3 truncate font-semibold" title={batch.filename}>{batch.filename}</div>
-            <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
-              <Users size={15} />{batch.total_contacts.toLocaleString()} candidates
-            </div>
-            <div className="mt-1 text-xs text-slate-500">{formatDate(batch.created_at)}</div>
-          </button>
-        ))}
+        {runs.map((batch, index) => {
+          const active = p.details?.id === batch.id;
+          return (
+            <button
+              key={batch.id}
+              onClick={() => p.openRun(batch)}
+              aria-pressed={active}
+              className={`${CARD} p-4 text-left transition focus-visible:outline-2 focus-visible:outline-[#137EFD] ${active ? 'ring-2 ring-[#137EFD]' : 'hover:ring-[#137EFD]/40'}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-semibold text-[#6B7A99]">Run {runs.length - index}</span>
+                <StatusBadge value={batch.status} />
+              </div>
+              <div className="mt-3 truncate font-semibold" title={batch.filename}>{batch.filename}</div>
+              <div className="mt-2 flex items-center justify-between text-[12px] text-[#6B7A99]">
+                <span className="flex items-center gap-1.5"><Users size={14} />{batch.total_contacts.toLocaleString()} contacts</span>
+                <span>{formatDate(batch.created_at)}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
       {!p.details ? (
-        <section className={`${card} p-12 text-center text-slate-500`}>
-          <FileSpreadsheet className="mx-auto mb-3" />
-          <p>Select a history card to see candidates and outcomes.</p>
-        </section>
+        <EmptyState icon={FileSpreadsheet} title="Pick a run" text="Choose a run above to see each contact, how the call went, and its transcript." />
       ) : (
         <RunDetails {...p} details={p.details} />
       )}
@@ -543,189 +414,128 @@ function CampaignDetails(p: DetailProps) {
   );
 }
 
+const PIPELINE = [
+  { icon: Bot, title: 'Agent prepares', text: 'Builds the greeting and context for each contact, about 15 seconds.' },
+  { icon: Phone, title: 'Phone rings', text: 'Calls go out only within the agreed calling hours.' },
+  { icon: CheckCircle2, title: 'Outcome saved', text: 'The conversation, sentiment and next step are recorded.' },
+];
+
 function RunDetails(p: DetailProps & { details: BatchDetails }) {
   const d = p.details;
   return (
-    <section className={`${card} min-w-0 overflow-hidden`}>
+    <section className={`${CARD} min-w-0 overflow-hidden`}>
       {d.status === 'running' && (
-        <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 to-indigo-50/50 p-4 dark:border-violet-900/40 dark:from-violet-950/20 dark:to-indigo-950/10">
+        <div className="bg-gradient-to-r from-[#0B1B3F] to-[#1E2F6B] p-5 text-white">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="animate-pulse text-violet-600" size={18} />
-              <span className="text-xs font-bold uppercase tracking-wider text-violet-800 dark:text-violet-300">
-                Active Campaign 3-Phase Calling Pipeline
-              </span>
-            </div>
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-violet-700 dark:text-violet-300">
-              <Loader2 size={13} className="animate-spin text-violet-600" /> Auto-Pacing Contacts
-            </span>
+            <span className="flex items-center gap-2 text-[14px] font-semibold"><Sparkles size={16} className="text-[#A779FF]" />Calling in progress</span>
+            <span className="flex items-center gap-1.5 text-[12px] text-white/70"><Loader2 size={13} className="animate-spin" />Pacing contacts automatically</span>
           </div>
-          <div className="mt-3 grid gap-2.5 text-xs sm:grid-cols-3">
-            <div className="rounded-xl border border-violet-200/80 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
-                <Bot size={14} className="text-violet-600" />
-                <span>1. AI Collecting Data</span>
-              </div>
-              <p className="mt-1 text-slate-500">Pre-generates greeting & context (~15s) before dialing callee.</p>
-            </div>
-            <div className="rounded-xl border border-violet-200/80 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
-                <Phone size={14} className="text-violet-600" />
-                <span>2. Send Call to User</span>
-              </div>
-              <p className="mt-1 text-slate-500">LiveKit SIP trunk rings recipients within agreed calling windows.</p>
-            </div>
-            <div className="rounded-xl border border-violet-200/80 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
-                <CheckCircle2 size={14} className="text-emerald-600" />
-                <span>3. Connected & Outcomes</span>
-              </div>
-              <p className="mt-1 text-slate-500">Real-time voice conversation, sentiment and qualification saved.</p>
-            </div>
-          </div>
+          <ol className="mt-4 grid gap-2.5 sm:grid-cols-3">
+            {PIPELINE.map((step, i) => (
+              <li key={step.title} className="rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
+                <div className="flex items-center gap-2 text-[13px] font-semibold">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#137EFD] to-[#7732FD] text-[11px]">{i + 1}</span>
+                  <step.icon size={14} className="text-white/80" />{step.title}
+                </div>
+                <p className="mt-1.5 text-[12px] leading-relaxed text-white/65">{step.text}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
-      <div className="border-b p-5 dark:border-slate-800">
+      <div className="p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold">{d.filename}</h2>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-[17px] font-semibold">{d.filename}</h2>
               <StatusBadge value={d.status} />
             </div>
-            <p className="mt-1 text-sm text-slate-500">{d.agent_name} · {d.total_contacts.toLocaleString()} candidates</p>
+            <p className="mt-1 text-[13px] text-[#6B7A99]">{d.agent_name}, {d.total_contacts.toLocaleString()} contacts</p>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={p.exportReport}
-              disabled={p.busy || !d.report_ready}
-              className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              <Download size={16} />{p.outcome || p.callStatus ? 'Export filtered CSV' : 'Export all CSV'}
+            <button onClick={p.exportReport} disabled={p.busy || !d.report_ready} className={BTN_SECONDARY}>
+              <Download size={16} />{p.outcome || p.callStatus ? 'Export filtered CSV' : 'Export CSV'}
             </button>
             {d.status === 'running' && (
-              <button
-                onClick={() => p.cancelBatch(d.id)}
-                disabled={p.busy}
-                className="flex items-center gap-2 rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                <Square size={14} />Cancel
+              <button onClick={() => p.cancelBatch(d.id)} disabled={p.busy} className={`${BTN} bg-[#ED5173] shadow-[0_6px_16px_rgba(237,81,115,0.3)] hover:bg-[#D9405F]`}>
+                <Square size={14} />Stop run
               </button>
             )}
           </div>
         </div>
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-violet-600" style={{ width: `${d.progress_percent}%` }} />
+        <div className="mt-5 flex items-end justify-between gap-3">
+          <span className="text-[28px] font-semibold leading-none tabular-nums">{d.progress_percent}%</span>
+          <span className="text-[12px] text-[#6B7A99]">{d.completed_contacts.toLocaleString()} of {d.total_contacts.toLocaleString()} processed</span>
         </div>
-        <div className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-slate-500">
-          <span>{d.progress_percent}% · {d.completed_contacts}/{d.total_contacts} processed</span>
-          <span>Connected {d.call_status_counts.connected || 0} · Call not connected {d.call_status_counts.failed || 0}</span>
+        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#E6EDF8] dark:bg-slate-800">
+          <div className="h-full rounded-full bg-gradient-to-r from-[#137EFD] to-[#7732FD] transition-[width] duration-500" style={{ width: `${d.progress_percent}%` }} />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2 text-[12px] font-semibold">
+          <span className="rounded-full bg-[#DDF7E8] px-2.5 py-1 text-[#118A4B]">Connected {d.call_status_counts.connected || 0}</span>
+          <span className="rounded-full bg-[#FDE4EA] px-2.5 py-1 text-[#C42D52]">Not connected {d.call_status_counts.failed || 0}</span>
         </div>
       </div>
-      <div className="grid gap-3 border-b bg-slate-50 p-4 sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-950">
-        <label className="text-xs font-semibold">
+      <div className="grid gap-3 bg-[#F4F9FF] px-5 py-4 sm:grid-cols-3 sm:px-6 dark:bg-slate-950">
+        <label className="text-[12px] font-semibold text-[#33415F] dark:text-slate-300">
           Outcome
-          <select
-            className={input}
-            value={p.outcome}
-            onChange={(e) => {
-              p.setOutcome(e.target.value);
-              p.setPage(1);
-            }}
-          >
+          <select className={`${INPUT} bg-white`} value={p.outcome} onChange={(e) => { p.setOutcome(e.target.value); p.setPage(1); }}>
             <option value="">All outcomes</option>
-            {OUTCOMES.map((v) => (
-              <option key={v} value={v}>{v} ({d.outcome_counts[v] || 0})</option>
-            ))}
+            {OUTCOMES.map((v) => <option key={v} value={v}>{v} ({d.outcome_counts[v] || 0})</option>)}
           </select>
         </label>
-        <label className="text-xs font-semibold">
+        <label className="text-[12px] font-semibold text-[#33415F] dark:text-slate-300">
           Call status
-          <select
-            className={input}
-            value={p.callStatus}
-            onChange={(e) => {
-              p.setCallStatus(e.target.value);
-              p.setPage(1);
-            }}
-          >
+          <select className={`${INPUT} bg-white`} value={p.callStatus} onChange={(e) => { p.setCallStatus(e.target.value); p.setPage(1); }}>
             <option value="">All statuses</option>
-            {CALL_STATUSES.filter((v) => d.call_status_counts[v]).map((v) => (
-              <option key={v} value={v}>{statusLabel(v)} ({d.call_status_counts[v]})</option>
-            ))}
+            {CALL_STATUSES.filter((v) => d.call_status_counts[v]).map((v) => <option key={v} value={v}>{statusLabel(v)} ({d.call_status_counts[v]})</option>)}
           </select>
         </label>
-        <label className="text-xs font-semibold">
-          Find candidate
-          <input
-            className={input}
-            value={p.search}
-            onChange={(e) => {
-              p.setSearch(e.target.value);
-              p.setPage(1);
-            }}
-            placeholder="Name or phone"
-          />
+        <label className="text-[12px] font-semibold text-[#33415F] dark:text-slate-300">
+          Find contact
+          <input className={`${INPUT} bg-white`} value={p.search} onChange={(e) => { p.setSearch(e.target.value); p.setPage(1); }} placeholder="Name or phone" />
         </label>
       </div>
       <div className="overflow-auto">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800">
-            <tr>
-              <th className="p-3">#</th>
-              <th className="p-3">Candidate</th>
-              <th className="p-3">Phone</th>
-              <th className="p-3">Call status</th>
-              <th className="p-3">Outcome</th>
-              <th className="p-3">Conversation</th>
+        <table className="w-full min-w-[860px] text-left text-[13px]">
+          <thead className="text-[12px] text-[#6B7A99]">
+            <tr className="border-b border-[#E6EDF8] dark:border-slate-800">
+              <th className="px-5 py-3 font-medium">#</th>
+              <th className="px-3 py-3 font-medium">Contact</th>
+              <th className="px-3 py-3 font-medium">Phone</th>
+              <th className="px-3 py-3 font-medium">Call status</th>
+              <th className="px-3 py-3 font-medium">Outcome</th>
+              <th className="px-3 py-3 font-medium">Conversation</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[#EEF3FB] dark:divide-slate-800">
             {d.contacts.map((c) => (
-              <tr key={c.row_number} className="border-t dark:border-slate-800">
-                <td className="p-3 text-slate-500">{c.row_number}</td>
-                <td className="p-3 font-medium">{c.contact_name}</td>
-                <td className="p-3">{c.destination}</td>
-                <td className="p-3"><StatusBadge value={c.call_status || c.status} /></td>
-                <td className="p-3 font-medium">{c.outcome}</td>
-                <td className="p-3">
-                  {c.conversation_id ? (
-                    <a className="font-semibold text-violet-600 hover:underline" href={`/dashboard/conversations/${c.conversation_id}`}>
-                      View transcript
-                    </a>
-                  ) : (
-                    '—'
-                  )}
+              <tr key={c.row_number} className="transition-colors hover:bg-[#F7FAFF] dark:hover:bg-slate-800/50">
+                <td className="px-5 py-3 tabular-nums text-[#9AA8C2]">{c.row_number}</td>
+                <td className="px-3 py-3 font-semibold">{c.contact_name}</td>
+                <td className="px-3 py-3 tabular-nums text-[#55648A] dark:text-slate-300">{c.destination}</td>
+                <td className="px-3 py-3"><StatusBadge value={c.call_status || c.status} /></td>
+                <td className="px-3 py-3 font-medium">{c.outcome || '—'}</td>
+                <td className="px-3 py-3">
+                  {c.conversation_id ? <a className="font-semibold text-[#137EFD] hover:underline" href={`/dashboard/conversations/${c.conversation_id}`}>View transcript</a> : <span className="text-[#9AA8C2]">—</span>}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {!d.contacts.length && <div className="p-10 text-center text-sm text-slate-500">No candidates match these filters.</div>}
+        {!d.contacts.length && <div className="p-10 text-center text-[13px] text-[#6B7A99]">No contacts match these filters. Clear a filter to see more.</div>}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4 text-sm dark:border-slate-800">
-        <span className="text-slate-500">{d.filtered_total.toLocaleString()} matching candidate(s)</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E6EDF8] px-5 py-4 text-[13px] dark:border-slate-800">
+        <span className="text-[#6B7A99]">{d.filtered_total.toLocaleString()} matching {d.filtered_total === 1 ? 'contact' : 'contacts'}</span>
         <div className="flex items-center gap-2">
-          <button
-            disabled={p.page === 1}
-            onClick={() => p.setPage((v) => Math.max(1, v - 1))}
-            className="rounded-lg border px-3 py-2 disabled:opacity-40"
-          >
-            Previous
-          </button>
-          <span>Page {p.page} of {Math.max(1, Math.ceil(d.filtered_total / d.limit))}</span>
-          <button
-            disabled={p.page * d.limit >= d.filtered_total}
-            onClick={() => p.setPage((v) => v + 1)}
-            className="rounded-lg border px-3 py-2 disabled:opacity-40"
-          >
-            Next
-          </button>
+          <button disabled={p.page === 1} onClick={() => p.setPage((v) => Math.max(1, v - 1))} className={BTN_SECONDARY}>Previous</button>
+          <span className="tabular-nums text-[#55648A]">Page {p.page} of {Math.max(1, Math.ceil(d.filtered_total / d.limit))}</span>
+          <button disabled={p.page * d.limit >= d.filtered_total} onClick={() => p.setPage((v) => v + 1)} className={BTN_SECONDARY}>Next</button>
         </div>
       </div>
       {(d.counts.failed || 0) > 0 && (
-        <div className="flex items-start gap-2 border-t bg-amber-50 p-3 text-xs text-amber-800 dark:border-slate-800 dark:bg-amber-950/20 dark:text-amber-300">
+        <div className="flex items-start gap-2 border-t border-amber-100 bg-amber-50 px-5 py-3 text-[12px] text-amber-800 dark:border-slate-800 dark:bg-amber-950/20 dark:text-amber-300">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
-          Contacts whose calls did not connect remain available as a filtered retry list.
+          Filter by “Call not connected” to get a retry list of contacts who didn’t pick up.
         </div>
       )}
     </section>
