@@ -1,3 +1,5 @@
+import InterviewAgentScores from './InterviewAgentScores';
+import {interviewAgentScores} from './interviewAgentScores';
 import {ReferenceScorecard} from '@/shared-assessment/ReferenceScorecard';
 import {invalidateStudentScorecard} from "./assessmentClient";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -634,7 +636,7 @@ export default function CandidateReport({
   const answerState = (review: Data) => String(review.answer_state || review.evidence_status || review.status || "not_assessed").toLowerCase();
   const answerLabel = (review: Data) => { const state = answerState(review); return state === "answered" ? "Answered" : ["explicit_dont_know", "no_response", "capture_unavailable", "system_interrupted", "irrelevant_answer"].includes(state) ? "Needs review" : state === "not_assessed" ? "Not assessed" : "Limited evidence"; };
   const answerIsMissing = (review: Data) => ["explicit_dont_know", "no_response", "capture_unavailable", "system_interrupted", "irrelevant_answer"].includes(answerState(review));
-  const roundEntries = rounds.map((round, index) => ({
+  const roundEntries = interviewAgentScores(rounds,drive?.agent_selection).map(({round}, index) => ({
     round,
     index,
     label: roundRole(round.agent_type || round.track, round.interviewer_role),
@@ -732,6 +734,8 @@ export default function CandidateReport({
       {notice && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
 
       <ReferenceScorecard student={student} studentId={studentId} candidatePhoto={candidatePhoto} candidateProfile={candidateProfile} role={drive?.role_title} report={report} recordingDuration={recordingDuration} questionCount={reviews.length} executiveSummary={executiveSummary} readinessLabel={readinessLabel} competencyRows={competencyRows} strengthBriefs={strengthBriefs} growthBriefs={growthBriefs} followUpBriefs={followUpBriefs} evidenceHighlights={evidenceHighlights} onSeek={videoReady?seekToOffset:undefined} infoMessage={driveError?<>Drive details: {driveError} <button className="underline" onClick={()=>void load()}>Retry</button></>:undefined}/>
+
+      <InterviewAgentScores breakdown={rounds} selection={drive?.agent_selection}/>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <main className="candidate-report-content min-w-0 space-y-5">

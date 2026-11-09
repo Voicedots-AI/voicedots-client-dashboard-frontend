@@ -1,3 +1,4 @@
+import {atsIndicator} from '@/shared-assessment/atsCutoff';
 import {RosterExpandControl} from '@/shared-assessment/RosterExpandControl';
 import { UserFacingError } from '@/lib/userFacingError';
 import {loadCandidateAssessment,peekAssessment,studentAssessmentPath,mergeResumeEvidence,invalidateStudentAssessment,type FullBundle} from './assessmentClient';
@@ -348,7 +349,7 @@ function ResumeMatchSummary({ driveId, candidate, onOpen }: { driveId: string; c
   </span>;
 }
 
-export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequirements,initialAssessment,onOpenCoach}:{driveId:string;candidate:Candidate;drive:Drive|null;onClose:()=>void;onReviewRequirements:()=>void;initialAssessment?:Data;onOpenCoach?:()=>void}) {
+export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequirements,initialAssessment,cutoff,onOpenCoach}:{driveId:string;candidate:Candidate;drive:Drive|null;onClose:()=>void;onReviewRequirements:()=>void;initialAssessment?:Data;cutoff?:number|null;onOpenCoach?:()=>void}) {
   const dialogRef=useRef<HTMLElement>(null);
   const closeRef=useRef(onClose);
   useEffect(()=>{closeRef.current=onClose},[onClose]);
@@ -375,7 +376,7 @@ export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequireme
     return()=>{document.removeEventListener('keydown',key);if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true})};
   },[]);
   const merged={...candidate,...result} as Candidate;
-  const assessmentData={...result,job_description:result?.job_description||null,current_drive_job_description:drive?.id===driveId?drive.jd_raw_text:null};
+  const assessmentData={...result,criteria_ats_fit:result?.criteria_ats_fit??cutoff??(drive?.id===driveId?drive.criteria_ats_fit:undefined),job_description:result?.job_description||null,current_drive_job_description:drive?.id===driveId?drive.jd_raw_text:null};
   return createPortal(<div style={{margin:0}} className="ats-assessment-page placement-drives-scheme placement-scheme pd-portal" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="ats-assessment-dialog"><header className="ats-assessment-dialog-header"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
 }
 
@@ -389,7 +390,7 @@ export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezo
     <div className="placement-result-summary">
       <div className="placement-result-person"><input type="checkbox" aria-label={`Select ${candidate.full_name}`} checked={checked} onChange={event=>onSelect(event.target.checked)}/><StudentAvatar student={candidate} size="h-11 w-11"/><div><h4>{candidate.full_name}</h4><p>{candidate.email||candidate.roll_number||'Email unavailable'}</p>{candidate.rank!=null&&<span className="placement-result-rank">#{candidate.rank} in this drive</span>}</div></div>
       <dl className="placement-result-academics">{[['Degree',candidate.program],['Branch',candidate.department_code],['Year',candidate.graduation_year],['CGPA',candidate.cgpa]].map(([label,value])=><div key={String(label)}><dt>{label}</dt><dd>{value==null||value===''?'—':String(value)}</dd></div>)}</dl>
-      <div className="placement-result-ats"><span>ATS Fit</span><ATSMatchInfo driveId={driveId} candidate={candidate} compact onOpen={onATS}/></div>
+      <div className="placement-result-ats"><span>ATS Fit</span><ATSMatchInfo driveId={driveId} candidate={candidate} cutoff={drive?.criteria_ats_fit} compact onOpen={onATS}/></div>
       <div className="placement-result-assessment"><div><span>Overall assessment</span><strong>{score==null?'Not assessed':`${score}%`}</strong></div><progress max={100} value={score??0} aria-label={score==null?'Interview not assessed':`Overall interview assessment ${score}%`}/><p>{candidate.readiness||candidate.recommendation||'Complete the interview to view assessment feedback.'}</p><div className="placement-result-primary-actions"><button type="button" className="placement-result-report-link" disabled={busy||!candidate.report_ready} onClick={onReport}>View full assessment <ExternalLink size={12}/></button></div></div>
     </div>
 
@@ -684,7 +685,7 @@ function atsStatusLabel(status:string) {
   return ({evaluated:'Evaluated',processing:'Processing',resume_not_available:'Resume Not Available',evaluation_failed:'Evaluation Failed',needs_reevaluation:'Needs Re-evaluation'} as Record<string,string>)[status] || 'Needs Re-evaluation';
 }
 
-function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;candidate:Candidate;compact?:boolean;onOpen:()=>void}) {
+function ATSMatchInfo({driveId,candidate,cutoff,compact=false,onOpen}:{driveId:string;candidate:Candidate;cutoff?:number|null;compact?:boolean;onOpen:()=>void}) {
   const scope = `${driveId}:${candidate.student_id}`;
   const [assessment, setAssessment] = useState<{scope:string; row:Candidate|null; failed:boolean}>();
   const [retry, setRetry] = useState(0);
@@ -709,8 +710,7 @@ function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;c
   const current = assessment?.scope === scope ? assessment : undefined;
   const row = current?.row;
   const score = row?.ats_status === "evaluated" && typeof row.ats_fit_score === "number" && Number.isFinite(row.ats_fit_score) && row.ats_fit_score >= 0 && row.ats_fit_score <= 100 ? row.ats_fit_score : null;
-  // Presentation only: 50 is the requested tint threshold, never an eligibility rule.
-  const tone = score === null ? "neutral" : score >= 50 ? "green" : "red";
+  const tone = atsIndicator(score,row?.criteria_ats_fit??cutoff);
   const rows=row?.skills||[];
   const matched=rows.filter(row=>['FULL_MATCH','RELATED_EVIDENCE'].includes(String(row.match_status)));
   const missing=rows.filter(row=>row.priority==='mandatory'&&['NO_EVIDENCE','WEAK_OR_INFERRED'].includes(String(row.match_status)));
@@ -2585,7 +2585,7 @@ export default function DriveManagement({
                       {tab === "results" ? (
                         <>
                           <td className="p-3"><InterviewStatusBadge value={candidateInterviewStatus(c)}/><p className="mt-2 text-xs text-slate-500">{[c.program,c.department_code].filter(Boolean).join(" · ") || "Academic details unavailable"} · Attempt {c.attempt_number || 1}</p></td>
-                          <td className="p-3"><ATSMatchInfo driveId={driveId} candidate={c} compact onOpen={()=>setAtsCandidate(c)}/></td>
+                          <td className="p-3"><ATSMatchInfo driveId={driveId} candidate={c} cutoff={drive?.criteria_ats_fit} compact onOpen={()=>setAtsCandidate(c)}/></td>
                           <td className="p-3"><span className="text-base font-medium">{c.overall_score==null?'—':`${c.overall_score}/100`}</span><p className="mt-1 text-xs text-slate-500">PRI {c.ranking_score==null?'—':`${c.ranking_score}/100`}</p></td>
                           <td className="p-3"><p>{c.job_fit_score==null?'—':`${c.job_fit_score}/100`}</p><p className="mt-1 text-xs text-slate-500">{c.readiness || 'Not assessed'}</p></td>
                           <td className="p-3"><p>{c.proctoring_score==null?'—':`${c.proctoring_score}/100`}</p><div className="mt-1"><StatusBadge value={c.integrity_review_label || c.integrity_review_status || 'not assessed'}/></div></td>

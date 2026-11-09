@@ -1,6 +1,8 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {RefreshCw,TrendingUp,X} from 'lucide-react';
+import InterviewAgentScores from './InterviewAgentScores';
+import type {Drive} from '@/api/collegeApi';
 import {collegeApi,collegeError} from '@/api/collegeApi';
 import {endpointMissing,type FullBundle} from './assessmentClient';
 import {driveHistory} from './assessmentIntelligenceData';
@@ -11,6 +13,9 @@ import './assessmentJourney.css';
 
 export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBundle;driveId:string;onClose:()=>void}){
  const [result,setResult]=useState<{key:string;data?:StudentJourneyResponse;error?:string}>(),[version,setVersion]=useState(0);
+ const [agentDrive,setAgentDrive]=useState<Drive|null>(null),[agentError,setAgentError]=useState('');
+ const latestReport=driveHistory(bundle).find(row=>row.drive.drive_id===driveId)?.report;
+ useEffect(()=>{const c=new AbortController();setAgentDrive(null);setAgentError('');collegeApi.get<Drive>(`drives/${encodeURIComponent(driveId)}`,c.signal).then(value=>{if(!c.signal.aborted)setAgentDrive(value)}).catch(reason=>{if(!c.signal.aborted)setAgentError(collegeError(reason))});return()=>c.abort()},[driveId,version]);
  const dialog=useRef<HTMLElement>(null),restoreFocus=useRef(document.activeElement as HTMLElement|null);
  const drive=driveHistory(bundle).find(row=>row.drive.drive_id===driveId)?.drive;
  const path=`students/${encodeURIComponent(bundle.student.id)}/journey?drive_id=${encodeURIComponent(driveId)}`;
@@ -44,6 +49,7 @@ export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBun
    <header><div><span className="ai-eyebrow">STUDENT PROGRESS</span><h2 id="ai-progress-title"><TrendingUp size={21}/>Progress · {bundle.student.full_name}</h2><p>{drive?.company_name} · {drive?.role_title}</p><p>The same nine-screen saved-progress view available in this student’s portal.</p></div><button autoFocus className="ai-button" onClick={onClose} aria-label="Close progress"><X size={18}/></button></header>
    <div className="ai-coach-content">
     <button className="ai-button" disabled={loading} onClick={()=>setVersion(value=>value+1)}><RefreshCw size={15}/>Refresh progress</button>
+    {agentError?<p role="alert" className="ai-error">Could not load configured interview agents: {agentError}<button className="ai-button" onClick={()=>setVersion(value=>value+1)}>Retry agent results</button></p>:agentDrive?<InterviewAgentScores breakdown={latestReport?.detail?.agent_breakdown} selection={agentDrive.agent_selection}/>:<p role="status">Loading interview agent results…</p>}
     {error?<div className="ai-empty ai-error" role="alert"><p>{error}</p><button className="ai-button" onClick={()=>setVersion(value=>value+1)}>Retry progress</button></div>:loading?<p role="status" className="ai-inline-loading">Loading student journey…</p>:data&&<JourneyReview key={key} journey={data.journey} studentName={bundle.student.full_name} companyName={drive?.company_name} roleTitle={drive?.role_title}/>}
 
    </div><footer><p>Read-only. The student completes learning and validation in their own portal.</p><button className="ai-button" onClick={onClose}>Close progress</button></footer>

@@ -1,13 +1,24 @@
+import {atsCutoff,atsIndicator} from '../../shared-assessment/atsCutoff';
 import type {CollegeStudent} from '@/api/collegeApi';
 
-export type Assignment={placement_decision?:string|null;criteria_interview_score?:number|null;drive_id:string;company_name?:string;role_title?:string;assignment_status?:string;drive_status?:string;assigned_at?:string;started_at?:string;completed_at?:string;campaign_opens_at?:string;campaign_deadline_at?:string;attempt_number?:number};
-export type AssessmentReport={placement_decision?:string|null;drive_id?:string;session_id?:string;company_name?:string;role_title?:string;overall_score?:number|null;readiness?:string;completed_at?:string;interview_completed_at?:string;attempt_number?:number;assignment_status?:string;detail?:{strengths?:unknown[];priority_improvement_areas?:unknown[]}};
+export type Assignment={criteria_ats_fit?:number|null;placement_decision?:string|null;criteria_interview_score?:number|null;drive_id:string;company_name?:string;role_title?:string;assignment_status?:string;drive_status?:string;assigned_at?:string;started_at?:string;completed_at?:string;campaign_opens_at?:string;campaign_deadline_at?:string;attempt_number?:number};
+export type AssessmentReport={placement_decision?:string|null;drive_id?:string;session_id?:string;company_name?:string;role_title?:string;overall_score?:number|null;readiness?:string;completed_at?:string;interview_completed_at?:string;attempt_number?:number;assignment_status?:string;detail?:{agent_breakdown?:unknown[];strengths?:unknown[];priority_improvement_areas?:unknown[]}};
 export type AssessmentBundle={student:CollegeStudent;drives:Assignment[];reports:AssessmentReport[]};
 export type AssessmentSkill={skill?:string;requirement?:string;match_status?:string};
-export type AssessmentATS={student_id:string;ats_status?:string;ats_fit_score?:number|null;eligible?:boolean;resume_version?:string;input_fingerprint?:string;evaluated_at?:string;skills?:AssessmentSkill[]};
+export type AssessmentATS={criteria_ats_fit?:number|null;student_id:string;ats_status?:string;ats_fit_score?:number|null;eligible?:boolean;resume_version?:string;input_fingerprint?:string;evaluated_at?:string;skills?:AssessmentSkill[]};
 export type ATSState={row?:AssessmentATS;error?:string};
 export const validScore=(value:unknown):value is number=>typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100;
 export const currentATSScore=(value?:AssessmentATS)=>value?.ats_status==='evaluated'&&validScore(value.ats_fit_score)?value.ats_fit_score:null;
+// Match the requested indicator rule: green only above this drive's cutoff.
+// The current shared ATS payload takes precedence over the assignment snapshot.
+export function atsDriveCutoff(row?:AssessmentATS,driveCutoff?:number|null){
+ const cutoff=row?.criteria_ats_fit??driveCutoff??50;
+ return atsCutoff(cutoff);
+}
+export function atsAboveDriveCutoff(row?:AssessmentATS,driveCutoff?:number|null):boolean|null{
+ const score=currentATSScore(row),cutoff=atsDriveCutoff(row,driveCutoff);
+ return score===null||cutoff===null?null:atsIndicator(score,cutoff)==='green';
+}
 export const atsKey=(studentId:string,driveId:string)=>JSON.stringify([studentId,driveId]);
 
 // Both portals use the current resume/JD ATS result; interview results remain historical.
@@ -28,7 +39,7 @@ export function assessmentSummary(bundle:AssessmentBundle,ats:Record<string,ATSS
  const scores=rows.map(({drive})=>currentATSScore(ats[atsKey(bundle.student.id,drive.drive_id)]?.row)).filter((score):score is number=>score!==null);
  const interview=rows.map(row=>row.report?.overall_score).filter(validScore);
  return {drives:rows.length,participated:rows.filter(row=>row.drive.started_at||row.drive.completed_at||['in_progress','completed'].includes(row.drive.assignment_status||'')).length,
-  eligible:rows.filter(({drive})=>(currentATSScore(ats[atsKey(bundle.student.id,drive.drive_id)]?.row)??-1)>=50).length,
+  eligible:rows.filter(({drive})=>atsAboveDriveCutoff(ats[atsKey(bundle.student.id,drive.drive_id)]?.row,drive.criteria_ats_fit)===true).length,
   assessed:scores.length,averageATS:scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:null,bestScore:interview.length?Math.max(...interview):null,
   pending:rows.some(({drive})=>!ats[atsKey(bundle.student.id,drive.drive_id)]||ats[atsKey(bundle.student.id,drive.drive_id)]?.row?.ats_status==='processing'),
   failed:rows.some(({drive})=>Boolean(ats[atsKey(bundle.student.id,drive.drive_id)]?.error))};
