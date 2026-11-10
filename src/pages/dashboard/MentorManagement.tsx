@@ -394,7 +394,7 @@ export default function MentorManagement() {
       <option value="">Select mentor</option>
       {state.mentors.map((m) => (
         <option key={m.id} value={m.id}>
-          {m.id} – {m.name}
+          {m.employeeCode||`Mentor ${m.id.slice(0,8)}`} – {m.name}
           {m.active ? "" : " (Inactive)"}
         </option>
       ))}
@@ -732,35 +732,13 @@ export default function MentorManagement() {
             )}
           </div>
           <div className="mm-card">
-            <div className="mm-filters">
-              <label>Mentor{mentorSelect(mentorId, setMentorId)}</label>
-              <div className="mm-allocation">
-                <b>{mentor?.assignedCount || 0} Assigned</b>
-                <b>{mentor?.capacity || 0} Maximum</b>
-                <b>
-                  {Math.max(
-                    0,
-                    (mentor?.capacity || 0) - (mentor?.assignedCount || 0),
-                  )}{" "}
-                  Available
-                </b>
-              </div>
-            </div>
+            <div className="mm-mentor-picker"><label>Mentor{mentorSelect(mentorId,setMentorId)}</label></div>
+            {mentor ? <div className="mm-assignment-summary">
+              <div className="mm-selected-mentor"><MentorProfilePhoto kind="staff" id={mentor.staffId} name={mentor.name} large/><div><span className="mm-mentor-code">{mentor.employeeCode||`Mentor ${mentor.id.slice(0,8)}`}</span><h2>{mentor.name}</h2><p>{[mentor.department,mentor.designation].filter(Boolean).join(' · ')||'Faculty mentor'}</p>{mentor.email&&<a href={`mailto:${mentor.email}`}>{mentor.email}</a>}{mentor.phone&&<span className="mm-mentor-contact">{mentor.phone}</span>}{mentor.expertise&&<small>{mentor.expertise}</small>}<span className={`mm-badge ${mentor.active?'green':'gray'}`}>{mentor.active?'Active mentor':'Inactive mentor'}</span></div></div>
+              <div className="mm-assignment-stats">{[[Users,'Assigned',mentor.assignedCount],[GraduationCap,'Maximum',mentor.capacity],[CheckCircle2,'Available',Math.max(0,mentor.capacity-mentor.assignedCount)]].map(([Icon,label,value])=>{const StatIcon=Icon as typeof Users;return <div key={String(label)}><StatIcon size={24} aria-hidden="true"/><div><small>{String(label)}</small><strong>{String(value)}<span> students</span></strong></div></div>})}</div>
+            </div>:<p className="mm-empty">Choose a mentor to view their profile and allocation capacity.</p>}
             {step === 1 ? (
-              <div className="mm-empty">
-                <Users size={40} />
-                <h2>{mentor?.name || "Choose a mentor"}</h2>
-                <p>
-                  {mentor?.department} · {mentor?.expertise}
-                </p>
-                <button
-                  className="mm-primary"
-                  disabled={!mentor?.active}
-                  onClick={() => setStep(2)}
-                >
-                  Choose students <ArrowRight size={16} />
-                </button>
-              </div>
+              <p className="mm-assignment-hint">Review the mentor’s profile and available capacity, then choose students to assign.</p>
             ) : step === 2 ? (
               <>
                 <form className="mm-student-filters" aria-label="Filter mentees" onSubmit={event=>{event.preventDefault();setStudentFilters({...studentFilterDraft});setStudentPage(1)}}>
