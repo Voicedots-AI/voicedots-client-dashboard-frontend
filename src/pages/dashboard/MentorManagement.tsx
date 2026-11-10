@@ -1,3 +1,4 @@
+import {emptyMenteeFilters,filterMentees,menteeFilterOptions,selectableMentees,toggleMenteePage,type MenteeFilters} from './mentee-filters';
 import MentorProgressPanels from './MentorProgressPanels';
 import MentorProfilePhoto,{MentorPhotoEditor} from './MentorProfilePhoto';
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -124,7 +125,9 @@ export default function MentorManagement() {
     [studentId, setStudentId] = useState(state.students[0]?.id || ""),
     [progressTab, setProgressTab] = useState("Overall Status"),
     [reportTab, setReportTab] = useState("Overview"),
-    [studentFilters, setStudentFilters] = useState<Record<string, string>>({});
+    [studentFilters, setStudentFilters] = useState<MenteeFilters>(emptyMenteeFilters),
+    [studentFilterDraft,setStudentFilterDraft] = useState<MenteeFilters>(emptyMenteeFilters),
+    [studentPage,setStudentPage] = useState(1);
   mentorRef.current = mentorId;
   const commit = async (next: MentorState, action: string, _detail: string) => {
     if (mutating.current) return false;
@@ -252,7 +255,9 @@ export default function MentorManagement() {
     setSelected([]);
     setStep(1);
     setNotice("");
-    setStudentFilters({});
+    setStudentFilters(emptyMenteeFilters());
+    setStudentFilterDraft(emptyMenteeFilters());
+    setStudentPage(1);
   };
   const mentor = state.mentors.find((m) => m.id === mentorId),
     assigned = state.students.filter((s) => s.mentorId === mentorId),
@@ -271,16 +276,13 @@ export default function MentorManagement() {
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
-  const students = state.students.filter(
-    (s) =>
-      (!dept || s.department === dept) &&
-      Object.entries(studentFilters).every(
-        ([key, value]) =>
-          !value ||
-          String(s[key as "batch" | "degree" | "semester"] ?? "") === value,
-      ) &&
-      `${s.name} ${s.id}`.toLowerCase().includes(search.toLowerCase()),
-  );
+  const students = filterMentees(state.students,studentFilters);
+  const studentPageCount=Math.max(1,Math.ceil(students.length/20));
+  const currentStudentPage=Math.min(studentPage,studentPageCount);
+  const visibleStudents=students.slice((currentStudentPage-1)*20,currentStudentPage*20);
+  const selectablePage=selectableMentees(visibleStudents);
+  const selectedOutsideFilters=selected.filter(id=>!students.some(student=>student.id===id)).length;
+  const resetStudentFilters=()=>{setStudentFilterDraft(emptyMenteeFilters());setStudentFilters(emptyMenteeFilters());setStudentPage(1)};
   const avg = (items: typeof state.students) => {
     const values = items.filter((s) => s.readiness !== null);
     return values.length
@@ -338,7 +340,7 @@ export default function MentorManagement() {
     const items = state.students.filter((s) => selected.includes(s.id));
     if (
       items.length !== selected.length ||
-      items.some((s) => (transfer ? s.mentorId !== mentorId : !!s.mentorId))
+      items.some((s) => s.student_status==='inactive' || (transfer ? s.mentorId !== mentorId : !!s.mentorId))
     )
       return setNotice("Student allocation changed. Select students again.");
     if (transfer && (!reason.trim() || to === mentorId))
@@ -761,67 +763,18 @@ export default function MentorManagement() {
               </div>
             ) : step === 2 ? (
               <>
-                <div className="mm-filters">
-                  <label className="mm-search">
-                    <Search size={16} />
-                    <input
-                      aria-label="Search students"
-                      placeholder="Search student name / registration number"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Department
-                    <select
-                      value={dept}
-                      onChange={(e) => setDept(e.target.value)}
-                    >
-                      <option value="">All Departments</option>
-                      {departments.map((d) => (
-                        <option key={d}>{d}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <div className="mm-filters">
-                  {(["batch", "degree", "semester"] as const).map((key) => (
-                    <label key={key}>
-                      {key === "degree"
-                        ? "Degree"
-                        : key === "batch"
-                          ? "Batch"
-                          : "Semester"}
-                      <select
-                        value={studentFilters[key] || ""}
-                        onChange={(e) =>
-                          setStudentFilters((v) => ({
-                            ...v,
-                            [key]: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">All</option>
-                        {Array.from(
-                          new Set(
-                            state.students
-                              .map((s) => s[key])
-                              .filter((v) => v != null && v !== ""),
-                          ),
-                        ).map((v) => (
-                          <option key={String(v)} value={String(v)}>
-                            {v}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ))}
-                </div>
+                <form className="mm-student-filters" aria-label="Filter mentees" onSubmit={event=>{event.preventDefault();setStudentFilters({...studentFilterDraft});setStudentPage(1)}}>
+                  <div className="mm-student-filter-fields">
+                    {([['batch','Batch'],['degree','Degree'],['department','Department'],['semester','Semester']] as const).map(([key,label])=><label key={key}>{label}<select aria-label={`Filter students by ${label.toLowerCase()}`} value={studentFilterDraft[key]} onChange={event=>setStudentFilterDraft(current=>({...current,[key]:event.target.value}))}><option value="">All {label==='Batch'?'batches':label==='Degree'?'degrees':label==='Department'?'departments':'semesters'}</option>{menteeFilterOptions(state.students,key).map(value=><option value={value} key={value}>{value}</option>)}</select></label>)}
+                  </div>
+                  <div className="mm-student-filter-actions"><label className="mm-search"><Search size={16}/><input aria-label="Search students" placeholder="Name, registration number or email" value={studentFilterDraft.query} onChange={event=>setStudentFilterDraft(current=>({...current,query:event.target.value}))}/></label><button type="submit" className="mm-primary"><Search size={15}/>Search Students</button><button type="button" onClick={resetStudentFilters}>Clear filters</button></div>
+                </form>
+                <div className="mm-student-results" aria-live="polite"><span><b>{students.length}</b> matching students · {selectableMentees(students).length} available to assign</span><span>{selected.length} selected{selectedOutsideFilters>0?` · ${selectedOutsideFilters} outside current filters`:''}{selected.length>0&&<button type="button" onClick={()=>setSelected([])}>Clear selection</button>}</span></div>
                 <div className="mm-table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        <th>Select</th>
+                        <th><input type="checkbox" aria-label="Select all available students on this page" disabled={!selectablePage.length} checked={selectablePage.length>0&&selectablePage.every(student=>selected.includes(student.id))} ref={element=>{if(element)element.indeterminate=selectablePage.some(student=>selected.includes(student.id))&&!selectablePage.every(student=>selected.includes(student.id))}} onChange={()=>setSelected(current=>toggleMenteePage(current,visibleStudents))}/></th>
                         <th>Reg. No</th>
                         <th>Student Name</th>
                         <th>Batch</th>
@@ -832,7 +785,7 @@ export default function MentorManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {students.map((s) => (
+                      {visibleStudents.map((s) => (
                         <tr key={s.id}>
                           <td>
                             <input
@@ -860,9 +813,11 @@ export default function MentorManagement() {
                           </td>
                         </tr>
                       ))}
+                      {!students.length&&<tr><td colSpan={8}><div className="mm-empty">No students match these filters. Try another selection or clear the filters.</div></td></tr>}
                     </tbody>
                   </table>
                 </div>
+                <div className="mm-student-pagination"><span>{students.length?`${(currentStudentPage-1)*20+1}–${Math.min(currentStudentPage*20,students.length)} of ${students.length}`:'0 students'}</span><div><button type="button" disabled={currentStudentPage===1} onClick={()=>setStudentPage(currentStudentPage-1)}>Previous</button><span>Page {currentStudentPage} of {studentPageCount}</span><button type="button" disabled={currentStudentPage===studentPageCount} onClick={()=>setStudentPage(currentStudentPage+1)}>Next</button></div></div>
               </>
             ) : (
               <div className="mm-empty">
