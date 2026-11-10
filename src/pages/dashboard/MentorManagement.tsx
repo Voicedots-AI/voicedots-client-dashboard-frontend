@@ -1,3 +1,4 @@
+import MenteeBulkDialog from './MenteeBulkDialog';
 import {emptyMenteeFilters,filterMentees,menteeFilterOptions,selectableMentees,toggleMenteePage,type MenteeFilters} from './mentee-filters';
 import MentorProgressPanels from './MentorProgressPanels';
 import MentorProfilePhoto,{MentorPhotoEditor} from './MentorProfilePhoto';
@@ -118,6 +119,7 @@ export default function MentorManagement() {
     [mentorId, setMentorId] = useState(state.mentors[0]?.id || ""),
     [selected, setSelected] = useState<string[]>([]),
     [step, setStep] = useState(1),
+    [bulkOpen,setBulkOpen] = useState(false),
     [to, setTo] = useState(""),
     [reason, setReason] = useState("Change in mentor workload"),
     [role, setRole] = useState("Mentor"),
@@ -748,11 +750,12 @@ export default function MentorManagement() {
                   <div className="mm-student-filter-actions"><label className="mm-search"><Search size={16}/><input aria-label="Search students" placeholder="Name, registration number or email" value={studentFilterDraft.query} onChange={event=>setStudentFilterDraft(current=>({...current,query:event.target.value}))}/></label><button type="submit" className="mm-primary"><Search size={15}/>Search Students</button><button type="button" onClick={resetStudentFilters}>Clear filters</button></div>
                 </form>
                 <div className="mm-student-results" aria-live="polite"><span><b>{students.length}</b> matching students · {selectableMentees(students).length} available to assign</span><span>{selected.length} selected{selectedOutsideFilters>0?` · ${selectedOutsideFilters} outside current filters`:''}{selected.length>0&&<button type="button" onClick={()=>setSelected([])}>Clear selection</button>}</span></div>
-                <div className="mm-table-wrap">
+                <div className="mm-assignment-workspace"><div className="mm-assignment-roster"><div className="mm-table-wrap">
                   <table>
                     <thead>
                       <tr>
                         <th><input type="checkbox" aria-label="Select all available students on this page" disabled={!selectablePage.length} checked={selectablePage.length>0&&selectablePage.every(student=>selected.includes(student.id))} ref={element=>{if(element)element.indeterminate=selectablePage.some(student=>selected.includes(student.id))&&!selectablePage.every(student=>selected.includes(student.id))}} onChange={()=>setSelected(current=>toggleMenteePage(current,visibleStudents))}/></th>
+                        <th>S.No</th>
                         <th>Reg. No</th>
                         <th>Student Name</th>
                         <th>Batch</th>
@@ -763,7 +766,7 @@ export default function MentorManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {visibleStudents.map((s) => (
+                      {visibleStudents.map((s,index) => (
                         <tr key={s.id}>
                           <td>
                             <input
@@ -774,6 +777,7 @@ export default function MentorManagement() {
                               onChange={() => toggle(s.id)}
                             />
                           </td>
+                          <td>{(currentStudentPage-1)*20+index+1}</td>
                           <td>{s.rollNumber || s.id}</td>
                           <td>
                             <span className="mm-person"><MentorProfilePhoto kind="students" id={s.id} name={s.name}/><b>{s.name}</b></span>
@@ -791,11 +795,12 @@ export default function MentorManagement() {
                           </td>
                         </tr>
                       ))}
-                      {!students.length&&<tr><td colSpan={8}><div className="mm-empty">No students match these filters. Try another selection or clear the filters.</div></td></tr>}
+                      {!students.length&&<tr><td colSpan={9}><div className="mm-empty">No students match these filters. Try another selection or clear the filters.</div></td></tr>}
                     </tbody>
                   </table>
                 </div>
                 <div className="mm-student-pagination"><span>{students.length?`${(currentStudentPage-1)*20+1}–${Math.min(currentStudentPage*20,students.length)} of ${students.length}`:'0 students'}</span><div><button type="button" disabled={currentStudentPage===1} onClick={()=>setStudentPage(currentStudentPage-1)}>Previous</button><span>Page {currentStudentPage} of {studentPageCount}</span><button type="button" disabled={currentStudentPage===studentPageCount} onClick={()=>setStudentPage(currentStudentPage+1)}>Next</button></div></div>
+                </div><aside className="mm-allocation-sidebar"><h2>Assignment Summary</h2>{[[CalendarDays,'Scheduled Sessions',null],[History,'Pending Assignments',selected.length],[Users,'Mentoring Attended',null],[GraduationCap,'After Assignment',(mentor?.assignedCount||0)+selected.length],[CheckCircle2,'Availabilities',Math.max(0,(mentor?.capacity||0)-(mentor?.assignedCount||0)-selected.length)]].map(([Icon,label,value])=>{const SummaryIcon=Icon as typeof Users;return <div className="mm-allocation-summary-row" key={String(label)}><SummaryIcon size={16} aria-hidden="true"/><span>{String(label)}</span><b>{value===null?'Not recorded':String(value)}</b></div>})}<p className="mm-muted">Session scheduling and mentoring attendance have no saved records yet.</p>{(mentor?.assignedCount||0)+selected.length>(mentor?.capacity||0)&&<p className="mm-bulk-error" role="alert">Selection exceeds this mentor’s capacity. Remove students before assigning.</p>}</aside></div>
               </>
             ) : (
               <div className="mm-empty">
@@ -813,8 +818,8 @@ export default function MentorManagement() {
                   ))}
               </div>
             )}
-            <footer className="mm-form-footer">
-              <span>{selected.length} students selected</span>
+            <footer className="mm-form-footer mm-assignment-footer"><div className="mm-assignment-secondary-actions"><button type="button" disabled={!mentor?.active||saving} onClick={()=>setBulkOpen(true)}><Upload size={15}/>Bulk Assignment (Excel)</button><button type="button" disabled={!mentor} onClick={()=>go('Reassignment History')}><History size={15}/>Reassign / Transfer</button></div>
+              <span>{selected.length} students selected</span><button type="button" disabled={saving} onClick={()=>go('Mentor Master')}>Cancel</button>
               {step > 1 && (
                 <button onClick={() => setStep(step - 1)}>
                   <ArrowLeft size={15} /> Back
@@ -822,7 +827,7 @@ export default function MentorManagement() {
               )}
               <button
                 className="mm-primary"
-                disabled={(step > 1 && !selected.length) || !mentor?.active}
+                disabled={saving||(step > 1 && !selected.length) || !mentor?.active||(step>1&&(mentor.assignedCount+selected.length>mentor.capacity))}
                 onClick={() => (step < 3 ? setStep(step + 1) : allocate())}
               >
                 {step === 3
@@ -1441,6 +1446,7 @@ export default function MentorManagement() {
           )}
         </>
       )}
+      {bulkOpen&&<MenteeBulkDialog onClose={()=>setBulkOpen(false)} onPreview={ids=>{setSelected(ids);setStep(3);setBulkOpen(false);setNotice(`${ids.length} students selected from Excel. Review before assigning.`)}}/>}
       {editing && (
         <div className="mm-modal-backdrop">
           <section
