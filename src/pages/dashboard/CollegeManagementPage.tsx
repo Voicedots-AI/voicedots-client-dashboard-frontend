@@ -33,6 +33,7 @@ import {
 import { useCollegeAccess } from "@/hooks/useCollegeAccess";
 import PlacementDashboard from "./PlacementDashboard";
 import AssessmentIntelligence from "./AssessmentIntelligence";
+import MentorManagement from "./MentorManagement";
 import CandidateDirectory from "./CandidateDirectory";
 import FeedbackDashboard from "./FeedbackDashboard";
 import CreateDriveWizard from "./CreateDriveWizard";
@@ -160,6 +161,7 @@ export default function CollegeManagementPage() {
   } = useCollegeAccess();
   const [params, setParams] = useSearchParams();
   const requestedTab = (params.get("view") || "placements") as
+      | "mentors"
       | "assessment-intelligence"
       | "dashboard"
       | "feedback"
@@ -326,6 +328,7 @@ export default function CollegeManagementPage() {
         </button>
       </section>
     );
+  if (access.is_mentor && access.erp_role !== "college_admin" && !params.has("view") && !driveId && !creating) return <Navigate to="/dashboard/placement-management?view=mentors" replace/>;
   const navigate = (view: string) =>
     setParams((p) => {
       p.set("view", view);
@@ -335,6 +338,7 @@ export default function CollegeManagementPage() {
       p.delete("section");
       return p;
     });
+  if (tab === "mentors") return <MentorManagement/>;
   if (tab === "assessment-intelligence") return <AssessmentIntelligence/>;
   if (tab === "dashboard") return <PlacementDashboard />;
   if (tab === "feedback") return <FeedbackDashboard/>;
@@ -501,7 +505,7 @@ type PlacementStaffScopeGroup = { program?: string | null; department_code?: str
 type StaffScopeSelection = { programs: string[]; department_codes: string[]; batch_labels: string[]; graduation_years: number[] };
 type StudentCohort = { program: string; department_code: string; batch_label: string | null; graduation_year: number | null; student_count: number };
 type PlacementStaffOptions = { programs: Program[]; graduation_years: number[]; batches: string[]; student_groups?: StudentCohort[] };
-type PlacementStaffMember = { user_id: string; name: string; email: string; status: "invited" | "active" | "disabled"; created_at?: string | null; scope_groups: PlacementStaffScopeGroup[] };
+type PlacementStaffMember = { is_mentor?:boolean;mentor_active?:boolean; user_id: string; name: string; email: string; status: "invited" | "active" | "disabled"; created_at?: string | null; scope_groups: PlacementStaffScopeGroup[] };
 const emptyScopeGroup = (): StaffScopeSelection => ({ programs: [], department_codes: [], batch_labels: [], graduation_years: [] });
 const selectionFromScopeGroup = (group: PlacementStaffScopeGroup): StaffScopeSelection => ({
   programs: group.program ? [group.program] : [],
@@ -591,7 +595,7 @@ export function PlacementStaffManagement({ mode = "all" }: { mode?: "all" | "ros
     {!accessMode && <><StaffImport onComplete={() => void load(true)} /><form onSubmit={invite} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Full name<input required maxLength={150} value={name} onChange={e => setName(e.target.value)} className={input} placeholder="Placement coordinator" /></label><label className="text-sm font-medium">Work email<input required type="email" value={email} onChange={e => setEmail(e.target.value)} className={input} placeholder="name@institution.edu" /></label></div>{mode === "all" && <StaffScopeEditor groups={scopeGroups} setGroups={setScopeGroups} options={options} />}<div className="flex justify-end"><button className={primary} disabled={busy}>{busy ? "Working…" : "Invite staff"}</button></div></form></>}
     {accessMode && staff.length > 0 && <label className="block max-w-xl text-sm font-medium">Placement staff member<select aria-label="Placement staff member" className={input} value={editing || ""} onChange={event => { const id = event.target.value; setEditing(id || null); const person = staff.find(item => item.user_id === id); setEditGroups(person?.scope_groups?.length ? person.scope_groups.map(selectionFromScopeGroup) : [emptyScopeGroup()]); }}><option value="">Select staff member</option>{staff.map(person => <option key={person.user_id} value={person.user_id}>{person.name} · {person.email}</option>)}</select></label>}
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center justify-between border-b p-5 dark:border-slate-800"><div><h3 className="font-semibold">{accessMode ? "Select staff member" : "Placement staff"}</h3><p className="mt-1 text-sm text-slate-500">{staff.length} active or invited</p></div><button type="button" aria-label="Refresh staff roster" className={button} disabled={busy || refreshing} onClick={() => void load(true)}><RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />{refreshing ? "Refreshing…" : "Refresh"}</button></div>
-      {staff.length ? <ul className="divide-y dark:divide-slate-800">{staff.map(person => <li key={person.user_id} className="space-y-3 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{person.name}</p><p className="text-sm text-slate-500">{person.email}</p>{accessMode && (() => { const count = currentStudentsInScope(person.scope_groups, options.student_groups); return <p className="mt-2 text-xs text-slate-500">{person.scope_groups?.length ? `${person.scope_groups.length} access rule${person.scope_groups.length === 1 ? "" : "s"}` : "No student access assigned"}{count !== null ? ` · ${count} matching students` : ""}</p>; })()}</div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${person.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{person.status === "active" ? "Active" : "Invitation pending"}</span>{accessMode && <button className={button} disabled={busy} onClick={() => { setEditing(editing === person.user_id ? null : person.user_id); setEditGroups(person.scope_groups?.length ? person.scope_groups.map(selectionFromScopeGroup) : [emptyScopeGroup()]); }}>{editing === person.user_id ? "Close" : "Manage access"}</button>}{mode !== "access" && <button className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50" disabled={busy} onClick={() => void revoke(person)}>Remove staff</button>}</div></div>{accessMode && editing === person.user_id && <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4"><StaffScopeEditor groups={editGroups} setGroups={setEditGroups} options={options}/>{hasCompleteScopeGroups(editGroups) && !hasSupportedScopeGroupCount(editGroups, options.programs) && <p role="alert" className="mt-3 text-sm text-rose-700">Reduce the selections; this staff member can have at most 100 access rules.</p>}<div className="mt-3 flex justify-end"><button type="button" className={primary} disabled={busy || !hasCompleteScopeGroups(editGroups) || !hasSupportedScopeGroupCount(editGroups, options.programs)} onClick={() => void saveScope(person)}>{busy ? "Saving…" : "Save Access"}</button></div></div>}</li>)}</ul> : <p className="p-8 text-center text-sm text-slate-500">No placement staff have been invited yet.</p>}</div>
+      {staff.length ? <ul className="divide-y dark:divide-slate-800">{staff.map(person => <li key={person.user_id} className="space-y-3 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{person.name} {person.is_mentor&&<span className="ml-2 rounded-full bg-violet-100 px-2 py-1 text-xs text-violet-700">{person.mentor_active?"Mentor":"Mentor · inactive"}</span>}</p><p className="text-sm text-slate-500">{person.email}</p>{accessMode && (() => { const count = currentStudentsInScope(person.scope_groups, options.student_groups); return <p className="mt-2 text-xs text-slate-500">{person.scope_groups?.length ? `${person.scope_groups.length} access rule${person.scope_groups.length === 1 ? "" : "s"}` : "No student access assigned"}{count !== null ? ` · ${count} matching students` : ""}</p>; })()}</div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${person.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{person.status === "active" ? "Active" : "Invitation pending"}</span>{accessMode && <button className={button} disabled={busy} onClick={() => { setEditing(editing === person.user_id ? null : person.user_id); setEditGroups(person.scope_groups?.length ? person.scope_groups.map(selectionFromScopeGroup) : [emptyScopeGroup()]); }}>{editing === person.user_id ? "Close" : "Manage access"}</button>}{mode !== "access" && <button className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50" disabled={busy} onClick={() => void revoke(person)}>Remove staff</button>}</div></div>{accessMode && editing === person.user_id && <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4"><StaffScopeEditor groups={editGroups} setGroups={setEditGroups} options={options}/>{hasCompleteScopeGroups(editGroups) && !hasSupportedScopeGroupCount(editGroups, options.programs) && <p role="alert" className="mt-3 text-sm text-rose-700">Reduce the selections; this staff member can have at most 100 access rules.</p>}<div className="mt-3 flex justify-end"><button type="button" className={primary} disabled={busy || !hasCompleteScopeGroups(editGroups) || !hasSupportedScopeGroupCount(editGroups, options.programs)} onClick={() => void saveScope(person)}>{busy ? "Saving…" : "Save Access"}</button></div></div>}</li>)}</ul> : <p className="p-8 text-center text-sm text-slate-500">No placement staff have been invited yet.</p>}</div>
   </section>;
 }
 
