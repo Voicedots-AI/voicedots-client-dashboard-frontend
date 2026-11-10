@@ -26,6 +26,11 @@ export type Mentor = {
 };
 export type Mentee = {
   student_status?:string;
+  hasPhoto?:boolean;
+  aiProgress?:number|null;
+  aiTasksCompleted?:number;
+  aiTasksTotal?:number;
+  aiPlans?:number;
   id: string;
   rollNumber: string;
   name: string;
@@ -121,7 +126,7 @@ export const initialState = (): MentorState => ({
 export function normalizeState(raw: MentorState): MentorState {
   return {
     ...raw,
-    mentors: raw.mentors.map((m) => ({ ...m, photo: "" })),
+    mentors: raw.mentors,
     students: raw.students.map((s) => {
       const items =
         (s as unknown as { milestones: Milestone[] }).milestones || [];

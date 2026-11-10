@@ -1,0 +1,11 @@
+import {useEffect,useState} from 'react';
+import {collegeApi,collegeError} from '@/api/collegeApi';
+export default function MentorProfilePhoto({kind,id,name,large=false,revision=0}:{kind:'students'|'staff';id:string;name:string;large?:boolean;revision?:number}){
+ const [photo,setPhoto]=useState('');
+ useEffect(()=>{let active=true;setPhoto('');if(id)collegeApi.get<{photo:string|null}>(`mentors/photos/${kind}/${id}`).then(value=>{if(active)setPhoto(value.photo||'')}).catch(()=>{});return()=>{active=false}},[kind,id,revision]);
+ return <span className={`mm-avatar${large?' large':''}`}>{photo?<img src={photo} alt={`${name} profile`} onError={()=>setPhoto('')}/>:<span aria-label={`${name}, no profile photo`}>{name.trim().split(/\s+/).slice(0,2).map(s=>s[0]).join('')}</span>}</span>;
+}
+export function MentorPhotoEditor({mentorId,staffId,name,readOnly}:{mentorId:string;staffId:string;name:string;readOnly:boolean}){
+ const [revision,setRevision]=useState(0),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ return <><MentorProfilePhoto kind="staff" id={staffId} name={name} large revision={revision}/><b>Profile Photo</b>{!readOnly&&mentorId?<label className="mm-photo-upload">{busy?'Saving photo…':'Upload faculty photo'}<input type="file" accept="image/jpeg,image/png" disabled={busy} onChange={async e=>{const file=e.target.files?.[0];if(!file)return;setError('');if(file.size>2*1024*1024){setError('Choose a JPEG or PNG up to 2 MB.');return}setBusy(true);try{const photo=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file)});await collegeApi.save(`mentors/profiles/${mentorId}/photo`,{photo},true);setRevision(v=>v+1)}catch(error){setError(collegeError(error))}finally{setBusy(false)}}}/></label>:<small>{mentorId?'Existing faculty profile':'Save the mentor before uploading a photo.'}</small>}{error&&<small role="alert">{error}</small>}</>;
+}

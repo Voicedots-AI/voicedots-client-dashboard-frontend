@@ -1,3 +1,5 @@
+import MentorProgressPanels from './MentorProgressPanels';
+import MentorProfilePhoto,{MentorPhotoEditor} from './MentorProfilePhoto';
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Users,
@@ -640,19 +642,7 @@ export default function MentorManagement() {
                         </td>
                         <td>
                           <span className="mm-person">
-                            <span className="mm-avatar">
-                              {m.photo ? (
-                                <img src={m.photo} alt="" />
-                              ) : (
-                                m.name
-                                  .replace(/Dr\.|Prof\./g, "")
-                                  .trim()
-                                  .split(" ")
-                                  .map((v) => v[0])
-                                  .slice(0, 2)
-                                  .join("")
-                              )}
-                            </span>
+                            <MentorProfilePhoto kind="staff" id={m.staffId} name={m.name}/>
                             <b>{m.name}</b>
                             <span className="mm-badge green">Mentor</span>
                           </span>
@@ -855,7 +845,7 @@ export default function MentorManagement() {
                           </td>
                           <td>{s.rollNumber || s.id}</td>
                           <td>
-                            <b>{s.name}</b>
+                            <span className="mm-person"><MentorProfilePhoto kind="students" id={s.id} name={s.name}/><b>{s.name}</b></span>
                           </td>
                           <td>{s.batch}</td>
                           <td>{s.degree}</td>
@@ -1153,7 +1143,7 @@ export default function MentorManagement() {
             [
               CheckCircle2,
               "Milestones completed",
-              state.students.reduce((n, s) => n + s.milestones, 0),
+              state.students.reduce((n, s) => n + s.milestones + (s.aiTasksCompleted||0), 0),
               "purple",
             ],
           ])}
@@ -1161,14 +1151,14 @@ export default function MentorManagement() {
             <div className="mm-card">
               <h2>Mentee Distribution by Department</h2>
               <div className="mm-distribution">
-                <div className="mm-donut">
+                <div className="mm-donut" style={{background: ringBackground(departments.map(d=>state.students.filter(s=>s.mentorId&&s.department===d).length))}}>
                   <b>
                     {state.students.filter((s) => s.mentorId).length}
                     <small>Mentees</small>
                   </b>
                 </div>
                 <div>
-                  {departments.map((d, i) => (
+                  {departments.filter(d=>state.students.some(s=>s.mentorId&&s.department===d)).map((d, i) => (
                     <p key={d}>
                       <i
                         style={{
@@ -1181,7 +1171,7 @@ export default function MentorManagement() {
                           ][i % 5],
                         }}
                       />
-                      {d}
+                      {d||"Department not recorded"}
                       <b>
                         {
                           state.students.filter(
@@ -1241,7 +1231,7 @@ export default function MentorManagement() {
                     </div>
                   ))
                 : reportTab === "Placement"
-                  ? ["Placed", "Not recorded"].map((p) => (
+                  ? ["Placed", "Shortlisted", "On hold", "Not shortlisted", "Pending decision", "Not recorded"].map((p) => (
                       <div className="mm-report-row" key={p}>
                         <b>{p}</b>
                         <span>
@@ -1262,7 +1252,7 @@ export default function MentorManagement() {
                           <span>{own.length} mentees</span>
                           {reportTab === "Engagement" ? (
                             <span>
-                              {own.reduce((a, s) => a + s.milestones, 0)}{" "}
+                              {own.reduce((a, s) => a + s.milestones + (s.aiTasksCompleted||0), 0)}{" "}
                               milestones
                             </span>
                           ) : (
@@ -1299,14 +1289,14 @@ export default function MentorManagement() {
                 [
                   GraduationCap,
                   "Milestones Completed",
-                  assigned.reduce((n, s) => n + s.milestones, 0),
+                  assigned.reduce((n, s) => n + s.milestones + (s.aiTasksCompleted||0), 0),
                   "green",
                 ],
                 [Gauge, "Career Readiness", pct(avg(assigned)), "purple"],
                 [
                   CalendarDays,
                   "Plans Created",
-                  assigned.filter((s) => s.plan).length,
+                  assigned.reduce((total,s) => total + (s.plan?1:0) + (s.aiPlans||0),0),
                   "orange",
                 ],
               ])}
@@ -1314,7 +1304,7 @@ export default function MentorManagement() {
                 <div className="mm-card">
                   <h2>Mentee Readiness</h2>
                   <div className="mm-distribution">
-                    <div className="mm-readiness">
+                    <div className="mm-readiness" style={{background: ringBackground([assigned.filter(s=>s.readiness!==null&&s.readiness>=80).length,assigned.filter(s=>s.readiness!==null&&s.readiness>=60&&s.readiness<80).length,assigned.filter(s=>s.readiness!==null&&s.readiness<60).length,assigned.filter(s=>s.readiness===null).length],["#10b981","#3b82f6","#f59e0b","#dfe6f5"])}}>
                       <b>
                         {pct(avg(assigned))}
                         <small>Overall</small>
@@ -1393,9 +1383,7 @@ export default function MentorManagement() {
                       go("Mentee Progress");
                     }}
                   >
-                    <span>
-                      {s.name} · {s.rollNumber || s.id}
-                    </span>
+                    <span className="mm-person"><MentorProfilePhoto kind="students" id={s.id} name={s.name}/>{s.name} · {s.rollNumber || s.id}</span>
                     <span>
                       {pct(s.readiness)} <ArrowRight size={15} />
                     </span>
@@ -1443,13 +1431,7 @@ export default function MentorManagement() {
                     ))}
                   </nav>
                   <div className="mm-student-banner">
-                    <span className="mm-avatar large">
-                      {student.name
-                        .split(" ")
-                        .map((s) => s[0])
-                        .slice(0, 2)
-                        .join("")}
-                    </span>
+                    <MentorProfilePhoto kind="students" id={student.id} name={student.name} large/>
                     <div>
                       <h2>{student.name}</h2>
                       <p>
@@ -1461,7 +1443,7 @@ export default function MentorManagement() {
                     {[
                       ["Attendance", pct(student.attendance)],
                       ["Competency", pct(student.competency)],
-                      ["Milestone Progress", pct(student.progress)],
+                      ["AI Learning Progress", pct(student.aiProgress??null)],
                       ["Placement Status", student.placement],
                     ].map(([l, v]) => (
                       <div className="mm-mini-stat" key={l}>
@@ -1470,51 +1452,8 @@ export default function MentorManagement() {
                       </div>
                     ))}
                   </div>
-                  <div className="mm-grid">
-                    <div className="mm-card">
-                      <h2>
-                        {progressTab === "Milestones"
-                          ? "Milestones"
-                          : progressTab === "Placement"
-                            ? "Placement Review"
-                            : "Competency Profile"}
-                      </h2>
-                      {progressTab === "Milestones" ? (
-                        <p>
-                          {student.milestones} of{" "}
-                          {student.milestoneItems.length} mentoring milestones
-                          completed.
-                        </p>
-                      ) : progressTab === "Placement" ? (
-                        <p>
-                          Current review status: <b>{student.placement}</b>.
-                          Mentor notes do not alter drive eligibility.
-                        </p>
-                      ) : (
-                        <>
-                          {student.dimensions.length ? (
-                            student.dimensions.map((c) => (
-                              <div className="mm-competency" key={c.name}>
-                                <span>{c.name}</span>
-                                <progress max="100" value={c.value} />
-                                <b>{c.value}%</b>
-                              </div>
-                            ))
-                          ) : (
-                            <p>
-                              No released competency assessment is available.
-                            </p>
-                          )}
-                          <small className="mm-muted">
-                            Latest released placement assessment
-                            {student.assessmentAt
-                              ? ` · ${new Date(student.assessmentAt).toLocaleDateString()}`
-                              : ""}
-                            . Missing scores are not estimated.
-                          </small>
-                        </>
-                      )}
-                    </div>
+                  <MentorProgressPanels key={student.id} student={student} tab={progressTab}/>
+                  {["Career Plan","Coaching","Milestones"].includes(progressTab) && <div className="mm-grid mm-mentor-editor">
                     <form
                       className="mm-card"
                       onSubmit={(e) => {
@@ -1543,40 +1482,22 @@ export default function MentorManagement() {
                       key={student.id + progressTab + student.coachingVersion}
                     >
                       <h2>
-                        {progressTab === "Coaching"
-                          ? "Mentor Coaching Notes"
-                          : "Mentor – Career Plan"}
+                        {progressTab === "Coaching" ? "Mentor Coaching Notes" : progressTab === "Milestones" ? "Mentor Milestones" : "Mentor – Career Plan"}
                       </h2>
                       <p className="mm-muted">
                         Mentor-authored plan and feedback, shared with the
                         student.
                       </p>
-                      <label>
-                        Improvement plan
-                        <textarea
-                          name="plan"
-                          defaultValue={student.plan}
-                          placeholder="Add a goal, activity and target date…"
-                          rows={3}
-                        />
-                      </label>
-                      <label>
-                        Feedback visible to student
-                        <textarea
-                          name="notes"
-                          defaultValue={student.notes}
-                          placeholder="Record guidance and follow-up actions…"
-                          rows={2}
-                        />
-                      </label>
-                      <MentorMilestones items={student.milestoneItems} />
+                      {progressTab === "Career Plan" ? <label>Improvement plan<textarea name="plan" defaultValue={student.plan} placeholder="Add a goal, activity and target date…" rows={5}/></label> : <input type="hidden" name="plan" value={student.plan}/>}
+                      {progressTab === "Coaching" ? <label>Feedback visible to student<textarea name="notes" defaultValue={student.notes} placeholder="Record guidance and follow-up actions…" rows={5}/></label> : <input type="hidden" name="notes" value={student.notes}/>}
+                      {progressTab === "Milestones" ? <MentorMilestones items={student.milestoneItems}/> : <input type="hidden" name="milestones" value={JSON.stringify(student.milestoneItems)}/>}
                       <footer className="mm-form-footer">
                         <button disabled={saving} className="mm-primary">
                           Save Coaching Record
                         </button>
                       </footer>
                     </form>
-                  </div>
+                  </div>}
                 </>
               ) : (
                 <div className="mm-card mm-empty">
@@ -1624,15 +1545,7 @@ export default function MentorManagement() {
               <fieldset disabled={readOnly}>
                 <div className="mm-edit-layout">
                   <div className="mm-photo">
-                    <span className="mm-avatar portrait">
-                      {editing.photo ? (
-                        <img src={editing.photo} alt="Mentor profile" />
-                      ) : (
-                        <Users size={60} />
-                      )}
-                    </span>
-                    <b>Profile Photo</b>
-                    <small>Existing faculty identity</small>
+                    <MentorPhotoEditor key={editing.id||editing.staffId} mentorId={editing.id} staffId={editing.staffId} name={editing.name} readOnly={readOnly}/>
                   </div>
                   <div className="mm-field-grid">
                     {formTab === 0 ? (
@@ -1917,3 +1830,5 @@ function MentorMilestones({
     </fieldset>
   );
 }
+
+function ringBackground(counts:number[],colors=["#6675ff","#12c8ab","#009bff","#ffbd24","#aa4bff"]){const total=counts.reduce((a,b)=>a+b,0);if(!total)return "#dfe6f5";let cursor=0;return `conic-gradient(${counts.map((n,i)=>{const start=cursor;cursor+=n/total*100;return `${colors[i%colors.length]} ${start}% ${cursor}%`}).join(',')})`;}
