@@ -3,7 +3,7 @@ import type {ReactNode} from 'react';
 import './reference-scorecard.css';
 export type ReferenceCompetency={label:string;score:number|null;target:number|null;evidence:string};
 export type ReferenceHighlight={key:string;offset:number|null;timestamp:string;question:string;score:string};
-export type ReferenceScorecardProps={student:Record<string,unknown>;studentId:string;candidatePhoto?:{studentId:string;url:string};candidateProfile?:Record<string,unknown>;role?:unknown;report:{overall_score?:number|null;session_id?:string;completed_at?:string};recordingDuration?:unknown;questionCount:number;executiveSummary?:unknown;readinessLabel:string;competencyRows:ReferenceCompetency[];strengthBriefs:string[];growthBriefs:string[];followUpBriefs:string[];evidenceHighlights:ReferenceHighlight[];infoMessage?:ReactNode;onSeek?:(seconds:number)=>void};
+export type ReferenceScorecardProps={student:Record<string,unknown>;studentId:string;candidatePhoto?:{studentId:string;url:string};candidateProfile?:Record<string,unknown>;role?:unknown;report:{overall_score?:number|null;session_id?:string;completed_at?:string};recordingDuration?:unknown;questionCount:number;executiveSummary?:unknown;readinessLabel:string;competencyRows:ReferenceCompetency[];strengthBriefs:string[];growthBriefs:string[];followUpBriefs:string[];evidenceHighlights:ReferenceHighlight[];overallScoreDetails?:ReactNode;infoMessage?:ReactNode;onSeek?:(seconds:number)=>void};
 const competencyColors = ["#0dafa0", "#f2b313", "#11b39b", "#f4ad16", "#42b7ec"];
 function CompetencyIcon({ label, index }: { label: string; index: number }) {
   const normalized = label.toLowerCase();
@@ -27,7 +27,7 @@ const show = (value: unknown, fallback = "Not available") =>
 const stamp = (value: unknown) =>
   value ? new Date(String(value)).toLocaleString() : "Not available";
 const durationLabel=(value:unknown)=>{const total=Math.max(0,Math.floor(Number(value)||0)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m ${seconds}s`:`${minutes}m ${seconds}s`};
-export function ReferenceScorecard({student,studentId,candidatePhoto={studentId:'',url:''},candidateProfile={},role,report,recordingDuration=null,questionCount,executiveSummary,readinessLabel,competencyRows,strengthBriefs,growthBriefs,followUpBriefs,evidenceHighlights,infoMessage,onSeek}:ReferenceScorecardProps){
+export function ReferenceScorecard({student,studentId,candidatePhoto={studentId:'',url:''},candidateProfile={},role,report,recordingDuration=null,questionCount,executiveSummary,readinessLabel,competencyRows,strengthBriefs,growthBriefs,followUpBriefs,evidenceHighlights,overallScoreDetails,infoMessage,onSeek}:ReferenceScorecardProps){
  const studentInitials=String(student.full_name||'Candidate').trim().split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
  const reviews={length:questionCount};
  // The seven-competency rubric calls 70/100 Interview Ready. This count
@@ -59,6 +59,7 @@ export function ReferenceScorecard({student,studentId,candidatePhoto={studentId:
           <article className="flex min-h-[152px] flex-col rounded-2xl border border-sky-100 bg-[#eef8ff] p-4">
             <p className="text-[13px] font-bold text-[#0b2b59]">Overall Score</p>
             <p className="mt-3 flex items-baseline gap-1 tabular-nums text-[#0b2b59]"><span className="text-[32px] font-extrabold leading-none">{report.overall_score == null ? "—" : report.overall_score}</span>{report.overall_score != null && <span className="text-sm font-semibold">/100</span>}</p>
+            {overallScoreDetails}
             <div className="mt-auto pt-4"><div className="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-[#1e7be6]" style={{ width: scoreWidth(report.overall_score) }}/></div></div>
           </article>
           <article className="flex min-h-[152px] flex-col rounded-2xl border border-amber-100 bg-[#fff8e8] p-4">

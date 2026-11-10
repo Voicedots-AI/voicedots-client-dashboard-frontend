@@ -1,0 +1,9 @@
+.agent-score-summary{margin-top:14px;padding-top:10px;border-top:1px solid #cde4f7;min-width:0}
+.vd-reference-scorecard .agent-score-summary h3{margin:0 0 7px;font-size:10px;font-weight:700;line-height:1.4;color:#48627f}
+.agent-score-summary dl{margin:0;display:grid;gap:7px}
+.agent-score-summary dl>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+.agent-score-summary dt{display:flex;align-items:baseline;gap:5px;min-width:0;font-size:11px;line-height:1.4;color:#25466b;overflow-wrap:anywhere}
+.agent-score-number{font-size:9px;font-weight:700;color:#6481a0;flex-shrink:0}
+.agent-score-summary dd{margin:0;flex-shrink:0;font-size:12px;font-weight:750;font-variant-numeric:tabular-nums;color:#0b2b59}
+.agent-score-summary dd small{margin-left:2px;font-size:9px;font-weight:500;color:#48627f}
+.agent-score-summary .agent-score-missing,.agent-score-summary>p{font-size:10px;font-weight:400;color:#526b84}
