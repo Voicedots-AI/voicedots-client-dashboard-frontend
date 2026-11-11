@@ -27,13 +27,12 @@ import {
   Compass,
   MessageSquare,
   BriefcaseBusiness,
+  RefreshCw,
 } from "lucide-react";
 import {
   emptyMentor,
   initialState,
   exportCsv,
-  permissions,
-  roles,
   type Mentor,
   type MentorState,
 } from "./mentor-model";
@@ -47,8 +46,6 @@ const sections = [
   "Assign Mentee",
   "Mentor Reports",
   "Reassignment History",
-  "Roles & Permissions",
-  "Audit Logs",
   "Mentor Dashboard",
   "Mentee Progress",
 ];
@@ -57,8 +54,6 @@ const descriptions = [
   "Allocate one or multiple mentees to a mentor.",
   "Analyze mentoring performance, mentee progress, and outcomes.",
   "Reassign mentees between mentors with complete history.",
-  "Manage role-based access for mentor management.",
-  "Track all mentor management activities.",
   "Overview of key mentoring metrics and career readiness.",
   "Track individual mentee career development and milestones.",
 ];
@@ -90,7 +85,6 @@ export default function MentorManagement() {
           ? v
           : data.students.find((s) => s.mentorId === chosen)?.id || "",
       );
-      setRoleDraft(data.permissions.Mentor || []);
       if (!data.access.can_manage)
         setTab((v) =>
           ["Mentor Dashboard", "Mentee Progress"].includes(v)
@@ -130,8 +124,6 @@ export default function MentorManagement() {
     [bulkOpen,setBulkOpen] = useState(false),
     [to, setTo] = useState(""),
     [reason, setReason] = useState("Change in mentor workload"),
-    [role, setRole] = useState("Mentor"),
-    [roleDraft, setRoleDraft] = useState(state.permissions.Mentor || []),
     [studentId, setStudentId] = useState(state.students[0]?.id || ""),
     [progressTab, setProgressTab] = useState("Overall Status"),
     [reportTab, setReportTab] = useState("Overview"),
@@ -213,12 +205,6 @@ export default function MentorManagement() {
           from_mentor_id: action === "Mentees reassigned" ? mentorId : null,
           reason: action === "Mentees reassigned" ? reason : "",
         });
-      } else if (action === "Role configuration updated") {
-        await collegeApi.save(
-          "mentors/permissions",
-          { permissions: next.permissions.Mentor },
-          true,
-        );
       } else if (action === "Coaching record updated") {
         const student = next.students.find(
           (s) =>
@@ -566,7 +552,6 @@ export default function MentorManagement() {
             className={tab === name ? "selected" : ""}
             onClick={() => go(name)}
           >
-            {i === 6 && <span className="mm-preview-dot" />}
             {name}
           </button>
         ))}
@@ -933,137 +918,11 @@ export default function MentorManagement() {
           </div>
         </div>
       )}
-      {tab === "Roles & Permissions" && (
-        <div className="mm-role-layout">
-          <aside className="mm-card">
-            <h2>Roles</h2>
-            {roles.map((r) => (
-              <button
-                className={role === r ? "mm-role selected" : "mm-role"}
-                key={r}
-                onClick={() => {
-                  setRole(r);
-                  setRoleDraft(
-                    r === "Mentor"
-                      ? state.permissions.Mentor || []
-                      : permissions,
-                  );
-                }}
-              >
-                <Users size={16} />
-                {r}
-              </button>
-            ))}
-          </aside>
-          <div className="mm-card">
-            <h2>Permissions – {role} Role</h2>
-            <p className="mm-muted">
-              Mentor permissions are enforced by the server. Institute placement
-              officers manage faculty and allocations.
-            </p>
-            <div className="mm-permissions">
-              {permissions.map((p) => (
-                <label className="mm-check" key={p}>
-                  <input
-                    type="checkbox"
-                    disabled={role !== "Mentor"}
-                    checked={roleDraft.includes(p)}
-                    onChange={() =>
-                      setRoleDraft((v) =>
-                        v.includes(p) ? v.filter((x) => x !== p) : [...v, p],
-                      )
-                    }
-                  />
-                  {p}
-                </label>
-              ))}
-            </div>
-            <footer className="mm-form-footer">
-              <button
-                disabled={saving || role !== "Mentor"}
-                className="mm-primary"
-                onClick={() =>
-                  commit(
-                    {
-                      ...state,
-                      permissions: { ...state.permissions, [role]: roleDraft },
-                    },
-                    "Role configuration updated",
-                    role,
-                  )
-                }
-              >
-                Save Changes
-              </button>
-            </footer>
-          </div>
-        </div>
-      )}
-      {tab === "Audit Logs" && (
-        <div className="mm-card">
-          <div className="mm-filters">
-            <label className="mm-search">
-              <Search size={16} />
-              <input
-                aria-label="Search audit logs"
-                placeholder="Search actions and details"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </label>
-            <button
-              className="mm-primary"
-              onClick={() =>
-                exportCsv("mentor-audit.csv", [
-                  ["Date & Time", "Action", "Details"],
-                  ...state.logs.map((l) => [l.at, l.action, l.detail]),
-                ])
-              }
-            >
-              <Download size={16} /> Export
-            </button>
-          </div>
-          <div className="mm-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date & Time</th>
-                  <th>User</th>
-                  <th>Action</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.logs
-                  .filter((l) =>
-                    `${l.action} ${l.detail}`
-                      .toLowerCase()
-                      .includes(search.toLowerCase()),
-                  )
-                  .map((l) => (
-                    <tr key={l.id}>
-                      <td>{new Date(l.at).toLocaleString()}</td>
-                      <td>{l.actor}</td>
-                      <td>
-                        <b>{l.action}</b>
-                      </td>
-                      <td>{l.detail}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-            {!state.logs.length && (
-              <p className="mm-empty">Your saved changes will appear here.</p>
-            )}
-          </div>
-        </div>
-      )}
       {tab === "Mentor Reports" && (
         <>
           <nav className="mm-subtabs">
             {[
               "Overview",
-              "Mentor Wise",
               "Department Wise",
               "Engagement",
               "Placement",
@@ -1226,7 +1085,7 @@ export default function MentorManagement() {
       )}
       {(tab === "Mentor Dashboard" || tab === "Mentee Progress") && (
         <>
-          <div className="mm-context">
+          {tab === "Mentor Dashboard" && <div className="mm-context">
             <label>
               Mentor
               {mentorSelect(mentorId, (v) => {
@@ -1237,7 +1096,7 @@ export default function MentorManagement() {
               })}
             </label>
             <span>Assigned mentees and their released assessment records.</span>
-          </div>
+          </div>}
           {tab === "Mentor Dashboard" ? (
             <>
               {kpis([
@@ -1336,22 +1195,30 @@ export default function MentorManagement() {
             </>
           ) : (
             <>
-              <label className="mm-student-select">
-                Mentee
-                <select
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                >
-                  <option value="">Select mentee</option>
-                  {assigned.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} · {s.rollNumber || s.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="mp-selection-bar"><label>Mentor{state.access.can_manage?mentorSelect(mentorId,value=>{setMentorId(value);setStudentId(state.students.find(student=>student.mentorId===value)?.id||'')}):<strong>{mentor?.name||'My mentees'}</strong>}</label><label>Mentee<select value={studentId} onChange={event=>setStudentId(event.target.value)}><option value="">Select mentee</option>{assigned.map(student=><option key={student.id} value={student.id}>{student.name} · {student.rollNumber||student.id}</option>)}</select></label><button type="button" onClick={()=>void load()} disabled={saving}><RefreshCw size={15}/>Refresh</button></div>
               {student && student.mentorId === mentorId ? (
                 <>
+                  <div className="mm-student-banner">
+                    <MentorProfilePhoto kind="students" id={student.id} name={student.name} large/>
+                    <div>
+                      <h2>{student.name}</h2>
+                      <p>
+                        {student.rollNumber || student.id} | {student.degree} –{" "}
+                        {student.department}
+                      </p>
+                      <span className="mp-profile-caption">Student 360 <span>·</span> Saved portal records & mentor guidance</span>
+                    </div>
+                    {[
+                      ["Attendance", student.attendance==null?"Not recorded":pct(student.attendance)],
+                      ["Mentor milestones", `${student.milestones} / ${student.milestoneItems.length}`],
+
+                    ].map(([l, v]) => (
+                      <div className="mm-mini-stat" key={l}>
+                        <small>{l}</small>
+                        <strong>{v}</strong>
+                      </div>
+                    ))}
+                  </div>
                   <nav className="mm-subtabs mp-tabs" aria-label="Mentee progress sections">
                     {[
                       "Overall Status",
@@ -1372,29 +1239,8 @@ export default function MentorManagement() {
                       </button>
                     ))}
                   </nav>
-                  <div className="mm-student-banner">
-                    <MentorProfilePhoto kind="students" id={student.id} name={student.name} large/>
-                    <div>
-                      <h2>{student.name}</h2>
-                      <p>
-                        {student.rollNumber || student.id} | {student.degree} –{" "}
-                        {student.department}
-                      </p>
-                      <span className="mp-profile-caption">Mentee workspace <span>·</span> Saved student evidence & mentor guidance</span>
-                    </div>
-                    {[
-                      ["Attendance", student.attendance==null?"Not recorded":pct(student.attendance)],
-                      ["Mentor milestones", `${student.milestones} / ${student.milestoneItems.length}`],
-
-                    ].map(([l, v]) => (
-                      <div className="mm-mini-stat" key={l}>
-                        <small>{l}</small>
-                        <strong>{v}</strong>
-                      </div>
-                    ))}
-                  </div>
                   <MentorProgressPanels key={student.id} student={student} tab={progressTab}/>
-                  {["Career Plan","Coaching","Milestones"].includes(progressTab) && <div className="mm-mentor-editor mp-editor-wrap">
+                  {["Career Plan","Coaching","Milestones"].includes(progressTab) && <details className="mm-mentor-editor mp-editor-wrap"><summary>{progressTab === "Coaching"?"Add mentor coaching notes":progressTab === "Milestones"?"Manage mentor milestones":"Add mentor advice & agreed goals"}</summary>
                     <form
                       className="mm-card mp-mentor-editor"
                       onSubmit={(e) => {
@@ -1438,7 +1284,7 @@ export default function MentorManagement() {
                         </button>
                       </footer>
                     </form>
-                  </div>}
+                  </details>}
                 </>
               ) : (
                 <div className="mm-card mm-empty">
@@ -1684,8 +1530,7 @@ export default function MentorManagement() {
       )}
       <footer className="mm-footer">
         <ShieldCheck size={16} /> Create & Manage Mentors <span>•</span>{" "}
-        Allocate & Assign <span>•</span> Track Progress <span>•</span> Reassign
-        & Audit
+        Allocate & Assign <span>•</span> Track Progress <span>•</span> Reassign & Review
       </footer>
     </section>
   );
