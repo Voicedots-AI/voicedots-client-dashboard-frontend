@@ -7,13 +7,16 @@ import { useAuth } from "@/context/AuthContext";
 import { kpiAPI } from "@/api/kpi";
 import conversationsApi from "@/api/conversations";
 import { DatePickerWithRange } from "@/components/DatePickerWithRange";
-import type { ConversationsListSummary, KpiTimeseriesPoint } from "@/types/conversation.types";
+import type { ConversationsListSummary } from "@/types/conversation.types";
+import { conversationsHref, type DrilldownFilters } from "@/lib/conversationFilters";
 import type { InsightsResponse, InsightsSummaryResponse, SentimentKey } from "@/types/insights.types";
 import {
   ActionsCard,
   ChannelsCard,
+  CoverageBar,
   EmotionCard,
   EscalationsCard,
+  HomeDrillContext,
   KpiCard,
   NAVY,
   RecentConversationsCard,
@@ -98,11 +101,18 @@ const SUMMARY_POLL_MS = 5 * 60_000;
 
 /* ================= MAIN PAGE ================= */
 
+/** Relative change, for counts (unlike the percentage-point trends above). */
+const countTrend = (current: number, previous: number | undefined): Trend | undefined => {
+  if (previous === undefined) return undefined;
+  if (previous === 0) return current > 0 ? { text: "new", up: true, neutral: true } : undefined;
+  const diff = ((current - previous) / previous) * 100;
+  const clamped = Math.max(-999, Math.min(999, diff));
+  return { text: `${Math.abs(clamped).toFixed(1)}%`, up: diff >= 0, neutral: true };
+};
+
 export function HomePage() {
   const { user } = useAuth();
   const reduceMotion = useReducedMotion();
-  const [timeseries, setTimeseries] = useState<KpiTimeseriesPoint[]>([]);
-  const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState<Preset>("7d");
   const [{ from, to }, setRange] = useState(() => getRangeFromPreset("7d"));
   const [channel, setChannel] = useState<ChannelFilter>("all");
@@ -129,33 +139,11 @@ export function HomePage() {
     }
   }, [user?.agent_id]);
 
-  const fetchKPIs = useCallback(async (isSilent = false) => {
-    if (!user?.agent_id) return;
-    if (!isSilent) setLoading(true);
-    try {
-      const res: unknown = await kpiAPI.getKpis(user.agent_id, undefined, undefined, channel);
-      const response = res && typeof res === "object" ? res as { timeseries?: unknown } : null;
-      const points = Array.isArray(response?.timeseries) ? response.timeseries.flatMap((point): KpiTimeseriesPoint[] => {
-        if (!point || typeof point !== "object" || typeof (point as KpiTimeseriesPoint).date !== "string") return [];
-        return [point as KpiTimeseriesPoint];
-      }) : [];
-      setTimeseries(points);
-    } catch (err) {
-      console.error("Failed to fetch KPIs:", err);
-    } finally {
-      if (!isSilent) setLoading(false);
-    }
-  }, [user?.agent_id, channel]);
-
   useEffect(() => {
-    fetchKPIs();
     fetchRecent();
-    pollTimer.current = setInterval(() => {
-      fetchKPIs(true);
-      fetchRecent();
-    }, 10000); // 10 sec polling for realtime
+    pollTimer.current = setInterval(fetchRecent, 10000); // 10 sec polling for realtime
     return () => { if (pollTimer.current) clearInterval(pollTimer.current); };
-  }, [fetchKPIs, fetchRecent, user?.agent_id]);
+  }, [fetchRecent]);
 
   // Sentiment, emotion, intent, urgency and channel figures for the selected range.
   const fetchInsights = useCallback(async (isSilent = false) => {
@@ -203,191 +191,107 @@ export function HomePage() {
 
   const handlePresetChange = useCallback((p: Preset) => {
     setPreset(p);
-    if (p === "custom") return;
-
-    if (p === "all" && timeseries.length > 0) {
-      const dates = timeseries.map(pt => new Date(pt.date).getTime());
-      setRange({
-        from: getSafeLocalDate(new Date(Math.min(...dates))) || "2020-01-01",
-        to: getSafeLocalDate(new Date()) || new Date().toISOString().slice(0, 10)
-      });
-    } else {
-      setRange(getRangeFromPreset(p));
-    }
-  }, [timeseries]);
-
-  const filteredData = useMemo(() => {
-    if (!timeseries.length) return [];
-
-    // Filter out data before integration to ensure accuracy
-    const activeData = timeseries.filter(pt => {
-      const d = getSafeLocalDate(pt.date);
-      return d && d >= INTEGRATION_DATE;
-    });
-
-    if (preset === "all") {
-      return activeData
-        .filter(p => {
-          const d = getSafeLocalDate(p.date);
-          return d && d >= from && d <= to;
-        })
-        .map(p => ({
-          ...p,
-          date: getSafeLocalDate(p.date) || p.date,
-          avg_call_duration_secs: p.avg_call_duration_secs ?? 0
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }
-
-    const pointsMap = new Map<string, KpiTimeseriesPoint>();
-    activeData.forEach(p => {
-      const d = getSafeLocalDate(p.date);
-      if (d) pointsMap.set(d, p);
-    });
-
-    const result: KpiTimeseriesPoint[] = [];
-    const curr = new Date(from + "T00:00:00");
-    const end = new Date(to + "T00:00:00");
-
-    while (curr <= end) {
-      const dStr = getSafeLocalDate(curr);
-      if (!dStr) break;
-
-      const existing = pointsMap.get(dStr);
-      result.push(existing ? {
-        ...existing,
-        date: dStr,
-        avg_call_duration_secs: existing.avg_call_duration_secs ?? 0
-      } : {
-        date: dStr,
-        conversations: 0,
-        cost_usd: 0,
-        messages: 0,
-        total_call_duration_secs: 0,
-        avg_call_duration_secs: 0
-      });
-      curr.setDate(curr.getDate() + 1);
-    }
-    return result;
-  }, [timeseries, from, to, preset]);
-
-  const computeMetrics = useCallback((data: KpiTimeseriesPoint[]) => {
-    const metrics = data.reduce((acc, p) => ({
-      conversations: acc.conversations + p.conversations,
-      cost: acc.cost + p.cost_usd,
-      messages: acc.messages + p.messages,
-      totalDuration: acc.totalDuration + p.total_call_duration_secs,
-      leads: acc.leads + (p.leads_captured ?? 0),
-    }), { conversations: 0, cost: 0, messages: 0, totalDuration: 0, leads: 0 });
-
-    return {
-      ...metrics,
-      avgCost: metrics.conversations > 0 ? metrics.cost / metrics.conversations : 0
-    };
+    if (p !== "custom") setRange(getRangeFromPreset(p));
   }, []);
 
-  const previousMetrics = useMemo(() => {
-    const curM = computeMetrics(filteredData);
-    if (!timeseries.length || filteredData.length < 2) return { current: curM, previous: curM };
+  // Every figure links to Conversations with this range and channel applied.
+  const drill = useCallback(
+    (filters: DrilldownFilters = {}) =>
+      conversationsHref({ start_date: from || undefined, end_date: to || undefined, source: channel, ...filters }),
+    [from, to, channel]
+  );
+  const dayHref = useCallback(
+    (date: string) => conversationsHref({ start_date: date, end_date: date, source: channel }),
+    [channel]
+  );
 
-    // Filter timeseries for valid records post-integration
-    const activeHistory = timeseries.filter(p => {
-      const d = getSafeLocalDate(p.date);
-      return d && d >= INTEGRATION_DATE;
-    });
-
-    // Determine account age based on INTEGRATION date
-    const allDates = activeHistory.map(p => new Date(p.date).getTime());
-    if (!allDates.length) return { current: curM, previous: curM };
-
-    const firstDate = Math.min(...allDates);
-    const today = new Date().getTime();
-    const accountAgeDays = (today - firstDate) / 86400000;
-    const periodDays = (new Date(to).getTime() - new Date(from).getTime()) / 86400000;
-
-    // Use Split-Half internal growth if account history is less than 1.5x the period
-    const mid = Math.floor(filteredData.length / 2);
-    const splitCurrent = computeMetrics(filteredData.slice(mid));
-    const splitPrevious = computeMetrics(filteredData.slice(0, mid));
-
-    if (preset === "all" || accountAgeDays < (periodDays * 1.5)) {
-      return { current: splitCurrent, previous: splitPrevious };
-    }
-
-    const fromTime = new Date(from + "T00:00:00").getTime();
-    const durationMs = new Date(to + "T00:00:00").getTime() - fromTime;
-    const prevTo = getSafeLocalDate(new Date(fromTime - 86400000));
-    const prevFrom = getSafeLocalDate(new Date(fromTime - durationMs - 86400000));
-
-    const prevData = activeHistory.filter(p => {
-      const d = getSafeLocalDate(p.date);
-      return d && prevFrom && prevTo && d >= prevFrom && d <= prevTo;
-    });
-
-    const prevM = computeMetrics(prevData);
-    if (prevM.conversations < (curM.conversations * 0.05) && prevM.conversations < 10) {
-      return { current: splitCurrent, previous: splitPrevious };
-    }
-
-    return { current: curM, previous: prevM };
-  }, [timeseries, from, to, preset, filteredData, computeMetrics]);
-
-  const getTrend = (key: keyof ReturnType<typeof computeMetrics>): Trend => {
-    if (!previousMetrics) return { text: "0.0%", up: true };
-    const cur = previousMetrics.current[key];
-    const prev = previousMetrics.previous[key];
-    if (prev === 0) return { text: cur > 0 ? "+100%" : "0.0%", up: true };
-    const diff = ((cur - prev) / prev) * 100;
-    const val = diff > 999 ? 999 : diff < -999 ? -999 : diff;
-    return { text: `${val >= 0 ? "+" : ""}${val.toFixed(1)}%`, up: diff >= 0 };
-  };
-
-  const currentStats = useMemo(() => computeMetrics(filteredData), [filteredData, computeMetrics]);
-
-  // KPI figures from the insights endpoint.
+  // Every KPI, Total Conversations included, comes from the insights endpoint,
+  // so all cards count the same set of conversations.
   const kpi = useMemo(() => {
     const series = insights?.timeseries ?? [];
     const scored = insights?.sentiment.scored ?? 0;
     const prev = insights?.previous ?? null;
     const comparable = scored > 0 && (prev?.sentiment_scored ?? 0) > 0;
-    const sentimentCard = (key: SentimentKey, upIsGood?: boolean) => ({
+    const totals = insights?.totals;
+    const n = (v: number | undefined) => (v ?? 0).toLocaleString();
+    // Why a percentage's base is smaller than Total Conversations.
+    const skipped: [string, string][] = totals
+      ? [
+          ["Too short to judge", n(totals.not_assessable)],
+          ["Waiting for analysis", n(totals.pending)],
+          ...(totals.no_transcript ? [["No transcript", n(totals.no_transcript)] as [string, string]] : []),
+        ]
+      : [];
+    const sentimentCard = (key: SentimentKey, label: string, upIsGood?: boolean) => ({
       value: scored > 0 ? `${insights?.sentiment[key].pct ?? 0}%` : "—",
-      hint: scored > 0 ? `${(insights?.sentiment[key].count ?? 0).toLocaleString()} of ${scored.toLocaleString()} scored` : "Nothing scored yet",
+      hint: scored > 0 ? `${n(insights?.sentiment[key].count)} of ${n(scored)} scored` : "Nothing scored yet",
       trend: pointsTrend(insights?.sentiment[key].pct ?? 0, prev?.sentiment_pct[key], comparable, upIsGood),
       spark: series.map((d) => share(d[key], d.positive + d.neutral + d.negative)),
+      tip: {
+        title: `${label} sentiment`,
+        rows: [
+          [label, n(insights?.sentiment[key].count)],
+          ["Scored conversations", n(scored)],
+          ...(prev ? [["Previous period", `${prev.sentiment_pct[key]}%`] as [string, string]] : []),
+        ] as [string, string][],
+        note: `Share of the ${n(scored)} conversations that could be scored, out of ${n(totals?.conversations)} in total.`,
+      },
     });
-    const assessable = insights?.totals.assessable ?? 0;
+    const assessable = totals?.assessable ?? 0;
     const urgent = insights?.urgent.count ?? 0;
     const urgentDiff = prev ? urgent - prev.urgent : 0;
+    const recognized = insights?.intent_recognized.count ?? 0;
     return {
-      positive: sentimentCard("positive", true),
-      neutral: sentimentCard("neutral"),
-      negative: sentimentCard("negative", false),
+      total: {
+        value: insights ? n(totals?.conversations) : "—",
+        hint: totals ? `${n(totals.analysed)} analysed` : undefined,
+        trend: countTrend(totals?.conversations ?? 0, prev?.conversations),
+        spark: series.map((d) => d.total),
+        tip: {
+          title: "Total conversations",
+          rows: [["All conversations", n(totals?.conversations)], ["Analysed with enough speech", n(assessable)], ...skipped] as [string, string][],
+          note: prev ? `Previous period: ${n(prev.conversations)}.` : undefined,
+        },
+      },
+      positive: sentimentCard("positive", "Positive", true),
+      neutral: sentimentCard("neutral", "Neutral"),
+      negative: sentimentCard("negative", "Negative", false),
       intent: {
         value: assessable > 0 ? `${insights?.intent_recognized.pct ?? 0}%` : "—",
-        hint: assessable > 0 ? `${(insights?.intent_recognized.count ?? 0).toLocaleString()} of ${assessable.toLocaleString()} conversations` : "Nothing analysed yet",
+        hint: assessable > 0 ? `${n(recognized)} of ${n(assessable)} conversations` : "Nothing analysed yet",
         trend: pointsTrend(insights?.intent_recognized.pct ?? 0, prev?.intent_recognized_pct, assessable > 0 && (prev?.assessable ?? 0) > 0, true),
         spark: series.map((d) => share(d.recognized, d.assessable)),
+        tip: {
+          title: "Intent recognised",
+          rows: [["Clear admissions topic", n(recognized)], ["Topic “Other” or unclear", n(assessable - recognized)], ["Base (enough speech)", n(assessable)], ...skipped] as [string, string][],
+          note: "Only conversations with enough speech are counted; the rest are listed above.",
+        },
       },
       urgent: {
         value: insights ? urgent.toLocaleString() : "—",
-        hint: insights?.totals.pending ? `${insights.totals.pending.toLocaleString()} still being analysed` : undefined,
+        hint: totals?.pending ? `${n(totals.pending)} still being analysed` : undefined,
         trend: prev && (urgent > 0 || prev.urgent > 0)
           ? { text: `${Math.abs(urgentDiff)} vs prev`, up: urgentDiff >= 0, good: urgentDiff <= 0 }
           : undefined,
         spark: series.map((d) => d.urgent),
+        tip: {
+          title: "Urgent cases",
+          rows: [
+            ["Urgent", n(urgent)],
+            ...(insights?.escalations.urgent_by_topic.slice(0, 3).map((t) => [t.label, n(t.count)] as [string, string]) ?? []),
+            ...(prev ? [["Previous period", n(prev.urgent)] as [string, string]] : []),
+          ] as [string, string][],
+          note: "A deadline, a complaint or a problem blocking the caller.",
+        },
       },
     };
   }, [insights]);
-
-  const conversationSeries = useMemo(() => filteredData.map((p) => p.conversations), [filteredData]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     return hour < 12 ? "Good Morning!" : hour < 18 ? "Good Afternoon!" : "Good Evening!";
   }, []);
 
-  const totalText = loading ? "—" : currentStats.conversations.toLocaleString();
   const insightsBusy = insightsLoading && !insights;
 
   const motionProps = reduceMotion
@@ -463,28 +367,34 @@ export function HomePage() {
         </div>
       </motion.div>
 
-      {/* KPI ROW */}
-      <motion.div variants={item} className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <HomeDrillContext.Provider value={drill}>
+      {/* KPI ROW — every card opens the conversations it counted */}
+      <motion.div variants={item} className="grid grid-cols-2 gap-4 md:grid-cols-3 min-[1700px]:grid-cols-6">
         <KpiCard
           label="Total Conversations"
-          value={totalText}
-          trend={getTrend("conversations")}
+          value={kpi.total.value}
+          trend={kpi.total.trend}
+          hint={kpi.total.hint}
+          tip={kpi.total.tip}
+          filters={{}}
           icon={MessageSquare}
           iconFrom="#137EFD"
           iconTo="#5AB8FF"
-          spark={conversationSeries.length ? conversationSeries : [0, 0]}
+          spark={kpi.total.spark.length > 1 ? kpi.total.spark : [0, 0]}
           sparkId="spark-total"
-          loading={loading}
+          loading={insightsBusy}
         />
         <KpiCard
           label="Positive Sentiment"
           value={kpi.positive.value}
           trend={kpi.positive.trend}
           hint={kpi.positive.hint}
+          tip={kpi.positive.tip}
+          filters={{ sentiment: "positive" }}
           icon={Smile}
           iconFrom="#1FB867"
           iconTo="#6FE0A0"
-          spark={kpi.positive.spark}
+          spark={kpi.positive.spark.length > 1 ? kpi.positive.spark : [0, 0]}
           sparkId="spark-pos"
           loading={insightsBusy}
         />
@@ -493,10 +403,12 @@ export function HomePage() {
           value={kpi.neutral.value}
           trend={kpi.neutral.trend}
           hint={kpi.neutral.hint}
+          tip={kpi.neutral.tip}
+          filters={{ sentiment: "neutral" }}
           icon={Meh}
           iconFrom="#F0A500"
           iconTo="#FFD35C"
-          spark={kpi.neutral.spark}
+          spark={kpi.neutral.spark.length > 1 ? kpi.neutral.spark : [0, 0]}
           sparkId="spark-neu"
           loading={insightsBusy}
         />
@@ -505,10 +417,12 @@ export function HomePage() {
           value={kpi.negative.value}
           trend={kpi.negative.trend}
           hint={kpi.negative.hint}
+          tip={kpi.negative.tip}
+          filters={{ sentiment: "negative" }}
           icon={Frown}
           iconFrom="#ED5173"
           iconTo="#FF8FA3"
-          spark={kpi.negative.spark}
+          spark={kpi.negative.spark.length > 1 ? kpi.negative.spark : [0, 0]}
           sparkId="spark-neg"
           loading={insightsBusy}
         />
@@ -517,10 +431,12 @@ export function HomePage() {
           value={kpi.intent.value}
           trend={kpi.intent.trend}
           hint={kpi.intent.hint}
+          tip={kpi.intent.tip}
+          filters={{ intent_recognized: true }}
           icon={Target}
           iconFrom="#7732FD"
           iconTo="#A779FF"
-          spark={kpi.intent.spark}
+          spark={kpi.intent.spark.length > 1 ? kpi.intent.spark : [0, 0]}
           sparkId="spark-intent"
           loading={insightsBusy}
         />
@@ -529,18 +445,25 @@ export function HomePage() {
           value={kpi.urgent.value}
           trend={kpi.urgent.trend}
           hint={kpi.urgent.hint}
+          tip={kpi.urgent.tip}
+          filters={{ urgent: true }}
           icon={Zap}
           iconFrom="#FF6B35"
           iconTo="#FFB27A"
-          spark={kpi.urgent.spark}
+          spark={kpi.urgent.spark.length > 1 ? kpi.urgent.spark : [0, 0]}
           sparkId="spark-urgent"
           loading={insightsBusy}
         />
       </motion.div>
 
+      {/* What the percentages are out of, and why that is less than the total */}
+      <motion.div variants={item}>
+        <CoverageBar insights={insights} />
+      </motion.div>
+
       {/* TREND + DISTRIBUTION + INTENTS */}
       <motion.div variants={item} className="grid grid-cols-1 gap-5 lg:grid-cols-[1.6fr_1fr_1fr]">
-        <SentimentTrendCard points={insights?.timeseries ?? []} loading={insightsLoading} />
+        <SentimentTrendCard points={insights?.timeseries ?? []} loading={insightsLoading} dayHref={dayHref} />
         <SentimentDistributionCard insights={insights} loading={insightsLoading} />
         <TopIntentsCard insights={insights} loading={insightsLoading} />
       </motion.div>
@@ -553,11 +476,13 @@ export function HomePage() {
       </motion.div>
 
       {/* RECENT + ESCALATIONS + ACTIONS */}
-      <motion.div variants={item} className="grid grid-cols-1 gap-5 lg:grid-cols-[1.45fr_1fr_1fr]">
-        <RecentConversationsCard items={recent} loading={recentLoading} />
+      {/* The table needs ~640px, so it takes the full row; escalations and actions share the next. */}
+      <motion.div variants={item} className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <RecentConversationsCard items={recent} loading={recentLoading} className="lg:col-span-2" />
         <EscalationsCard insights={insights} loading={insightsLoading} />
         <ActionsCard summary={summary} loading={summaryLoading} />
       </motion.div>
+      </HomeDrillContext.Provider>
     </motion.div>
   );
 }

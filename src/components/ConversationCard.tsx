@@ -1,4 +1,4 @@
-import { CalendarClock, ChevronRight, Clock3, Globe2, MessageSquareText, Phone } from "lucide-react";
+import { Bot, CalendarClock, ChevronRight, Clock3, Globe2, MessageSquareText, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { ConversationsListSummary } from "@/types/conversation.types";
 import { CARD } from "@/components/comms/CommsKit";
@@ -47,7 +47,7 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <span
           className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
-          style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 6px 14px ${from}40` }}
+          style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)" }}
         >
           <SourceIcon size={18} strokeWidth={2.25} />
           <span className="absolute -bottom-1.5 -right-1.5 rounded-md bg-white px-1 text-[10px] font-semibold tabular-nums text-[#6B7A99] shadow-sm ring-1 ring-sky-100 dark:bg-slate-900 dark:ring-slate-700">
@@ -65,15 +65,26 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
                 {conversation.sentiment}
               </span>
             )}
+            {conversation.emotion && (
+              <span className="rounded-full bg-[#F3ECFF] px-2 py-0.5 text-[11px] font-semibold capitalize text-[#5B21D6] dark:bg-violet-950/50 dark:text-violet-300">
+                {conversation.emotion}
+              </span>
+            )}
             {conversation.urgent && (
               <span className="rounded-full bg-[#FDE4EA] px-2 py-0.5 text-[11px] font-semibold text-[#C42D52] dark:bg-rose-950/50 dark:text-rose-300">Urgent</span>
             )}
             {conversation.topic && conversation.topic !== "Other" && (
               <span className="hidden rounded-full bg-[#EEF3FB] px-2 py-0.5 text-[11px] font-medium text-[#55648A] sm:inline dark:bg-slate-800 dark:text-slate-300">{conversation.topic}</span>
             )}
+            {conversation.team && conversation.team.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#55648A] dark:text-slate-300" title="AI team members who replied">
+                <Bot size={13} />
+                {conversation.team.map((m) => m.label).join(" → ")}
+              </span>
+            )}
             {conversation.analysed === false && <span className="text-[11px] italic">Analysing…</span>}
             <span className="hidden items-center gap-1.5 sm:inline-flex"><Clock3 size={13} />{formatDuration(conversation.duration)}</span>
-            <span className="hidden items-center gap-1.5 md:inline-flex"><MessageSquareText size={13} />{conversation.message_count || 0} messages</span>
+            <span className="hidden items-center gap-1.5 md:inline-flex"><MessageSquareText size={13} />{conversation.message_count || 0} {conversation.message_count === 1 ? "message" : "messages"}</span>
             <span className="hidden items-center gap-1.5 lg:inline-flex">
               <CalendarClock size={13} />
               {new Date(conversation.start_time * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
