@@ -40,26 +40,29 @@ export function packageLabel(row:PlacementRecord){
 function Details({items}:{items:Array<[string,React.ReactNode]>}){
  return <dl className="c360-details">{items.map(([label,content])=><div key={label}><dt>{label}</dt><dd>{content??'Not recorded'}</dd></div>)}</dl>;
 }
-export function CandidateProfileOverview({student,context,drives,reports,photo,onPhotoError}:{student:ProfileStudent;context?:ProfileContext;drives:PlacementRecord[];reports:ProfileReport[];photo:string;onPhotoError:()=>void}){
+export function CandidateProfileOverview({student,context,drives,reports,photo,onPhotoError,section='all'}:{section?:'all'|'identity'|'overview'|'academics';student:ProfileStudent;context?:ProfileContext;drives:PlacementRecord[];reports:ProfileReport[];photo:string;onPhotoError:()=>void}){
  const placements=uniquePlacementRecords(drives),mentor=context?.mentor;
  const skills=Array.isArray(student.skills)?student.skills.filter(skill=>typeof skill==='string'&&skill.trim()):[];
  const cgpa=student.cgpa!=null&&String(student.cgpa).trim()!==''&&Number.isFinite(Number(student.cgpa))?`${Number(student.cgpa).toFixed(2)} / 10`:'Not recorded';
  return <>
-  <section className="candidate-profile-hero c360-hero" aria-label="Student overview">
+  {(section==='all'||section==='identity')&&<section className="candidate-profile-hero c360-hero" aria-label="Student overview">
    <div className="candidate-identity"><span className="candidate-profile-avatar">{photo?<img src={photo} alt={`${student.full_name} profile`} onError={onPhotoError}/>:<span className="candidate-profile-initials">{student.full_name.split(' ').filter(Boolean).slice(0,2).map(part=>part[0]).join('')}</span>}</span>
     <div><p className="candidate-eyebrow">COMPLETE STUDENT PROFILE</p><h1>{student.full_name}</h1><p>{value(student.program)} · {value(student.department_display_name||student.department_code)}</p><div className="c360-identity-tags"><span>{value(student.roll_number)}</span><span>{student.graduation_year?`Class of ${student.graduation_year}`:'Graduation year not recorded'}</span>{student.status&&<span>{displayName(student.status)}</span>}</div></div>
    </div>
    <div className="c360-hero-contact"><p>{value(context?.college_name)}</p>{student.email&&<a href={`mailto:${student.email}`}><Mail size={15}/>{student.email}</a>}{student.phone&&<a href={`tel:${student.phone}`}><Phone size={15}/>{student.phone}</a>}</div>
-  </section>
-  <div className="c360-summary" aria-label="Placement summary">
+  </section>}
+  {(section==='all'||section==='overview')&&<div className="c360-summary" aria-label="Placement summary">
    <article><span>Assigned drives</span><strong>{placements.length}</strong><small>Distinct placement assignments</small></article>
    <article><span>Assessment reports</span><strong>{reports.length}</strong><small>Placement and practice history</small></article>
    <article><span>Shortlisted drives</span><strong>{placements.filter(row=>row.officer_decision==='shortlist').length}</strong><small>Recorded officer decisions</small></article>
    <article><span>Placement status</span><strong className="c360-summary-status">{student.status==='placed'?'Placed':'Not recorded'}</strong><small>Confirmed student record</small></article>
-  </div>
-  <article className="pi-card c360-compact-profile"><h2><GraduationCap size={18}/> Student details</h2><Details items={[
-   ['Course / program',value(context?.program_display_name||student.program)],['Branch / department',value(student.department_display_name||student.department_code)],['CGPA',cgpa],['Overall attendance',<span title="Current semester academic attendance; present and on-duty classes count as attended.">{attendanceLabel(student)}</span>],['Graduation year',value(student.graduation_year)],['Batch',value(student.batch_label)],['Academic year',value(context?.academic_year)],['Semester',value(context?.semester)],['Mentor',mentor?.name||(context?'No mentor assignment recorded.':'Not available')],['Email',value(student.email)],['Phone',value(student.phone)],['Resume',student.has_readable_resume?'Available':student.current_resume_submission_id?'Uploaded · parsing unavailable':'Not uploaded'],
-  ]}/>{skills.length>0&&<div className="c360-skill-list"><span className="c360-skills-label">Skills</span>{skills.map((skill,index)=><span key={`${skill}-${index}`}>{skill}</span>)}</div>}</article>
+  </div>}
+  {section!=='identity'&&<article className="pi-card c360-compact-profile"><h2><GraduationCap size={18}/> Student details</h2><Details items={[
+   ['Course / program',value(context?.program_display_name||student.program)],['Branch / department',value(student.department_display_name||student.department_code)],['CGPA',cgpa],['Overall attendance',<span title="Current semester academic attendance; present and on-duty classes count as attended.">{attendanceLabel(student)}</span>],['Graduation year',value(student.graduation_year)],['Batch',value(student.batch_label)],['Academic year',value(context?.academic_year)],['Semester',value(context?.semester)],['Section',value(context?.section)],['Registration number',value(student.registration_number)],['Date of birth',student.date_of_birth?formatDateOnly(student.date_of_birth):'Not recorded'],['Mentor',mentor?.name||(context?'No mentor assignment recorded.':'Not available')],['Email',value(student.email)],['Phone',value(student.phone)],['Resume',student.has_readable_resume?'Available':student.current_resume_submission_id?'Uploaded · parsing unavailable':'Not uploaded'],
+  ].filter(([label])=>section!=='overview'||['Course / program','Branch / department','CGPA','Overall attendance','Graduation year','Batch','Semester','Mentor'].includes(String(label))) as Array<[string,React.ReactNode]>}/>{section==='academics'&&<p className="c360-source-note">Attendance: {student.overall_attendance?.period||'Period not recorded'}{student.overall_attendance?.as_of_date?` · Updated ${formatDateOnly(student.overall_attendance.as_of_date)}`:''}. Present and on-duty classes count as attended.</p>}{skills.length>0&&<div className="c360-skill-list"><span className="c360-skills-label">Skills</span>{skills.map((skill,index)=><span key={`${skill}-${index}`}>{skill}</span>)}</div>}</article>}
+  {section==='overview'&&<article className="pi-card c360-mentor-contact"><h2><Users size={19}/>Mentorship & contact</h2><Details items={[
+   ['Assigned mentor',mentor?.name||'No mentor assigned'],['Designation',value(mentor?.designation)],['Mentor email',mentor?.email?<a href={`mailto:${mentor.email}`}>{mentor.email}</a>:'Not recorded'],['Mentor phone',mentor?.phone?<a href={`tel:${mentor.phone}`}>{mentor.phone}</a>:'Not recorded'],['Student email',value(student.email)],['Student phone',value(student.phone)],
+  ]}/></article>}
  </>;
 }
 export function CandidatePlacementHistory({drives,reports,onReport}:{drives:PlacementRecord[];reports:ProfileReport[];onReport:(index:number)=>void}){

@@ -14,24 +14,29 @@ test('shows academics, real zero CGPA, contact, mentor and placement details wit
  await setup(page);
  await expect(page.getByRole('heading',{name:'Profile Student',exact:true})).toBeVisible();
  await expect(page.getByText('0.00 / 10',{exact:true})).toBeVisible();
+ await expect(page.locator('.c360-summary-status')).toHaveText('Not recorded');
+ await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:'Academics',exact:true}).click();
+ await expect(page).toHaveURL(/candidateTab=academics/);
  await expect(page.getByText('2026–2027',{exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'student@example.test',exact:true}).first()).toBeVisible();
  await expect(page.getByText('Assigned Faculty',{exact:true})).toBeVisible();
+ await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:/^Placement/}).click();
  await expect(page.getByRole('cell',{name:/Example Technologies/})).toBeVisible();
  await expect(page.getByText('0 – 6 LPA · INR',{exact:true})).toBeVisible();
  await expect(page.getByText('Shortlist',{exact:true})).toBeVisible();
- await page.getByText('Interview scorecards & review',{exact:true}).click();
+ await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:/^Assessments/}).click();
  await expect(page.getByRole('heading',{name:'No completed assessments yet',exact:true})).toBeVisible();
- await expect(page.locator('.c360-summary-status')).toHaveText('Not recorded');
 });
 test('shows honest empty states for a student without placement or optional academic records',async({page})=>{
  const data=bundle();data.drives=[];data.profile_context={college_name:'Example Institute'} as typeof data.profile_context;
  data.student={...data.student,cgpa:null,has_readable_resume:false,skills:[]} as unknown as typeof data.student;
  await setup(page,data);
- await expect(page.getByText('No placement assignments recorded for this student.',{exact:true})).toBeVisible();
+ await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:'Academics',exact:true}).click();
  await expect(page.getByText('No mentor assignment recorded.',{exact:true})).toBeVisible();
  await expect(page.getByText('Not uploaded',{exact:true})).toBeVisible();
  await expect(page.getByText('0.00 / 10',{exact:true})).toHaveCount(0);
+ await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:/^Placement/}).click();
+ await expect(page.getByText('No placement assignments recorded for this student.',{exact:true})).toBeVisible();
 });
 test('rejects a mismatched student response rather than displaying another candidate',async({page})=>{
  const data=bundle();data.student.id='another-student';data.student.full_name='Wrong Student';await setup(page,data);

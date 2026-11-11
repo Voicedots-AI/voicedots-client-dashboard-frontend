@@ -336,9 +336,11 @@ export default function CollegeManagementPage() {
       p.delete("create");
       p.delete("draft");
       p.delete("section");
+      p.delete("candidate");p.delete("candidateTab");p.delete("candidateAttempt");
       return p;
     });
   if (tab === "mentors") return <MentorManagement/>;
+  if (tab === "candidates") return <CandidateDirectory/>;
   if (tab === "assessment-intelligence") return <AssessmentIntelligence/>;
   if (tab === "dashboard") return <PlacementDashboard />;
   if (tab === "feedback") return <FeedbackDashboard/>;
@@ -435,9 +437,7 @@ export default function CollegeManagementPage() {
           {notice}
         </p>
       )}
-      {tab === "candidates" ? (
-        <CandidateDirectory />
-      ) : tab === "staff" && !placementStaff ? (
+      {tab === "staff" && !placementStaff ? (
         <Navigate to="/dashboard/attendance" replace />
       ) : tab === "analytics" ? (
         <PlacementAnalytics data={analytics} />
