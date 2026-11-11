@@ -1074,7 +1074,7 @@ export default function MentorManagement() {
             ],
             [
               Gauge,
-              "Avg. Readiness",
+              "Avg. latest interview score",
               pct(avg(state.students.filter((s) => s.mentorId))),
               "orange",
             ],
@@ -1126,17 +1126,17 @@ export default function MentorManagement() {
               <div className="mm-heading">
                 <h2>
                   {reportTab === "Department Wise"
-                    ? "Department Readiness"
+                    ? "Department interview scores"
                     : reportTab === "Engagement"
                       ? "Mentoring Engagement"
                       : reportTab === "Placement"
                         ? "Placement Status"
-                        : "Mentors by Mentee Readiness"}
+                        : "Latest interview scores by mentor"}
                 </h2>
                 <button
                   onClick={() =>
                     exportCsv("mentor-reports.csv", [
-                      ["Mentor", "Mentees", "Readiness"],
+                      ["Mentor", "Mentees", "Latest interview score"],
                       ...state.mentors.map((m) => [
                         m.name,
                         state.students.filter((s) => s.mentorId === m.id)
@@ -1230,7 +1230,7 @@ export default function MentorManagement() {
                   assigned.reduce((n, s) => n + s.milestones + (s.aiTasksCompleted||0), 0),
                   "green",
                 ],
-                [Gauge, "Career Readiness", pct(avg(assigned)), "purple"],
+                [Gauge, "Latest interview score", pct(avg(assigned)), "purple"],
                 [
                   CalendarDays,
                   "Plans Created",
@@ -1376,13 +1376,12 @@ export default function MentorManagement() {
                         {student.rollNumber || student.id} | {student.degree} –{" "}
                         {student.department}
                       </p>
-                      <b>Career Readiness · {pct(student.readiness)}</b>
+                      <b>Assessment details follow the drive and attempt selected below.</b>
                     </div>
                     {[
                       ["Attendance", pct(student.attendance)],
-                      ["Competency", pct(student.competency)],
-                      ["AI Learning Progress", pct(student.aiProgress??null)],
-                      ["Placement Status", student.placement],
+                      ["Mentor milestones", `${student.milestones} / ${student.milestoneItems.length}`],
+
                     ].map(([l, v]) => (
                       <div className="mm-mini-stat" key={l}>
                         <small>{l}</small>
