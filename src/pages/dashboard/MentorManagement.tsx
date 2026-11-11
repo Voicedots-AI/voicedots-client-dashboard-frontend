@@ -39,7 +39,7 @@ import {
 } from "./mentor-model";
 import "./mentor-management.css";
 import "./mentor-progress-ui.css";
-import { collegeApi, collegeError } from "@/api/collegeApi";
+import { collegeApi, collegeError, type Program } from "@/api/collegeApi";
 import { normalizeState } from "./mentor-model";
 import {interviewDistribution} from "./mentor-career-data";
 const sections = [
@@ -138,6 +138,18 @@ export default function MentorManagement() {
     [studentFilters, setStudentFilters] = useState<MenteeFilters>(emptyMenteeFilters),
     [studentFilterDraft,setStudentFilterDraft] = useState<MenteeFilters>(emptyMenteeFilters),
     [studentPage,setStudentPage] = useState(1);
+  const [photoDraft,setPhotoDraft]=useState<string|null>(null),[photoReading,setPhotoReading]=useState(false);
+  const [catalog,setCatalog]=useState<Program[]>([]),[catalogError,setCatalogError]=useState(''),[catalogLoading,setCatalogLoading]=useState(false),[catalogVersion,setCatalogVersion]=useState(0);
+  useEffect(()=>{setPhotoDraft(null);setPhotoReading(false)},[editing?.id,editing?.staffId]);
+  const modalOpen=Boolean(editing);
+  useEffect(()=>{
+    if(!modalOpen||readOnly)return;
+    const controller=new AbortController();setCatalogLoading(true);setCatalogError('');
+    collegeApi.get<{programs:Program[]}>('academic-catalog',controller.signal).then(data=>{if(!controller.signal.aborted)setCatalog(data.programs||[])}).catch(error=>{if(!controller.signal.aborted)setCatalogError(collegeError(error))}).finally(()=>{if(!controller.signal.aborted)setCatalogLoading(false)});
+    return()=>controller.abort();
+  },[modalOpen,readOnly,catalogVersion]);
+  const departmentOptions=Array.from(new Map(catalog.flatMap(program=>program.departments||[]).map(department=>[department.code,department])).values()).sort((a,b)=>a.display_name.localeCompare(b.display_name));
+  const selectedDepartment=departmentOptions.find(item=>[item.code,item.display_name].some(value=>value.toLowerCase()===editing?.department.trim().toLowerCase()));
   mentorRef.current = mentorId;
   const commit = async (next: MentorState, action: string, _detail: string) => {
     if (mutating.current) return false;
@@ -168,7 +180,7 @@ export default function MentorManagement() {
         const saved = await collegeApi.save<{
           id: string;
           email_queued: boolean;
-        }>("mentors", payload(m));
+        }>("mentors", {...payload(m),...(photoDraft?{photo:photoDraft}:{})});
         invitations = 1;
         failures = saved.email_queued ? 0 : 1;
       } else if (action === "Mentors imported") {
@@ -182,10 +194,11 @@ export default function MentorManagement() {
         const m = next.mentors.find(
           (m) =>
             JSON.stringify(m) !==
-            JSON.stringify(state.mentors.find((v) => v.id === m.id)),
+            JSON.stringify(state.mentors.find((v) => v.id === m.id)) || Boolean(photoDraft && editing?.id===m.id),
         );
         if (!m) throw new Error("No mentor changes to save.");
-        await collegeApi.save(`mentors/profiles/${m.id}`, payload(m), true);
+        await collegeApi.save(`mentors/profiles/${m.id}`, {...payload(m),...(photoDraft?{photo:photoDraft}:{})}, true);
+        if(photoDraft)window.dispatchEvent(new CustomEvent("mentor-photo-updated",{detail:{id:m.staffId,kind:"staff"}}));
       } else if (
         action === "Mentees assigned" ||
         action === "Mentees reassigned"
@@ -302,7 +315,7 @@ export default function MentorManagement() {
     );
   const saveMentor = async (e: FormEvent) => {
     e.preventDefault();
-    if (!editing) return;
+    if (!editing || photoReading) return;
     if (!editing.staffId)
       return setNotice("Select an existing faculty member.");
     if (
@@ -321,14 +334,16 @@ export default function MentorManagement() {
       !editing.department.trim()
     )
       return setNotice("Name, email and department are required.");
+    if(catalogLoading||catalogError||!selectedDepartment)return setNotice("Select a department from the institute academic catalog.");
+    const mentorToSave={...editing,department:selectedDepartment.code};
     const exists = state.mentors.some((m) => m.id === editing.id);
     if (
       await commit(
         {
           ...state,
           mentors: exists
-            ? state.mentors.map((m) => (m.id === editing.id ? editing : m))
-            : [...state.mentors, editing],
+            ? state.mentors.map((m) => (m.id === editing.id ? mentorToSave : m))
+            : [...state.mentors, mentorToSave],
         },
         exists ? "Mentor updated" : "Mentor added",
         `${editing.name} · Faculty mentor access`,
@@ -1469,10 +1484,10 @@ export default function MentorManagement() {
               ))}
             </nav>
             <form onSubmit={saveMentor}>
-              <fieldset disabled={readOnly}>
+              <fieldset disabled={readOnly || saving}>
                 <div className="mm-edit-layout">
                   <div className="mm-photo">
-                    <MentorPhotoEditor key={editing.id||editing.staffId} mentorId={editing.id} staffId={editing.staffId} name={editing.name} readOnly={readOnly}/>
+                    <MentorPhotoEditor key={editing.staffId} staffId={editing.staffId} name={editing.name} readOnly={readOnly} draft={photoDraft} onChange={setPhotoDraft} onReadingChange={setPhotoReading}/>
                   </div>
                   <div className="mm-field-grid">
                     {formTab === 0 ? (
@@ -1522,16 +1537,7 @@ export default function MentorManagement() {
                         </label>
                         <label>
                           Department *
-                          <input
-                            required
-                            value={editing.department}
-                            onChange={(e) =>
-                              setEditing({
-                                ...editing,
-                                department: e.target.value,
-                              })
-                            }
-                          />
+                          {readOnly?<input disabled value={editing.department}/>:<><select required aria-label="Mentor department" disabled={catalogLoading||Boolean(catalogError)} value={selectedDepartment?.code||''} onChange={event=>setEditing({...editing,department:event.target.value})}><option value="">{catalogLoading?'Loading departments…':'Select department'}</option>{departmentOptions.map(item=><option key={item.code} value={item.code}>{item.display_name} · {item.code}</option>)}</select>{catalogError?<span className="mm-field-error" role="alert">{catalogError} <button type="button" onClick={()=>setCatalogVersion(v=>v+1)}>Retry</button></span>:!catalogLoading&&!departmentOptions.length?<small>Add departments in Institution Management first.</small>:editing.department&&!selectedDepartment?<small>Previously saved: {editing.department}. Choose a department from the catalog.</small>:null}</>}
                         </label>
                         <label>
                           Designation *
@@ -1665,7 +1671,7 @@ export default function MentorManagement() {
                 </button>
                 {!readOnly && (
                   <button
-                    disabled={saving || !editing.staffId}
+                    disabled={saving || photoReading || !editing.staffId}
                     className="mm-primary"
                   >
                     Save Mentor
