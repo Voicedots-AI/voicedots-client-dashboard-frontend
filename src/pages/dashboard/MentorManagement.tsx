@@ -21,6 +21,12 @@ import {
   ShieldCheck,
   History,
   X,
+  LayoutDashboard,
+  Flag,
+  ChartNoAxesCombined,
+  Compass,
+  MessageSquare,
+  BriefcaseBusiness,
 } from "lucide-react";
 import {
   emptyMentor,
@@ -32,8 +38,10 @@ import {
   type MentorState,
 } from "./mentor-model";
 import "./mentor-management.css";
+import "./mentor-progress-ui.css";
 import { collegeApi, collegeError } from "@/api/collegeApi";
 import { normalizeState } from "./mentor-model";
+import {interviewDistribution} from "./mentor-career-data";
 const sections = [
   "Mentor Master",
   "Assign Mentee",
@@ -264,6 +272,8 @@ export default function MentorManagement() {
   const mentor = state.mentors.find((m) => m.id === mentorId),
     assigned = state.students.filter((s) => s.mentorId === mentorId),
     student = state.students.find((s) => s.id === studentId);
+  const distribution=interviewDistribution(assigned);
+  const interviewScore=(value:number|null)=>value==null?"Not assessed":`${value}/100`;
   const departments = Array.from(
     new Set([
       ...state.mentors.map((m) => m.department),
@@ -285,14 +295,7 @@ export default function MentorManagement() {
   const selectablePage=selectableMentees(visibleStudents);
   const selectedOutsideFilters=selected.filter(id=>!students.some(student=>student.id===id)).length;
   const resetStudentFilters=()=>{setStudentFilterDraft(emptyMenteeFilters());setStudentFilters(emptyMenteeFilters());setStudentPage(1)};
-  const avg = (items: typeof state.students) => {
-    const values = items.filter((s) => s.readiness !== null);
-    return values.length
-      ? Math.round(
-          values.reduce((a, s) => a + (s.readiness || 0), 0) / values.length,
-        )
-      : null;
-  };
+  const avg = (items: typeof state.students) => interviewDistribution(items).average;
   const toggle = (id: string) =>
     setSelected((v) =>
       v.includes(id) ? v.filter((x) => x !== id) : [...v, id],
@@ -456,7 +459,7 @@ export default function MentorManagement() {
     : ["Mentor Dashboard", "Mentee Progress"];
   return (
     <section
-      className="mentor-management"
+      className={`mentor-management ${tab === "Mentee Progress" ? "mm-progress-workspace" : ""}`}
       aria-busy={saving}
       onChange={() => {
         dirty.current = true;
@@ -1075,13 +1078,13 @@ export default function MentorManagement() {
             [
               Gauge,
               "Avg. latest interview score",
-              pct(avg(state.students.filter((s) => s.mentorId))),
+              interviewScore(avg(state.students.filter((s) => s.mentorId))),
               "orange",
             ],
             [
               CheckCircle2,
-              "Milestones completed",
-              state.students.reduce((n, s) => n + s.milestones + (s.aiTasksCompleted||0), 0),
+              "Mentor milestones completed",
+              state.students.filter(s=>s.mentorId).reduce((n, s) => n + s.milestones, 0),
               "purple",
             ],
           ])}
@@ -1141,7 +1144,7 @@ export default function MentorManagement() {
                         m.name,
                         state.students.filter((s) => s.mentorId === m.id)
                           .length,
-                        pct(
+                        interviewScore(
                           avg(
                             state.students.filter((s) => s.mentorId === m.id),
                           ),
@@ -1158,7 +1161,7 @@ export default function MentorManagement() {
                     <div className="mm-report-row" key={d}>
                       <b>{d}</b>
                       <span>
-                        {pct(
+                        {interviewScore(
                           avg(
                             state.students.filter(
                               (s) => s.department === d && s.mentorId,
@@ -1196,7 +1199,7 @@ export default function MentorManagement() {
                           ) : (
                             <>
                               <progress max="100" value={avg(own) || 0} />
-                              <b>{pct(avg(own))}</b>
+                              <b>{interviewScore(avg(own))}</b>
                             </>
                           )}
                         </div>
@@ -1226,54 +1229,38 @@ export default function MentorManagement() {
                 [Users, "My Mentees", assigned.length, "blue"],
                 [
                   GraduationCap,
-                  "Milestones Completed",
-                  assigned.reduce((n, s) => n + s.milestones + (s.aiTasksCompleted||0), 0),
+                  "Mentor Milestones Completed",
+                  assigned.reduce((n, s) => n + s.milestones, 0),
                   "green",
                 ],
-                [Gauge, "Latest interview score", pct(avg(assigned)), "purple"],
+                [Gauge, "Avg. latest interview score", interviewScore(avg(assigned)), "purple"],
                 [
                   CalendarDays,
-                  "Plans Created",
-                  assigned.reduce((total,s) => total + (s.plan?1:0) + (s.aiPlans||0),0),
+                  "Saved AI Coaching Plans",
+                  assigned.reduce((total,s) => total + (s.aiPlans||0),0),
                   "orange",
                 ],
               ])}
               <div className="mm-grid">
                 <div className="mm-card">
-                  <h2>Mentee Readiness</h2>
+                  <h2>Latest Interview Performance</h2><p className="mm-muted">Each mentee’s latest released interview score. These score bands describe interview performance; they do not determine placement eligibility.</p>
+                  <p className="mm-muted">{distribution.assessed} of {distribution.total} mentees assessed. Students without a released score are excluded from the average.</p>
                   <div className="mm-distribution">
-                    <div className="mm-readiness" style={{background: ringBackground([assigned.filter(s=>s.readiness!==null&&s.readiness>=80).length,assigned.filter(s=>s.readiness!==null&&s.readiness>=60&&s.readiness<80).length,assigned.filter(s=>s.readiness!==null&&s.readiness<60).length,assigned.filter(s=>s.readiness===null).length],["#10b981","#3b82f6","#f59e0b","#dfe6f5"])}}>
+                    <div className="mm-readiness" style={{background: ringBackground(distribution.counts,["#10b981","#3b82f6","#f59e0b","#dfe6f5"])}}>
                       <b>
-                        {pct(avg(assigned))}
-                        <small>Overall</small>
+                        {interviewScore(avg(assigned))}
+                        <small>Average score</small>
                       </b>
                     </div>
                     <div>
                       {[
                         [
-                          "Ready (≥80%)",
-                          assigned.filter((s) => (s.readiness || 0) >= 80)
-                            .length,
+                          "80–100 / 100",
+                          distribution.counts[0],
                         ],
-                        [
-                          "In Progress (60–79%)",
-                          assigned.filter(
-                            (s) =>
-                              s.readiness !== null &&
-                              s.readiness >= 60 &&
-                              s.readiness < 80,
-                          ).length,
-                        ],
-                        [
-                          "Needs Support (<60%)",
-                          assigned.filter(
-                            (s) => s.readiness !== null && s.readiness < 60,
-                          ).length,
-                        ],
-                        [
-                          "Not assessed",
-                          assigned.filter((s) => s.readiness === null).length,
-                        ],
+                        ["60 to <80 / 100",distribution.counts[1]],
+                        ["Below 60 / 100",distribution.counts[2]],
+                        ["Not assessed",distribution.counts[3]],
                       ].map(([l, n]) => (
                         <p key={l}>
                           <span>{l}</span>
@@ -1284,10 +1271,9 @@ export default function MentorManagement() {
                   </div>
                 </div>
                 <div className="mm-card">
-                  <h2>Upcoming Mentor Actions</h2>
+                  <h2>Mentor shortcuts</h2>
                   {[
                     ["Review mentee progress", "Mentee Progress"],
-                    ["Provide mentoring for students", "Mentee Progress"],
                     ["Create improvement plans", "Mentee Progress"],
                     ...(state.access.can_manage
                       ? [["Review allocation", "Assign Mentee"]]
@@ -1298,7 +1284,8 @@ export default function MentorManagement() {
                       key={l}
                       onClick={() => {
                         go(t);
-                        setStudentId(assigned[0]?.id || "");
+                        setStudentId(current=>assigned.some(s=>s.id===current)?current:assigned[0]?.id||"");
+                        if(t==="Mentee Progress")setProgressTab(l==="Create improvement plans"?"Career Plan":"Overall Status");
                       }}
                     >
                       <span>
@@ -1323,7 +1310,7 @@ export default function MentorManagement() {
                   >
                     <span className="mm-person"><MentorProfilePhoto kind="students" id={s.id} name={s.name}/>{s.name} · {s.rollNumber || s.id}</span>
                     <span>
-                      {pct(s.readiness)} <ArrowRight size={15} />
+                      {interviewScore(s.readiness)} <ArrowRight size={15} />
                     </span>
                   </button>
                 ))}
@@ -1350,7 +1337,7 @@ export default function MentorManagement() {
               </label>
               {student && student.mentorId === mentorId ? (
                 <>
-                  <nav className="mm-subtabs">
+                  <nav className="mm-subtabs mp-tabs" aria-label="Mentee progress sections">
                     {[
                       "Overall Status",
                       "Milestones",
@@ -1362,8 +1349,10 @@ export default function MentorManagement() {
                       <button
                         key={t}
                         className={progressTab === t ? "selected" : ""}
+                        aria-current={progressTab === t ? 'page' : undefined}
                         onClick={() => setProgressTab(t)}
                       >
+                        {t==='Overall Status'?<LayoutDashboard size={17}/>:t==='Milestones'?<Flag size={17}/>:t==='Competency'?<ChartNoAxesCombined size={17}/>:t==='Career Plan'?<Compass size={17}/>:t==='Coaching'?<MessageSquare size={17}/>:<BriefcaseBusiness size={17}/>}
                         {t}
                       </button>
                     ))}
@@ -1376,10 +1365,10 @@ export default function MentorManagement() {
                         {student.rollNumber || student.id} | {student.degree} –{" "}
                         {student.department}
                       </p>
-                      <b>Assessment details follow the drive and attempt selected below.</b>
+                      <span className="mp-profile-caption">Mentee workspace <span>·</span> Saved student evidence & mentor guidance</span>
                     </div>
                     {[
-                      ["Attendance", pct(student.attendance)],
+                      ["Attendance", student.attendance==null?"Not recorded":pct(student.attendance)],
                       ["Mentor milestones", `${student.milestones} / ${student.milestoneItems.length}`],
 
                     ].map(([l, v]) => (
@@ -1390,9 +1379,9 @@ export default function MentorManagement() {
                     ))}
                   </div>
                   <MentorProgressPanels key={student.id} student={student} tab={progressTab}/>
-                  {["Career Plan","Coaching","Milestones"].includes(progressTab) && <div className="mm-grid mm-mentor-editor">
+                  {["Career Plan","Coaching","Milestones"].includes(progressTab) && <div className="mm-mentor-editor mp-editor-wrap">
                     <form
-                      className="mm-card"
+                      className="mm-card mp-mentor-editor"
                       onSubmit={(e) => {
                         e.preventDefault();
                         const form = new FormData(e.currentTarget);
@@ -1419,18 +1408,18 @@ export default function MentorManagement() {
                       key={student.id + progressTab + student.coachingVersion}
                     >
                       <h2>
-                        {progressTab === "Coaching" ? "Mentor Coaching Notes" : progressTab === "Milestones" ? "Mentor Milestones" : "Mentor – Career Plan"}
+                        {progressTab === "Coaching" ? "Mentor Coaching Notes" : progressTab === "Milestones" ? "Mentor Milestones" : "Mentor advice and agreed goals"}
                       </h2>
                       <p className="mm-muted">
                         Mentor-authored plan and feedback, shared with the
                         student.
                       </p>
-                      {progressTab === "Career Plan" ? <label>Improvement plan<textarea name="plan" defaultValue={student.plan} placeholder="Add a goal, activity and target date…" rows={5}/></label> : <input type="hidden" name="plan" value={student.plan}/>}
+                      {progressTab === "Career Plan" ? <label>Improvement plan<textarea name="plan" defaultValue={student.plan} placeholder="Add your advice, agreed goals and next review date…" rows={5}/></label> : <input type="hidden" name="plan" value={student.plan}/>}
                       {progressTab === "Coaching" ? <label>Feedback visible to student<textarea name="notes" defaultValue={student.notes} placeholder="Record guidance and follow-up actions…" rows={5}/></label> : <input type="hidden" name="notes" value={student.notes}/>}
                       {progressTab === "Milestones" ? <MentorMilestones items={student.milestoneItems}/> : <input type="hidden" name="milestones" value={JSON.stringify(student.milestoneItems)}/>}
                       <footer className="mm-form-footer">
                         <button disabled={saving} className="mm-primary">
-                          Save Coaching Record
+                          Save mentor guidance
                         </button>
                       </footer>
                     </form>
