@@ -285,7 +285,7 @@ function candidateInterviewStatus(candidate: Candidate): string {
 }
 
 function InterviewProgressChart({assigned, progress}:{assigned:number;progress:Data}) {
-  const rows = [ ['not_started','Not started','#cbd5e1'],['in_progress','In progress','#8b5cf6'],['completed','Completed','#10b981'],['needs_review','Needs review','#f59e0b'],['failed','Failed','#f43f5e'],['expired','Ended / expired','#f97316'] ];
+  const rows = [ ['not_started','Not started','#cbd5e1'],['in_progress','In progress','#8b5cf6'],['completed','Completed','#10b981'],['needs_review','Needs review','#f59e0b'],['failed','Failed','#f43f5e'],['expired','Ended / expired','#f97316'], ...(Number(progress.other || 0) > 0 ? [['other','Other status','#64748b']] : []) ];
   let cursor=0;
   const slices=rows.map(([key,,color]) => {const start=cursor;cursor += assigned ? Number(progress[key] || 0)/assigned*100 : 0;return `${color} ${start}% ${cursor}%`;});
   const background=assigned ? `conic-gradient(${slices.join(',')}, #f1f5f9 ${cursor}% 100%)` : '#f1f5f9';
@@ -2246,9 +2246,10 @@ export default function DriveManagement({
                 <article className={panel}>
                   <h3 className="font-bold">Interview Progress</h3>
                   <p className="mb-5 text-sm text-slate-500">
-                    Operational state of assigned candidates.
+                    Each candidate is counted once. Any completed attempt counts as completed, including candidates taking a retry.
                   </p>
                   <InterviewProgressChart assigned={assigned} progress={progress}/>
+                  {Number(metrics.completed_awaiting_review || 0)>0&&<p className="mt-3 text-xs text-slate-500">Includes {Number(metrics.completed_awaiting_review)} completed {Number(metrics.completed_awaiting_review)===1?'interview':'interviews'} awaiting evaluation review.</p>}
                 </article>
                 <article className={panel}>
                   <h3 className="font-bold">Readiness Distribution</h3>
