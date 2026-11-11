@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { format, parseISO } from "date-fns";
+import { createContext, useContext, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { CONVERSATIONS_PATH, type DrilldownFilters } from "@/lib/conversationFilters";
+import { format, parseISO, isToday } from "date-fns";
 import {
   Area,
   AreaChart,
@@ -81,7 +82,7 @@ export const PALETTE = {
 };
 
 const CARD =
-  "rounded-2xl bg-white shadow-[0_8px_26px_rgba(18,50,120,0.09)] ring-1 ring-sky-100/80 dark:bg-slate-900 dark:ring-slate-800";
+  "rounded-2xl bg-white shadow-[0_1px_2px_rgba(18,50,120,0.04),0_4px_16px_rgba(18,50,120,0.05)] ring-1 ring-sky-100/80 dark:bg-slate-900 dark:ring-slate-800";
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -110,12 +111,83 @@ function ViewAll({ to, children = "View All" }: { to?: string; children?: ReactN
   );
 }
 
+/* ================= DRILL-DOWN ================= */
+
+/**
+ * Turns a figure's filters into a Conversations link for the dashboard's
+ * current dates and channel. HomePage provides it; every card reads it.
+ */
+export const HomeDrillContext = createContext<(filters?: DrilldownFilters) => string>(() => CONVERSATIONS_PATH);
+const useDrill = () => useContext(HomeDrillContext);
+
+export type TipContent = { title: string; rows?: [string, ReactNode][]; note?: ReactNode };
+
+/** Hover / keyboard-focus card explaining a figure. Purely visual; the link carries the action. */
+function HoverTip({ tip, place = "top" }: { tip: TipContent; place?: "top" | "bottom" }) {
+  return (
+    <span
+      role="tooltip"
+      className={`pointer-events-none absolute left-1/2 z-40 w-max min-w-[180px] max-w-[260px] -translate-x-1/2 rounded-xl bg-[#0B1B3F] px-3.5 py-3 text-left text-[12px] text-white opacity-0 shadow-[0_12px_30px_rgba(11,27,63,0.35)] transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 ${
+        place === "top" ? "bottom-[calc(100%+8px)]" : "top-[calc(100%+8px)]"
+      }`}
+    >
+      <span className="block font-semibold">{tip.title}</span>
+      {tip.rows && tip.rows.length > 0 && (
+        <span className="mt-1.5 block space-y-1">
+          {tip.rows.map(([label, value]) => (
+            <span key={label} className="flex items-baseline justify-between gap-4">
+              <span className="text-[#9FD3FF]">{label}</span>
+              <span className="font-semibold tabular-nums">{value}</span>
+            </span>
+          ))}
+        </span>
+      )}
+      {tip.note && <span className="mt-1.5 block text-[11px] leading-snug text-white/70">{tip.note}</span>}
+      <span className="mt-2 block border-t border-white/10 pt-1.5 text-[11px] font-semibold text-[#9FD3FF]">
+        Click to see these conversations →
+      </span>
+    </span>
+  );
+}
+
+/** A figure that opens the conversations it counted, with a hover explanation. */
+function DrillLink({
+  filters,
+  tip,
+  label,
+  className = "",
+  place,
+  children,
+}: {
+  filters: DrilldownFilters;
+  tip: TipContent;
+  /** Accessible name; the tooltip text is not read as part of the link. */
+  label: string;
+  className?: string;
+  place?: "top" | "bottom";
+  children: ReactNode;
+}) {
+  const href = useDrill()(filters);
+  return (
+    <Link
+      to={href}
+      aria-label={label}
+      className={`group relative cursor-pointer transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#137EFD] ${className}`}
+    >
+      {children}
+      <HoverTip tip={tip} place={place} />
+    </Link>
+  );
+}
+
+const plural = (n: number, word: string) => `${fmt(n)} ${word}${n === 1 ? "" : "s"}`;
+
 /** Solid gradient chip with a white icon. */
 function IconChip({ icon: Icon, from, to, size = "h-9 w-9", iconSize = "h-4 w-4" }: { icon: LucideIcon; from: string; to: string; size?: string; iconSize?: string }) {
   return (
     <span
       className={`flex shrink-0 items-center justify-center rounded-xl text-white ${size}`}
-      style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 6px 14px ${from}40` }}
+      style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)" }}
     >
       <Icon className={iconSize} strokeWidth={2.25} />
     </span>
@@ -175,6 +247,8 @@ export function KpiCard({
   sparkId,
   loading,
   hint,
+  filters,
+  tip,
 }: {
   label: string;
   value: string;
@@ -187,19 +261,23 @@ export function KpiCard({
   loading?: boolean;
   /** Small muted line under the value, e.g. what a percentage is out of. */
   hint?: string;
+  /** When set, the card opens the conversations it counted. */
+  filters?: DrilldownFilters;
+  tip?: TipContent;
 }) {
   const good = trend?.good ?? trend?.up ?? true;
   const chipCls = trend?.neutral
-    ? "bg-[#EEF2F7] text-[#5B6B88]"
+    ? "bg-[#EEF2F7] text-[#5B6B88] dark:bg-slate-800 dark:text-slate-300"
     : good
-      ? "bg-[#DDF7E8] text-[#118A4B]"
-      : "bg-[#FDE4EA] text-[#C42D52]";
-  return (
-    <div className={`${CARD} flex min-w-0 flex-col p-4 sm:p-5`}>
+      ? "bg-[#DDF7E8] text-[#118A4B] dark:bg-emerald-500/15 dark:text-emerald-300"
+      : "bg-[#FDE4EA] text-[#C42D52] dark:bg-rose-500/15 dark:text-rose-300";
+  const body = (
+    <div className={`${CARD} flex h-full min-w-0 flex-col p-4 sm:p-5 ${filters ? "transition group-hover:ring-[#137EFD]/45" : ""}`}>
       <div className="flex items-start gap-3">
         <IconChip icon={icon} from={iconFrom} to={iconTo} size="h-11 w-11" iconSize="h-5 w-5" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-medium" style={{ color: MUTED }}>
+          {/* Wraps rather than truncating: six cards share the row on laptop screens. */}
+          <p className="text-[12px] font-medium leading-tight" style={{ color: MUTED }}>
             {label}
           </p>
           <p className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums" style={{ color: NAVY }}>
@@ -213,14 +291,77 @@ export function KpiCard({
             </span>
           )}
           {!loading && hint && (
-            <p className="mt-1.5 truncate text-[11px]" style={{ color: MUTED }}>
+            <p className="mt-1.5 text-[11px] leading-snug" style={{ color: MUTED }}>
               {hint}
             </p>
           )}
         </div>
       </div>
-      <div className="mt-3">
+      {/* Pinned to the bottom, so sparklines line up whatever the labels wrap to. */}
+      <div className="mt-auto pt-3">
         <Sparkline values={spark.length > 1 ? spark : [0, 0]} color={iconFrom} id={sparkId} />
+      </div>
+    </div>
+  );
+  if (!filters || loading) return body;
+  return (
+    <DrillLink filters={filters} tip={tip ?? { title: label }} label={`${label}: ${value}. View these conversations`} className="block min-w-0 rounded-2xl" place="bottom">
+      {body}
+    </DrillLink>
+  );
+}
+
+/* ================= ANALYSIS COVERAGE ================= */
+
+/**
+ * Why a percentage card's base is smaller than Total Conversations: only
+ * analysed conversations with enough speech can carry sentiment or intent.
+ * Each part opens the conversations it counts.
+ */
+export function CoverageBar({ insights }: { insights: InsightsResponse | null }) {
+  if (!insights || insights.totals.conversations === 0) return null;
+  const t = insights.totals;
+  const parts: { key: string; count: number; label: string; color: string; filters: DrilldownFilters; note: string }[] = [
+    { key: "assessable", count: t.assessable, label: "analysed with enough speech", color: PALETTE.green,
+      filters: { analysis_state: "assessable" },
+      note: "These are the conversations behind the sentiment, intent and urgency figures." },
+    { key: "not_assessable", count: t.not_assessable, label: "too short to judge", color: PALETTE.slate,
+      filters: { analysis_state: "not_assessable" },
+      note: "Missed, silent or very short calls. They are analysed, but say too little to score." },
+    { key: "pending", count: t.pending, label: "waiting for analysis", color: PALETTE.yellow,
+      filters: { analysis_state: "pending" },
+      note: "The background worker has not analysed these yet. They join the figures once it does." },
+    { key: "no_transcript", count: t.no_transcript, label: "no transcript", color: "#C3CEDF",
+      filters: { analysis_state: "no_transcript" },
+      note: "Nothing was recorded, so there is nothing to analyse." },
+  ];
+  const shown = parts.filter((p) => p.count > 0);
+  return (
+    <div className={`${CARD} px-4 py-3 sm:px-5`}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px]" style={{ color: MUTED }}>
+        <span className="font-semibold" style={{ color: NAVY }}>
+          {plural(t.conversations, "conversation")}:
+        </span>
+        {shown.map((p) => (
+          <DrillLink
+            key={p.key}
+            filters={p.filters}
+            label={`${fmt(p.count)} ${p.label}. View these conversations`}
+            tip={{ title: `${fmt(p.count)} ${p.label}`, rows: [["Share of all", `${Math.round((p.count * 100) / t.conversations)}%`]], note: p.note }}
+            className="inline-flex items-center gap-1.5 rounded-md hover:text-[#137EFD]"
+            place="bottom"
+          >
+            <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+            <span className="font-semibold tabular-nums" style={{ color: NAVY }}>{fmt(p.count)}</span>
+            {p.label}
+          </DrillLink>
+        ))}
+      </div>
+      {/* The same split as a bar, so the gap between Total and the scored figures is visible at a glance. */}
+      <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-[#EEF3FB] dark:bg-slate-800" aria-hidden>
+        {shown.map((p) => (
+          <span key={p.key} style={{ width: `${(p.count * 100) / t.conversations}%`, background: p.color }} />
+        ))}
       </div>
     </div>
   );
@@ -245,7 +386,22 @@ const dayLabel = (iso: string) => {
   }
 };
 
-export function SentimentTrendCard({ points, loading }: { points: InsightsTimeseriesPoint[]; loading: boolean }) {
+export function SentimentTrendCard({
+  points,
+  loading,
+  dayHref,
+}: {
+  points: InsightsTimeseriesPoint[];
+  loading: boolean;
+  /** Link to one IST day's conversations. */
+  dayHref?: (date: string) => string;
+}) {
+  const navigate = useNavigate();
+  const openDay = (state: unknown) => {
+    const index = Number((state as { activeTooltipIndex?: number | string } | null)?.activeTooltipIndex);
+    const point = Number.isInteger(index) ? points[index] : undefined;
+    if (point && point.total > 0 && dayHref) navigate(dayHref(point.date));
+  };
   const data = points.map((p) => ({
     label: dayLabel(p.date),
     total: p.total,
@@ -256,14 +412,14 @@ export function SentimentTrendCard({ points, loading }: { points: InsightsTimese
 
   return (
     <section className={`${CARD} flex min-w-0 flex-col p-5 sm:p-6`}>
-      <CardHeader title="Sentiment Trend" />
+      <CardHeader title="Sentiment Trend" action={dayHref ? <span className="text-[11px]" style={{ color: MUTED }}>Click a day to open it</span> : undefined} />
       <div className="-mt-2 mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]" style={{ color: MUTED }}>
         <LegendDot color={PALETTE.green} label="Positive" />
         <LegendDot color={PALETTE.yellow} label="Neutral" />
         <LegendDot color={PALETTE.red} label="Negative" />
         <LegendDot color={PALETTE.blue} label="Total" />
       </div>
-      <div className="h-[260px] w-full min-w-0">
+      <div className="min-h-[260px] w-full min-w-0 flex-1">
         {loading && data.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm" style={{ color: MUTED }}>
             Loading…
@@ -274,7 +430,7 @@ export function SentimentTrendCard({ points, loading }: { points: InsightsTimese
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 520, height: 240 }}>
-            <ComposedChart data={data} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
+            <ComposedChart data={data} margin={{ top: 10, right: 8, left: -12, bottom: 0 }} onClick={openDay} style={{ cursor: dayHref ? "pointer" : undefined }}>
               <defs>
                 <linearGradient id="home-bar-fill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3FA0FF" stopOpacity={0.95} />
@@ -311,31 +467,57 @@ function Donut({
   centerBottom,
   size = 190,
 }: {
-  slices: { name: string; value: number; color: string }[];
+  /** `href` makes a slice open its conversations; `pct` is shown on hover. */
+  slices: { name: string; value: number; color: string; href?: string; pct?: number }[];
   innerRadius: string;
   centerTop: string;
   centerBottom: string;
   size?: number;
 }) {
+  const navigate = useNavigate();
   // An all-zero pie renders nothing; show an empty grey ring instead.
   const hasData = slices.some((s) => s.value > 0);
-  const data = hasData ? slices : [{ name: "None", value: 1, color: GRID }];
+  const data = hasData ? slices : [{ name: "None", value: 1, color: GRID, href: undefined, pct: undefined }];
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: size, height: size }}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" innerRadius={innerRadius} outerRadius="100%" stroke="var(--home-card, #fff)" strokeWidth={2} isAnimationActive={false}>
             {data.map((s) => (
-              <Cell key={s.name} fill={s.color} />
+              <Cell
+                key={s.name}
+                fill={s.color}
+                style={{ cursor: hasData && s.href ? "pointer" : undefined, outline: "none" }}
+                onClick={hasData && s.href ? () => navigate(s.href!) : undefined}
+              />
             ))}
           </Pie>
+          {hasData && (
+            <Tooltip
+              wrapperStyle={{ zIndex: 40 }}
+              content={({ active, payload }) => {
+                const slice = active ? (payload?.[0]?.payload as (typeof slices)[number] | undefined) : undefined;
+                if (!slice) return null;
+                return (
+                  <div className="rounded-xl bg-[#0B1B3F] px-3 py-2 text-[12px] text-white shadow-lg">
+                    <p className="font-semibold">{slice.name}</p>
+                    <p className="tabular-nums">
+                      {plural(slice.value, "conversation")}
+                      {slice.pct !== undefined && <span className="text-[#9FD3FF]"> · {slice.pct}%</span>}
+                    </p>
+                    {slice.href && <p className="mt-1 text-[11px] font-semibold text-[#9FD3FF]">Click to see them →</p>}
+                  </div>
+                );
+              }}
+            />
+          )}
         </PieChart>
       </ResponsiveContainer>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-[22px] font-semibold tabular-nums" style={{ color: NAVY }}>
           {centerTop}
         </span>
-        <span className="text-[12px]" style={{ color: MUTED }}>
+        <span className="text-[11px] leading-tight" style={{ color: MUTED }}>
           {centerBottom}
         </span>
       </div>
@@ -343,39 +525,58 @@ function Donut({
   );
 }
 
+// A donut and its legend sit side by side only when the card is wide enough for
+// both (very wide screens); otherwise the legend goes under the donut, where
+// it never squeezes against the card edge or overlaps the ring.
+const DONUT_LAYOUT =
+  "flex flex-1 flex-col items-center justify-center gap-4 min-[1800px]:flex-row min-[1800px]:justify-around min-[1800px]:gap-6";
+const DONUT_LEGEND =
+  "flex w-full flex-wrap justify-center gap-1 min-[1800px]:w-auto min-[1800px]:max-w-[190px] min-[1800px]:flex-col min-[1800px]:flex-nowrap";
+
 /* ================= SENTIMENT DISTRIBUTION ================= */
 
 export function SentimentDistributionCard({ insights, loading }: { insights: InsightsResponse | null; loading: boolean }) {
+  const drill = useDrill();
   const s = insights?.sentiment;
   const rows = [
-    { name: "Positive", count: s?.positive.count ?? 0, pct: s?.positive.pct ?? 0, color: PALETTE.green },
-    { name: "Neutral", count: s?.neutral.count ?? 0, pct: s?.neutral.pct ?? 0, color: PALETTE.yellow },
-    { name: "Negative", count: s?.negative.count ?? 0, pct: s?.negative.pct ?? 0, color: PALETTE.red },
-  ];
+    { key: "positive", name: "Positive", count: s?.positive.count ?? 0, pct: s?.positive.pct ?? 0, color: PALETTE.green },
+    { key: "neutral", name: "Neutral", count: s?.neutral.count ?? 0, pct: s?.neutral.pct ?? 0, color: PALETTE.yellow },
+    { key: "negative", name: "Negative", count: s?.negative.count ?? 0, pct: s?.negative.pct ?? 0, color: PALETTE.red },
+  ] as const;
   const scored = s?.scored ?? 0;
   const busy = loading && !insights;
   return (
     <section className={`${CARD} flex min-w-0 flex-col p-5 sm:p-6`}>
       <CardHeader title="Sentiment Distribution" />
-      <div className="flex flex-1 flex-col items-center gap-6 sm:flex-row sm:justify-around">
+      <div className={DONUT_LAYOUT}>
         <Donut
-          slices={rows.map((r) => ({ name: r.name, value: r.count, color: r.color }))}
+          slices={rows.map((r) => ({ name: r.name, value: r.count, color: r.color, pct: r.pct, href: drill({ sentiment: r.key }) }))}
           innerRadius="66%"
           centerTop={busy ? "—" : fmt(scored)}
           centerBottom="Scored"
         />
-        <ul className="w-full max-w-[170px] space-y-4">
+        <ul className={DONUT_LEGEND}>
           {rows.map((r) => (
-            <li key={r.name} className="flex items-center gap-3">
-              <span className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: r.color }} />
-              <div className="min-w-0">
-                <p className="text-[12px] font-medium" style={{ color: MUTED }}>
-                  {r.name}
-                </p>
-                <p className="text-[14px] font-semibold tabular-nums" style={{ color: NAVY }}>
-                  {busy ? "—" : fmt(r.count)} <span style={{ color: r.color }}>{busy ? "" : `${r.pct}%`}</span>
-                </p>
-              </div>
+            <li key={r.name}>
+              <DrillLink
+                filters={{ sentiment: r.key }}
+                label={`${r.name}: ${fmt(r.count)} conversations. View them`}
+                tip={{
+                  title: `${r.name} sentiment`,
+                  rows: [["Conversations", fmt(r.count)], ["Share of scored", `${r.pct}%`], ["Scored in range", fmt(scored)]],
+                }}
+                className="flex items-center gap-3 rounded-xl px-2 py-1 hover:bg-[#F4F9FF] dark:hover:bg-white/5"
+              >
+                <span className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: r.color }} />
+                <span className="min-w-0">
+                  <span className="block text-[12px] font-medium" style={{ color: MUTED }}>
+                    {r.name}
+                  </span>
+                  <span className="block text-[14px] font-semibold tabular-nums" style={{ color: NAVY }}>
+                    {busy ? "—" : fmt(r.count)} <span style={{ color: r.color }}>{busy ? "" : `${r.pct}%`}</span>
+                  </span>
+                </span>
+              </DrillLink>
             </li>
           ))}
         </ul>
@@ -414,34 +615,47 @@ export function TopIntentsCard({ insights, loading }: { insights: InsightsRespon
   const topics = insights?.topics ?? [];
   const maxPct = Math.max(1, ...topics.map((t) => t.pct));
   const base = topics.reduce((sum, t) => sum + t.count, 0);
+  const drill = useDrill();
   return (
     <section className={`${CARD} flex min-w-0 flex-col p-5 sm:p-6`}>
-      <CardHeader title="Top Intent Categories" action={<ViewAll to="/dashboard/conversations" />} />
+      <CardHeader title="Top Intent Categories" action={<ViewAll to={drill({ analysis_state: "assessable" })} />} />
       {topics.length === 0 ? (
         <EmptyState loading={loading && !insights}>No intents identified in this range yet.</EmptyState>
       ) : (
         <>
-          <ul className="space-y-3.5">
+          <ul className="space-y-1">
             {topics.map((topic) => {
               const color = TOPIC_COLOR[topic.label] ?? PALETTE.slate;
               return (
-                <li key={topic.label} className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto] items-center gap-3 text-[13px]">
-                  <span className="flex min-w-0 items-center gap-2" style={{ color: NAVY }}>
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
-                    <span className="truncate">{topic.label}</span>
-                  </span>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF3FB] dark:bg-slate-800">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${(topic.pct / maxPct) * 100}%`, background: `linear-gradient(90deg, ${color}, ${color}aa)` }}
-                    />
-                  </div>
-                  <span className="text-right font-medium tabular-nums" style={{ color: NAVY }}>
-                    {fmt(topic.count)}
-                  </span>
-                  <span className="w-11 text-right font-semibold tabular-nums" style={{ color }}>
-                    {topic.pct}%
-                  </span>
+                <li key={topic.label}>
+                  <DrillLink
+                    filters={{ topic: topic.label }}
+                    label={`${topic.label}: ${fmt(topic.count)} conversations. View them`}
+                    tip={{
+                      title: topic.label,
+                      rows: [["Conversations", fmt(topic.count)], ["Share of intents", `${topic.pct}%`]],
+                      note: topic.label === "Other" ? "Analysed, but not one of the listed admissions topics." : undefined,
+                    }}
+                    className="block rounded-lg px-1.5 py-1.5 text-[13px] hover:bg-[#F4F9FF] dark:hover:bg-white/5"
+                  >
+                    {/* Name on its own line, bar beneath: long topic names never get cut to "Cours…". */}
+                    <span className="flex items-baseline gap-2">
+                      <span className="h-2.5 w-2.5 shrink-0 translate-y-[1px] rounded-full" style={{ background: color }} />
+                      <span className="min-w-0 flex-1 leading-snug" style={{ color: NAVY }}>{topic.label}</span>
+                      <span className="shrink-0 font-medium tabular-nums" style={{ color: NAVY }}>
+                        {fmt(topic.count)}
+                      </span>
+                      <span className="w-11 shrink-0 text-right font-semibold tabular-nums" style={{ color }}>
+                        {topic.pct}%
+                      </span>
+                    </span>
+                    <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-[#EEF3FB] dark:bg-slate-800">
+                      <span
+                        className="block h-full rounded-full"
+                        style={{ width: `${(topic.pct / maxPct) * 100}%`, background: `linear-gradient(90deg, ${color}, ${color}aa)` }}
+                      />
+                    </span>
+                  </DrillLink>
                 </li>
               );
             })}
@@ -482,29 +696,42 @@ export function EmotionCard({ insights, loading }: { insights: InsightsResponse 
         </EmptyState>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 min-[1500px]:grid-cols-3">
             {emotions.map((e) => {
               const meta = EMOTION_META[e.key];
               if (!meta) return null;
               return (
-                <div
+                <DrillLink
                   key={e.key}
-                  className="flex flex-col items-start gap-2 rounded-xl p-3 ring-1"
-                  style={{ background: `${meta.color}12`, boxShadow: `inset 0 0 0 1px ${meta.color}33` }}
-                  title={`${fmt(e.count)} conversation${e.count === 1 ? "" : "s"}`}
+                  filters={{ emotion: e.key }}
+                  label={`${meta.label}: ${fmt(e.count)} conversations. View them`}
+                  tip={{
+                    title: `${meta.label} callers`,
+                    rows: [["Conversations", fmt(e.count)], ["Share of emotions", `${e.pct}%`], ["Emotions detected", fmt(base)]],
+                  }}
+                  className="flex flex-col items-start min-w-0 gap-2 rounded-xl p-2.5 transition hover:brightness-[0.97] dark:hover:brightness-125"
                 >
-                  <IconChip icon={meta.icon} from={meta.color} to={meta.color} size="h-9 w-9" />
-                  <span className="text-[12px] font-medium" style={{ color: MUTED }}>
+                  <span aria-hidden className="absolute inset-0 rounded-xl" style={{ background: `${meta.color}12`, boxShadow: `inset 0 0 0 1px ${meta.color}33` }} />
+                  <span className="relative">
+                    <IconChip icon={meta.icon} from={meta.color} to={meta.color} size="h-9 w-9" />
+                  </span>
+                  <span className="relative whitespace-nowrap text-[11px] font-medium leading-tight" style={{ color: MUTED }}>
                     {meta.label}
                   </span>
-                  <span className="text-[18px] font-semibold tabular-nums" style={{ color: meta.color }}>
-                    {e.pct}%
+                  <span className="relative -mt-1 flex flex-col leading-tight">
+                    <span className="text-[18px] font-semibold tabular-nums" style={{ color: meta.color }}>{e.pct}%</span>
+                    <span className="text-[11px] font-medium tabular-nums" style={{ color: MUTED }}>{plural(e.count, "chat")}</span>
                   </span>
-                </div>
+                </DrillLink>
               );
             })}
           </div>
           <AnalysisNote insights={insights} base={base} />
+          {insights && base < insights.sentiment.scored && (
+            <p className="mt-1 text-[11px]" style={{ color: MUTED }}>
+              Emotion is known for {fmt(base)} of {fmt(insights.sentiment.scored)} scored conversations; older analyses don’t record it.
+            </p>
+          )}
         </>
       )}
     </section>
@@ -524,30 +751,38 @@ const CHANNEL_COLOR: Record<string, string> = {
 export function ChannelsCard({ insights, loading }: { insights: InsightsResponse | null; loading: boolean }) {
   const channels = (insights?.channels ?? []).map((c) => ({ ...c, color: CHANNEL_COLOR[c.key] ?? PALETTE.slate }));
   const total = insights?.totals.conversations ?? 0;
+  const drill = useDrill();
   return (
     <section className={`${CARD} flex min-w-0 flex-col p-5 sm:p-6`}>
       <CardHeader title="Conversation Channels" />
       {channels.length === 0 ? (
         <EmptyState loading={loading && !insights}>No conversations in this range yet.</EmptyState>
       ) : (
-        <div className="flex flex-1 flex-col items-center gap-5 sm:flex-row sm:justify-around">
+        <div className={DONUT_LAYOUT}>
           <Donut
-            slices={channels.map((c) => ({ name: c.label, value: c.count, color: c.color }))}
-            innerRadius="48%"
+            slices={channels.map((c) => ({ name: c.label, value: c.count, color: c.color, pct: c.pct, href: drill({ channel: c.key }) }))}
+            innerRadius="66%"
             centerTop={fmt(total)}
             centerBottom="Conversations"
             size={180}
           />
-          <ul className="w-full max-w-[190px] space-y-2.5">
+          <ul className={DONUT_LEGEND}>
             {channels.map((c) => (
-              <li key={c.key} className="flex items-center justify-between gap-3 text-[13px]" title={`${fmt(c.count)} conversations`}>
-                <span className="flex min-w-0 items-center gap-2" style={{ color: NAVY }}>
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: c.color }} />
-                  <span className="truncate">{c.label}</span>
-                </span>
-                <span className="font-semibold tabular-nums" style={{ color: c.color }}>
-                  {c.pct}%
-                </span>
+              <li key={c.key}>
+                <DrillLink
+                  filters={{ channel: c.key }}
+                  label={`${c.label}: ${fmt(c.count)} conversations. View them`}
+                  tip={{ title: c.label, rows: [["Conversations", fmt(c.count)], ["Share", `${c.pct}%`]] }}
+                  className="flex items-center justify-between gap-3 rounded-lg px-1.5 py-1 text-[13px] hover:bg-[#F4F9FF] dark:hover:bg-white/5"
+                >
+                  <span className="flex min-w-0 items-center gap-2" style={{ color: NAVY }}>
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: c.color }} />
+                    <span className="truncate">{c.label}</span>
+                  </span>
+                  <span className="font-semibold tabular-nums" style={{ color: c.color }}>
+                    {c.pct}%
+                  </span>
+                </DrillLink>
               </li>
             ))}
           </ul>
@@ -608,19 +843,19 @@ const channelMeta = (source?: string | null): { label: string; icon: LucideIcon;
 };
 
 const SENTIMENT_BADGE: Record<string, { label: string; cls: string }> = {
-  positive: { label: "Positive", cls: "bg-[#DDF7E8] text-[#118A4B]" },
-  neutral: { label: "Neutral", cls: "bg-[#FFF1CC] text-[#9A6B00]" },
-  negative: { label: "Negative", cls: "bg-[#FDE4EA] text-[#C42D52]" },
-  none: { label: "N/A", cls: "bg-[#EEF2F7] text-[#5B6B88]" },
-  pending: { label: "Analysing", cls: "bg-[#EEF2F7] text-[#5B6B88]" },
+  positive: { label: "Positive", cls: "bg-[#DDF7E8] text-[#118A4B] dark:bg-emerald-500/15 dark:text-emerald-300" },
+  neutral: { label: "Neutral", cls: "bg-[#FFF1CC] text-[#9A6B00] dark:bg-amber-500/15 dark:text-amber-300" },
+  negative: { label: "Negative", cls: "bg-[#FDE4EA] text-[#C42D52] dark:bg-rose-500/15 dark:text-rose-300" },
+  none: { label: "N/A", cls: "bg-[#EEF2F7] text-[#5B6B88] dark:bg-slate-800 dark:text-slate-300" },
+  pending: { label: "Analysing", cls: "bg-[#EEF2F7] text-[#5B6B88] dark:bg-slate-800 dark:text-slate-300" },
 };
 
 const STATUS_CLS = {
-  red: "bg-[#FDE4EA] text-[#C42D52]",
-  orange: "bg-[#FFEBDC] text-[#B5500B]",
-  blue: "bg-[#E1EFFF] text-[#0C64D6]",
-  green: "bg-[#DDF7E8] text-[#118A4B]",
-  grey: "bg-[#EEF2F7] text-[#5B6B88]",
+  red: "bg-[#FDE4EA] text-[#C42D52] dark:bg-rose-500/15 dark:text-rose-300",
+  orange: "bg-[#FFEBDC] text-[#B5500B] dark:bg-orange-500/15 dark:text-orange-300",
+  blue: "bg-[#E1EFFF] text-[#0C64D6] dark:bg-blue-500/15 dark:text-blue-300",
+  green: "bg-[#DDF7E8] text-[#118A4B] dark:bg-emerald-500/15 dark:text-emerald-300",
+  grey: "bg-[#EEF2F7] text-[#5B6B88] dark:bg-slate-800 dark:text-slate-300",
 };
 
 /** What the team should do with this conversation, from its analysis. */
@@ -642,11 +877,15 @@ function conversationStatus(conv: ConversationsListSummary): { label: string; cl
   }
 }
 
-const formatClock = (ts: number) => format(new Date(ts > 1e12 ? ts : ts * 1000), "p");
+// Time alone for today; older rows also say which day, so they are not read as today's.
+const formatClock = (ts: number) => {
+  const d = new Date(ts > 1e12 ? ts : ts * 1000);
+  return isToday(d) ? format(d, "p") : format(d, "d MMM, p");
+};
 
-export function RecentConversationsCard({ items, loading }: { items: ConversationsListSummary[]; loading: boolean }) {
+export function RecentConversationsCard({ items, loading, className = "" }: { items: ConversationsListSummary[]; loading: boolean; className?: string }) {
   return (
-    <section className={`${CARD} flex min-w-0 flex-col p-5 sm:p-6`}>
+    <section className={`${CARD} flex min-w-0 flex-col p-5 sm:p-6 ${className}`}>
       <CardHeader title="Recent Conversations" action={<ViewAll to="/dashboard/conversations" />} />
       {loading && items.length === 0 ? (
         <p className="py-10 text-center text-sm" style={{ color: MUTED }}>
@@ -736,42 +975,55 @@ const TOPIC_ICON: Record<string, LucideIcon> = {
   "General Information": Globe,
 };
 
-type EscalationRow = { key: string; label: string; count: number; icon: LucideIcon; from: string; to: string; high?: boolean };
+type EscalationRow = {
+  key: string; label: string; count: number; icon: LucideIcon; from: string; to: string; high?: boolean;
+  filters: DrilldownFilters; note: string;
+};
 
 export function EscalationsCard({ insights, loading }: { insights: InsightsResponse | null; loading: boolean }) {
+  const drill = useDrill();
   const esc = insights?.escalations;
   const urgent = insights?.urgent.count ?? 0;
   const rows: EscalationRow[] = [];
   if (esc) {
-    rows.push({ key: "urgent", label: "High Priority (Immediate Action)", count: urgent, icon: AlertTriangle, from: PALETTE.red, to: "#FF8FA3", high: urgent > 0 });
+    rows.push({ key: "urgent", label: "High Priority (Immediate Action)", count: urgent, icon: AlertTriangle, from: PALETTE.red, to: "#FF8FA3", high: urgent > 0,
+      filters: { urgent: true }, note: "The caller needs a reply soon: a deadline, a complaint or a problem blocking them." });
     for (const t of esc.urgent_by_topic.slice(0, 4)) {
-      rows.push({ key: `topic-${t.label}`, label: `Urgent · ${t.label}`, count: t.count, icon: TOPIC_ICON[t.label] ?? MoreHorizontal, from: PALETTE.orange, to: "#FFB27A" });
+      rows.push({ key: `topic-${t.label}`, label: `Urgent · ${t.label}`, count: t.count, icon: TOPIC_ICON[t.label] ?? MoreHorizontal, from: PALETTE.orange, to: "#FFB27A",
+        filters: { urgent: true, topic: t.label }, note: `Urgent conversations about ${t.label}.` });
     }
-    rows.push({ key: "callback", label: "Callback Requested", count: esc.callback_requested, icon: PhoneCall, from: PALETTE.yellow, to: "#FFD35C" });
-    rows.push({ key: "leads", label: "Interested Leads to Follow Up", count: esc.leads, icon: CalendarClock, from: PALETTE.blue, to: PALETTE.sky });
-    rows.push({ key: "negative", label: "Negative Conversations", count: esc.negative, icon: ThumbsDown, from: PALETTE.purple, to: "#A779FF" });
+    rows.push({ key: "callback", label: "Callback Requested", count: esc.callback_requested, icon: PhoneCall, from: PALETTE.yellow, to: "#FFD35C",
+      filters: { category: "Callback Required" }, note: "The person asked to be called back." });
+    rows.push({ key: "leads", label: "Interested Leads to Follow Up", count: esc.leads, icon: CalendarClock, from: PALETTE.blue, to: PALETTE.sky,
+      filters: { category: "Interested,Follow Up" }, note: "Interested or ready for follow-up, without asking for a callback." });
+    rows.push({ key: "negative", label: "Negative Conversations", count: esc.negative, icon: ThumbsDown, from: PALETTE.purple, to: "#A779FF",
+      filters: { sentiment: "negative" }, note: "Conversations where the caller’s sentiment was negative." });
   }
   return (
     <section className={`${CARD} flex min-w-0 flex-col p-5 sm:p-6`}>
-      <CardHeader title="Escalations & Urgent Alerts" action={<ViewAll to="/dashboard/conversations" />} />
+      <CardHeader title="Escalations & Urgent Alerts" action={<ViewAll to={drill({ urgent: true })} />} />
       {rows.length === 0 ? (
         <EmptyState loading={loading && !insights}>Nothing to escalate yet.</EmptyState>
       ) : (
         <>
           <ul className="space-y-1.5">
             {rows.map((item) => (
-              <li
-                key={item.key}
-                className={`flex items-center gap-3 rounded-xl px-2.5 py-2 ${item.high ? "bg-gradient-to-r from-[#FFE9EF] to-[#FFF5F8]" : ""}`}
-              >
-                <IconChip icon={item.icon} from={item.from} to={item.to} size="h-8 w-8" iconSize="h-4 w-4" />
-                <span className={`min-w-0 flex-1 truncate text-[13px] ${item.high ? "font-semibold" : "font-medium"}`} style={{ color: item.high ? PALETTE.red : NAVY }}>
-                  {item.label}
-                </span>
-                <span className="text-[13px] font-semibold tabular-nums" style={{ color: item.from }}>
-                  {fmt(item.count)}
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0" style={{ color: MUTED }} />
+              <li key={item.key}>
+                <DrillLink
+                  filters={item.filters}
+                  label={`${item.label}: ${fmt(item.count)}. View these conversations`}
+                  tip={{ title: item.label, rows: [["Conversations", fmt(item.count)]], note: item.note }}
+                  className={`flex items-center gap-3 rounded-xl px-2.5 py-2 hover:bg-[#F4F9FF] dark:hover:bg-white/5 ${item.high ? "bg-gradient-to-r from-[#FFE9EF] to-[#FFF5F8]" : ""}`}
+                >
+                  <IconChip icon={item.icon} from={item.from} to={item.to} size="h-8 w-8" iconSize="h-4 w-4" />
+                  <span className={`min-w-0 flex-1 text-[13px] leading-snug ${item.high ? "font-semibold" : "font-medium"}`} style={{ color: item.high ? PALETTE.red : NAVY }}>
+                    {item.label}
+                  </span>
+                  <span className="text-[13px] font-semibold tabular-nums" style={{ color: item.from }}>
+                    {fmt(item.count)}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 transition group-hover:translate-x-0.5" style={{ color: MUTED }} />
+                </DrillLink>
               </li>
             ))}
           </ul>

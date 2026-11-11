@@ -12,7 +12,7 @@ export const BRAND = "#137EFD";
 export const FONT = { fontFamily: "Poppins, Manrope, sans-serif" } as const;
 
 export const CARD =
-  "rounded-2xl bg-white shadow-[0_8px_26px_rgba(18,50,120,0.09)] ring-1 ring-sky-100/80 dark:bg-[#0F1A33] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04)] dark:ring-white/[0.07]";
+  "rounded-2xl bg-white shadow-[0_1px_2px_rgba(18,50,120,0.04),0_4px_16px_rgba(18,50,120,0.05)] ring-1 ring-sky-100/80 dark:bg-[#0F1A33] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:ring-white/[0.07]";
 
 export const INPUT =
   "mt-1 w-full rounded-xl border-0 bg-[#F4F9FF] px-3.5 py-2.5 text-sm text-[#0B1B3F] ring-1 ring-sky-100 outline-none transition placeholder:text-[#9AA8C2] focus:bg-white focus:ring-2 focus:ring-[#137EFD] dark:bg-[#0A1328] dark:text-slate-100 dark:ring-white/10 dark:placeholder:text-slate-500 dark:focus:bg-[#0A1328]";
@@ -21,7 +21,7 @@ export const INPUT =
 export const LABEL = "block text-[12px] font-medium text-[#55648A] dark:text-slate-400";
 
 export const BTN =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#137EFD] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(19,126,253,0.28)] transition hover:bg-[#0F6AD8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#137EFD] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none";
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#137EFD] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(11,27,63,0.16)] transition hover:bg-[#0F6AD8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#137EFD] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none";
 
 export const BTN_SECONDARY =
   "inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-[#0B1B3F] ring-1 ring-sky-100 transition hover:bg-[#F4F9FF] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#137EFD] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/[0.04] dark:text-slate-100 dark:ring-white/10 dark:hover:bg-white/[0.08]";
@@ -285,7 +285,7 @@ export function ChannelHero({
   const t = TONES[tone];
   return (
     <section
-      className="relative overflow-hidden rounded-[28px] px-5 py-6 text-white shadow-[0_18px_40px_rgba(11,27,63,0.22)] ring-1 ring-white/5 dark:shadow-[0_18px_44px_rgba(0,0,0,0.45)] dark:ring-white/10 sm:px-7 sm:py-7"
+      className="relative overflow-hidden rounded-[28px] px-5 py-6 text-white shadow-[0_6px_20px_rgba(11,27,63,0.14)] ring-1 ring-white/5 dark:shadow-none dark:ring-white/10 sm:px-7 sm:py-7"
       style={{ background: `radial-gradient(120% 140% at 100% 0%, ${t.glow}, transparent 55%), linear-gradient(135deg, #0B1B3F 0%, #13295C 100%)` }}
     >
       <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -293,7 +293,7 @@ export function ChannelHero({
           <div className="flex items-center gap-3">
             <span
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
-              style={{ background: `linear-gradient(135deg, ${t.from}, ${t.to})`, boxShadow: `0 10px 22px ${t.glow}` }}
+              style={{ background: `linear-gradient(135deg, ${t.from}, ${t.to})`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)" }}
             >
               <Icon className="h-6 w-6" strokeWidth={2.1} />
             </span>
@@ -321,7 +321,6 @@ export function HeroStatus({ ok, children }: { ok: boolean; children: ReactNode 
   return (
     <span className="inline-flex items-center gap-2 text-[13px] text-white/80">
       <span className={`relative flex h-2 w-2`}>
-        {ok && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 motion-reduce:hidden" />}
         <span className={`relative inline-flex h-2 w-2 rounded-full ${ok ? "bg-emerald-400" : "bg-amber-400"}`} />
       </span>
       {children}
@@ -354,7 +353,7 @@ export function HeroButton({ primary, tone = "voice", children, ...rest }: { pri
       className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-50 ${
         primary ? "text-white hover:brightness-110" : "bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15"
       }`}
-      style={primary ? { background: `linear-gradient(135deg, ${t.from}, ${t.to})`, boxShadow: `0 8px 20px ${t.glow}` } : undefined}
+      style={primary ? { background: `linear-gradient(135deg, ${t.from}, ${t.to})`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18)" } : undefined}
     >
       {children}
     </button>
@@ -386,7 +385,7 @@ export function SegmentTabs<T extends string>({
             aria-selected={active}
             onClick={() => onChange(key)}
             className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#137EFD] ${
-              active ? "bg-[#137EFD] text-white shadow-sm" : "text-[#6B7A99] hover:bg-[#F4F9FF] hover:text-[#0B1B3F] dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+              active ? "bg-[#137EFD] text-white" : "text-[#6B7A99] hover:bg-[#F4F9FF] hover:text-[#0B1B3F] dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
             }`}
           >
             {Icon && <Icon size={15} />}
@@ -404,7 +403,7 @@ export function IconChip({ icon: Icon, from, to, size = "h-11 w-11", iconSize = 
   return (
     <span
       className={`flex shrink-0 items-center justify-center rounded-xl text-white ${size}`}
-      style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 6px 14px ${from}40` }}
+      style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)" }}
     >
       <Icon className={iconSize} strokeWidth={2.25} />
     </span>
@@ -496,7 +495,7 @@ export function Notice({ tone, children, onDismiss }: { tone: "success" | "error
 export function EmptyState({ icon: Icon, title, text, tone = "inbox", children }: { icon: LucideIcon; title: string; text: string; tone?: Tone; children?: ReactNode }) {
   return (
     <div className={`${CARD} flex flex-col items-center px-6 py-14 text-center`}>
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl text-white" style={{ background: toneGradient(tone), boxShadow: `0 10px 24px ${TONES[tone].glow}` }}>
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl text-white" style={{ background: toneGradient(tone), boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)" }}>
         <Icon className="h-6 w-6" strokeWidth={2.1} />
       </span>
       <h2 className="mt-4 text-[16px] font-semibold text-[#0B1B3F] dark:text-white">{title}</h2>

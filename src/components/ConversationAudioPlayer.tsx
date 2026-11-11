@@ -95,7 +95,7 @@ export function ConversationAudioPlayer({
           <button
             onClick={togglePlay}
             disabled={!ready}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#137EFD] text-white shadow-[0_6px_14px_rgba(19,126,253,0.3)] disabled:opacity-40"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#137EFD] text-white disabled:opacity-40"
           >
             {playing ? <Pause size={14} /> : <Play size={14} />}
           </button>
