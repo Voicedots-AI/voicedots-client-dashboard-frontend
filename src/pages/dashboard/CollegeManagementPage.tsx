@@ -190,7 +190,7 @@ export default function CollegeManagementPage() {
     [type, setType] = useState(""),
     [sort, setSort] = useState("recent");
   useEffect(() => {
-    if (!access?.enabled) return;
+    if (!access?.enabled || (access.is_mentor && access.erp_role !== 'college_admin')) return;
     const c = new AbortController();
     setLoading(true);
     setError("");
@@ -238,9 +238,9 @@ export default function CollegeManagementPage() {
       });
     void requests;
     return () => c.abort();
-  }, [access?.enabled, version, driveId]);
+  }, [access?.enabled, access?.is_mentor, access?.erp_role, version, driveId]);
   useEffect(() => {
-    if (!access?.enabled || driveId || creating || tab !== "placements") return;
+    if (!access?.enabled || (access.is_mentor && access.erp_role !== "college_admin") || driveId || creating || tab !== "placements") return;
     const controller = new AbortController();
     let pending = false;
     const refreshOverview = async () => {
@@ -255,7 +255,7 @@ export default function CollegeManagementPage() {
     const timer = window.setInterval(() => void refreshOverview(), 15000);
     document.addEventListener("visibilitychange", refreshOverview);
     return () => { controller.abort(); window.clearInterval(timer); document.removeEventListener("visibilitychange", refreshOverview); };
-  }, [access?.enabled, driveId, creating, tab]);
+  }, [access?.enabled, access?.is_mentor, access?.erp_role, driveId, creating, tab]);
   const filtered = useMemo(
     () =>
       drives
@@ -328,7 +328,7 @@ export default function CollegeManagementPage() {
         </button>
       </section>
     );
-  if (access.is_mentor && access.erp_role !== "college_admin" && !params.has("view") && !driveId && !creating) return <Navigate to="/dashboard/placement-management?view=mentors" replace/>;
+  if (access.is_mentor && access.erp_role !== "college_admin" && (!["mentors","candidates"].includes(tab) || !!driveId || creating || !!draftId)) return <Navigate to="/dashboard/placement-management?view=mentors" replace/>;
   const navigate = (view: string) =>
     setParams((p) => {
       p.set("view", view);
@@ -340,7 +340,7 @@ export default function CollegeManagementPage() {
       return p;
     });
   if (tab === "mentors") return <MentorManagement/>;
-  if (tab === "candidates") return <CandidateDirectory/>;
+  if (tab === "candidates") return <CandidateDirectory mentorView={!!access.is_mentor && access.erp_role !== "college_admin"}/>;
   if (tab === "assessment-intelligence") return <AssessmentIntelligence/>;
   if (tab === "dashboard") return <PlacementDashboard />;
   if (tab === "feedback") return <FeedbackDashboard/>;

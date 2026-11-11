@@ -33,7 +33,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
-  const { access: collegeAccess } = useCollegeAccess();
+  const { access: collegeAccess, loading: collegeAccessLoading } = useCollegeAccess();
   const { enabled: emailEnabled } = useEmailCapabilities();
 
   const questionPaperNavigation: NavItem = {
@@ -45,7 +45,11 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
   };
 
   const placementChildren:NavChild[]=[{id:'placement-dashboard',label:'Dashboard',path:'/dashboard/placement-management?view=dashboard'},{id:'placement-feedback',label:'Feedback Dashboard',path:'/dashboard/placement-management?view=feedback'},{id:'placement-drives',label:'Placement drives',path:'/dashboard/placement-management?view=placements'},{id:'assessment-intelligence',label:'Assessment Intelligence',path:'/dashboard/placement-management?view=assessment-intelligence'},...(collegeAccess?.mentor_management_enabled?[{id:'mentor-management',label:'Mentor Management',path:'/dashboard/placement-management?view=mentors'}]:[])];
-  const navItems: NavItem[] = user?.portal_role === "placement_staff" ? [
+  const mentorOnly = collegeAccess?.is_mentor && collegeAccess.erp_role !== 'college_admin';
+  const navItems: NavItem[] = user?.portal_role === "placement_staff" && collegeAccessLoading ? [] : mentorOnly ? [
+    {id:'mentor-management',icon:GraduationCap,label:'Mentor Management',path:'/dashboard/placement-management?view=mentors'},
+    {id:'candidates',icon:Users,label:'Candidate 360°',path:'/dashboard/placement-management?view=candidates'},
+  ] : user?.portal_role === "placement_staff" ? [
     { id: "drives", icon: BriefcaseBusiness, label: "Placement management", path: "/dashboard/placement-management",children:placementChildren },
     { id: "candidates", icon: Users, label: "Candidates", path: "/dashboard/placement-management?view=candidates" },
     { id: "analytics", icon: BarChart3, label: "Analytics & reports", path: "/dashboard/placement-management?view=analytics" },

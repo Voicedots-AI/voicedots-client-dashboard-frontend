@@ -1,3 +1,4 @@
+import {Link} from 'react-router-dom';
 import MenteeBulkDialog from './MenteeBulkDialog';
 import {emptyMenteeFilters,filterMentees,menteeFilterOptions,selectableMentees,toggleMenteePage,type MenteeFilters} from './mentee-filters';
 import MentorProgressPanels from './MentorProgressPanels';
@@ -1206,7 +1207,7 @@ export default function MentorManagement() {
                         {student.rollNumber || student.id} | {student.degree} –{" "}
                         {student.department}
                       </p>
-                      <span className="mp-profile-caption">Student 360 <span>·</span> Saved portal records & mentor guidance</span>
+                      <span className="mp-profile-caption">Student 360 <span>·</span> Saved portal records & mentor guidance <span>·</span> <Link to={`/dashboard/placement-management?view=candidates&candidate=${encodeURIComponent(student.id)}&candidateTab=overview`}>Open Candidate 360° →</Link></span>
                     </div>
                     {[
                       ["Attendance", student.attendance==null?"Not recorded":pct(student.attendance)],
