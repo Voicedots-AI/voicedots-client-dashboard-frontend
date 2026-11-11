@@ -5,6 +5,7 @@ export type ProfileStudent = {
  id?:string; full_name:string; roll_number:string; email?:string|null; phone?:string|null;
  program?:string|null; department_code?:string|null; department_display_name?:string|null;
  graduation_year?:number|null; batch_label?:string|null; cgpa?:number|string|null;
+ overall_attendance?:{percentage:number|null;period:string;source:string|null;as_of_date?:string|null};
  status?:string|null; date_of_birth?:string|null; registration_number?:string|null;
  has_readable_resume?:boolean; current_resume_submission_id?:string|null; resume_submitted_at?:string|null; skills?:string[]|null;
 };
@@ -26,6 +27,10 @@ export type PlacementRecord = {
 export type ProfileReport = {session_id:string;drive_id?:string|null;overall_score:number|null;completed_at:string;assignment_status?:string;source?:string};
 const value=(v:unknown)=>v==null||String(v).trim()===''?'Not recorded':String(v);
 const date=(v?:string|null)=>v?formatPlacementDateTime(v):'Not recorded';
+export function attendanceLabel(student:ProfileStudent){
+ const n=student.overall_attendance?.percentage;
+ return typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=100?`${Number(n.toFixed(2))}%`:'Not recorded';
+}
 export const uniquePlacementRecords=(rows:PlacementRecord[])=>rows.filter((row,index)=>rows.findIndex(other=>other.drive_id===row.drive_id)===index);
 export function packageLabel(row:PlacementRecord){
  const min=row.package_min_lpa,max=row.package_max_lpa;
@@ -53,7 +58,7 @@ export function CandidateProfileOverview({student,context,drives,reports,photo,o
    <article><span>Placement status</span><strong className="c360-summary-status">{student.status==='placed'?'Placed':'Not recorded'}</strong><small>Confirmed student record</small></article>
   </div>
   <article className="pi-card c360-compact-profile"><h2><GraduationCap size={18}/> Student details</h2><Details items={[
-   ['Course / program',value(context?.program_display_name||student.program)],['Branch / department',value(student.department_display_name||student.department_code)],['CGPA',cgpa],['Graduation year',value(student.graduation_year)],['Batch',value(student.batch_label)],['Academic year',value(context?.academic_year)],['Semester',value(context?.semester)],['Mentor',mentor?.name||(context?'No mentor assignment recorded.':'Not available')],['Email',value(student.email)],['Phone',value(student.phone)],['Resume',student.has_readable_resume?'Available':student.current_resume_submission_id?'Uploaded · parsing unavailable':'Not uploaded'],
+   ['Course / program',value(context?.program_display_name||student.program)],['Branch / department',value(student.department_display_name||student.department_code)],['CGPA',cgpa],['Overall attendance',<span title="Current semester academic attendance; present and on-duty classes count as attended.">{attendanceLabel(student)}</span>],['Graduation year',value(student.graduation_year)],['Batch',value(student.batch_label)],['Academic year',value(context?.academic_year)],['Semester',value(context?.semester)],['Mentor',mentor?.name||(context?'No mentor assignment recorded.':'Not available')],['Email',value(student.email)],['Phone',value(student.phone)],['Resume',student.has_readable_resume?'Available':student.current_resume_submission_id?'Uploaded · parsing unavailable':'Not uploaded'],
   ]}/>{skills.length>0&&<div className="c360-skill-list"><span className="c360-skills-label">Skills</span>{skills.map((skill,index)=><span key={`${skill}-${index}`}>{skill}</span>)}</div>}</article>
  </>;
 }
