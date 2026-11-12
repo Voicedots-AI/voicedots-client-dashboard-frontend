@@ -1,0 +1,80 @@
+/* Mentor Management uses the approved placement dashboard tokens.
+   Tab fills deliberately stay in mentor-management.css / mentor-progress-ui.css. */
+.mentor-management.placement-scheme {
+  --mm-ink:var(--pc-heading);--mm-blue:var(--pc-primary);--mm-purple:var(--pc-purple-icon);--mm-border:var(--pc-border);
+  --mp-ink:var(--pc-heading);--mp-muted:var(--pc-muted);--mp-border:var(--pc-border);--mp-surface:var(--pc-card);--mp-soft:#f8fafc;--mp-blue:var(--pc-primary);--mp-purple:var(--pc-purple-icon);
+  background:#f5f8fc;color:var(--pc-body);font-family:var(--pc-font);font-size:14px;line-height:1.5;padding:20px;border-radius:12px;
+}
+.mentor-management.placement-scheme :is(button,input,select,textarea,h1,h2,h3,h4,table){font-family:var(--pc-font)}
+.mentor-management.placement-scheme :is(h1,h2,h3,h4,strong,b){color:var(--pc-heading)}
+.mentor-management.placement-scheme .mm-header{background:var(--pc-card);border:1px solid var(--pc-border);border-radius:12px;padding:22px 24px;margin-bottom:20px;box-shadow:0 1px 3px #0f172a05}
+.mentor-management.placement-scheme .mm-header h1{font-size:26px;font-weight:700;line-height:1.3;letter-spacing:-.5px;margin:5px 0 8px}
+.mentor-management.placement-scheme .mm-header p{font-size:14px;color:var(--pc-muted);font-weight:400}
+.mentor-management.placement-scheme .mm-header .mm-eyebrow{font-size:11px;letter-spacing:1px;font-weight:500;color:var(--pc-muted)}
+.mentor-management.placement-scheme .mm-review{background:var(--pc-blue-surface);border-color:var(--pc-border);color:var(--pc-body);font-size:12px;border-radius:10px;box-shadow:none}
+.mentor-management.placement-scheme :is(.mm-card,.mp-card,.mp-context,.mp-student-snapshot,.mm-student-banner,.mm-modal,.mm-year,.mp-editor-wrap){background:var(--pc-card);background-image:none;border:1px solid var(--pc-border);border-radius:12px;box-shadow:0 1px 3px #0f172a05}
+.mentor-management.placement-scheme :is(.mm-card,.mp-card){padding:20px}
+.mentor-management.placement-scheme :is(.mm-heading h2,.mp-heading h2){font-size:17px;font-weight:700;letter-spacing:-.2px}
+.mentor-management.placement-scheme :is(.mp-workspace h3,.mp-career-workspace h3){font-size:15px;font-weight:700;line-height:1.45}
+.mentor-management.placement-scheme :is(.mm-muted,.mm-table-footer,.mp-caption,.mp-heading p,.mp-timeline p,.mp-session-list p,.mp-panel-note,.mp-empty p){font-size:12px;line-height:1.6;color:var(--pc-muted)}
+.mentor-management.placement-scheme :is(.mm-primary,.mp-primary){background:var(--pc-primary);background-image:none;border-color:var(--pc-primary);color:#fff;box-shadow:none}
+.mentor-management.placement-scheme :is(.mm-primary,.mp-primary):hover{background:var(--pc-hover);border-color:var(--pc-hover)}
+.mentor-management.placement-scheme :is(input:not([type=checkbox]),select,textarea){background:var(--pc-card);color:var(--pc-body);border-color:var(--pc-border);border-radius:8px;font-size:13px;min-height:39px}
+.mentor-management.placement-scheme :is(input,select,textarea):disabled{background:var(--mp-soft);color:var(--pc-muted)}
+.mentor-management.placement-scheme :is(input,select,textarea):focus-visible{outline:2px solid #93c5fd;outline-offset:2px}
+.mentor-management.placement-scheme label{font-size:12px;font-weight:500;color:var(--pc-muted)}
+.mentor-management.placement-scheme :is(.mm-tabs,.mm-subtabs){gap:5px}
+.mentor-management.placement-scheme :is(.mm-tabs,.mm-subtabs) button{font-size:13px;line-height:1.4;font-weight:500}
+/* Dashboard-style pastel metrics, with consistent circular icon wells. */
+.mentor-management.placement-scheme .mm-kpi{min-height:130px;align-items:center;gap:16px;padding:22px;border:2px solid var(--pc-card);box-shadow:0 1px 3px #0f172a06}
+.mentor-management.placement-scheme .mm-kpi>div{display:flex;flex-direction:column;gap:8px;min-width:0}
+.mentor-management.placement-scheme .mm-kpi div>span{order:-1;font-size:13px;font-weight:600;margin:0;color:var(--pc-heading)}
+.mentor-management.placement-scheme .mm-kpi strong{font-size:29px;line-height:1.15;letter-spacing:-.6px;font-weight:700;font-variant-numeric:tabular-nums}
+.mentor-management.placement-scheme .mm-kpi-note{font-size:11px;line-height:1.5;color:var(--pc-muted)}
+.mentor-management.placement-scheme :is(.mm-icon,.mp-icon,.mp-metric-icon){border-radius:50%;box-shadow:none}
+.mentor-management.placement-scheme .mm-kpi-blue,.mentor-management.placement-scheme .mp-metric.mp-tone-blue{background:var(--pc-blue-surface)}
+.mentor-management.placement-scheme .mm-kpi-green,.mentor-management.placement-scheme .mp-metric.mp-tone-green{background:var(--pc-mint-surface)}
+.mentor-management.placement-scheme .mm-kpi-purple,.mentor-management.placement-scheme .mp-metric.mp-tone-purple{background:var(--pc-purple-surface)}
+.mentor-management.placement-scheme .mm-kpi-orange,.mentor-management.placement-scheme .mp-metric.mp-tone-amber{background:var(--pc-amber-surface)}
+.mentor-management.placement-scheme :is(.mm-icon.blue,.mp-icon,.mp-tone-blue .mp-metric-icon){background:#d6eaff;color:var(--pc-blue-icon)}
+.mentor-management.placement-scheme :is(.mm-icon.green,.mp-tone-green .mp-metric-icon){background:#cef7da;color:var(--pc-mint-icon)}
+.mentor-management.placement-scheme :is(.mm-icon.purple,.mp-tone-purple .mp-metric-icon){background:#e6d6fc;color:var(--pc-purple-icon)}
+.mentor-management.placement-scheme .mm-icon.orange{background:#ffebbb;color:var(--pc-amber-icon)}
+.mentor-management.placement-scheme .mp-metric{border:2px solid var(--pc-card);min-height:120px;box-shadow:0 1px 3px #0f172a06;border-radius:12px}
+.mentor-management.placement-scheme .mp-metric>div>span{font-size:13px;color:var(--pc-heading);font-weight:600}
+.mentor-management.placement-scheme .mp-metric strong{font-size:27px;font-weight:700;letter-spacing:-.5px}
+.mentor-management.placement-scheme .mp-metric small{font-size:12px;color:var(--pc-muted)}
+.mentor-management.placement-scheme table{font-size:13px;font-variant-numeric:tabular-nums}
+.mentor-management.placement-scheme th{background:var(--mp-soft);color:var(--pc-muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--pc-border);padding:13px 12px}
+.mentor-management.placement-scheme td{padding:14px 12px;border-bottom:1px solid var(--pc-border);color:var(--pc-body)}
+.mentor-management.placement-scheme tbody tr:nth-child(even){background:var(--mp-soft)}
+.mentor-management.placement-scheme .mm-icon-button{color:var(--pc-primary)}
+.mentor-management.placement-scheme .mm-badge.green{background:var(--pc-mint-surface);color:#16834d}
+.mentor-management.placement-scheme :is(.mm-avatar,.mp-step,.mp-rounds article>span){background:var(--pc-blue-surface);color:var(--pc-primary)}
+.mentor-management.placement-scheme :is(.mp-guidance,.mp-coach-plan,.mp-path,.mp-details,.mp-career-hero){background:var(--mp-soft);border-color:var(--pc-border);box-shadow:none;border-radius:10px}
+.mentor-management.placement-scheme :is(.mp-career-hero,.mp-report-toolbar,.mm-context){padding:18px}
+.mentor-management.placement-scheme .mp-career-hero h3{font-size:24px}
+.mentor-management.placement-scheme :is(.mp-eyebrow,.mp-details summary,.mp-editor-wrap>summary){color:var(--pc-primary)}
+.mentor-management.placement-scheme :is(.mp-competencies>div>div,.mp-fact-row,.mp-score-story>p){font-size:13px}
+.mentor-management.placement-scheme :is(.mp-student-snapshot small,.mp-context-score small,.mp-profile-caption,.mm-student-banner p){font-size:12px;color:var(--pc-muted)}
+.mentor-management.placement-scheme .mp-student-snapshot b{font-size:13px}
+.mentor-management.placement-scheme .mm-mini-stat{background:var(--mp-soft);border:1px solid var(--pc-border);box-shadow:none}
+.mentor-management.placement-scheme .mm-student-banner h2{font-size:19px;font-weight:700}
+.mentor-management.placement-scheme .mm-student-banner a{color:var(--pc-primary);font-weight:500}
+.mentor-management.placement-scheme .mm-footer{color:var(--pc-muted)}
+:root.dark .mentor-management.placement-scheme{--mp-soft:#162238;background:#081022}
+:root.dark .mentor-management.placement-scheme :is(.mm-icon.blue,.mp-icon,.mp-tone-blue .mp-metric-icon){background:#1d3c65}
+:root.dark .mentor-management.placement-scheme :is(.mm-icon.green,.mp-tone-green .mp-metric-icon){background:#184b3b}
+:root.dark .mentor-management.placement-scheme :is(.mm-icon.purple,.mp-tone-purple .mp-metric-icon){background:#432b62}
+:root.dark .mentor-management.placement-scheme .mm-icon.orange{background:#4a3a1c}
+:root.dark .mentor-management.placement-scheme .mm-badge.green{color:var(--pc-mint-icon)}
+@media(max-width:900px){.mentor-management.placement-scheme .mm-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.mentor-management.placement-scheme .mm-header{padding:18px;align-items:flex-start;flex-wrap:wrap}.mentor-management.placement-scheme .mm-actions{flex-wrap:wrap}.mentor-management.placement-scheme .mm-kpi{padding:18px}}
+@media(max-width:600px){.mentor-management.placement-scheme{padding:12px}.mentor-management.placement-scheme .mm-header h1{font-size:23px}.mentor-management.placement-scheme .mm-kpis{gap:10px}.mentor-management.placement-scheme .mm-kpi{min-height:130px;padding:14px;gap:10px}.mentor-management.placement-scheme .mm-kpi .mm-icon{width:36px;height:36px}.mentor-management.placement-scheme .mm-kpi strong{font-size:25px}.mentor-management.placement-scheme :is(.mm-card,.mp-card){padding:16px}.mentor-management.placement-scheme .mp-metric{min-height:105px}}
+/* Assignment and report surfaces share the same neutral canvas as the dashboard. */
+.mentor-management.placement-scheme :is(.mm-allocation-sidebar,.mm-context,.mm-history,.mm-assignment-stats>div,.mm-career-empty){background:var(--pc-card);border-color:var(--pc-border);box-shadow:none}
+.mentor-management.placement-scheme :is(.mm-assignment-stats small,.mm-allocation-summary-row,.mm-distribution p,.mm-table-footer span){color:var(--pc-muted);font-size:12px}
+.mentor-management.placement-scheme .mm-assignment-roster thead th{background:var(--mp-soft)}
+.mentor-management.placement-scheme .mm-assignment-stats>div:nth-child(1){background:var(--pc-blue-surface)}
+.mentor-management.placement-scheme .mm-assignment-stats>div:nth-child(2){background:var(--pc-purple-surface)}
+.mentor-management.placement-scheme .mm-assignment-stats>div:nth-child(3){background:var(--pc-mint-surface)}
+.mentor-management.placement-scheme .mm-kpi-note{font-size:12px}

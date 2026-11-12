@@ -39,6 +39,8 @@ import {
 } from "./mentor-model";
 import "./mentor-management.css";
 import "./mentor-progress-ui.css";
+import "./placement-dashboard-theme.css";
+import "./mentor-dashboard-theme.css";
 import { collegeApi, collegeError, type Program } from "@/api/collegeApi";
 import { normalizeState } from "./mentor-model";
 import {interviewDistribution} from "./mentor-career-data";
@@ -407,16 +409,17 @@ export default function MentorManagement() {
       ))}
     </select>
   );
-  const kpis = (items: [typeof Users, string, string | number, string][]) => (
+  const kpis = (items: [typeof Users, string, string | number, string, string?][]) => (
     <div className="mm-kpis">
-      {items.map(([Icon, label, value, tone]) => (
-        <article className="mm-card mm-kpi" key={label}>
+      {items.map(([Icon, label, value, tone, note]) => (
+        <article className={`mm-card mm-kpi mm-kpi-${tone}`} key={label}>
           <span className={`mm-icon ${tone}`}>
             <Icon size={25} />
           </span>
           <div>
             <strong>{value}</strong>
             <span>{label}</span>
+            {note&&<small className="mm-kpi-note">{note}</small>}
           </div>
         </article>
       ))}
@@ -445,14 +448,14 @@ export default function MentorManagement() {
     ]);
   if (error && !state.access.can_manage && !state.access.mentor_id)
     return (
-      <section className="mentor-management">
+      <section className="mentor-management placement-scheme">
         <div role="alert">{error}</div>
         <button onClick={() => void load()}>Retry</button>
       </section>
     );
   if (loading)
     return (
-      <section className="mentor-management" role="status">
+      <section className="mentor-management placement-scheme" role="status">
         Loading mentor management…
       </section>
     );
@@ -461,7 +464,7 @@ export default function MentorManagement() {
     : ["Mentor Dashboard", "Mentee Progress"];
   return (
     <section
-      className={`mentor-management ${tab === "Mentee Progress" ? "mm-progress-workspace" : ""}`}
+      className={`mentor-management placement-scheme ${tab === "Mentee Progress" ? "mm-progress-workspace" : ""}`}
       aria-busy={saving}
       onChange={() => {
         dirty.current = true;
@@ -583,9 +586,10 @@ export default function MentorManagement() {
             ],
             [
               Gauge,
-              "Max. allowed per Mentor",
-              Math.max(0, ...state.mentors.map((m) => m.capacity)),
+              "Available mentee slots",
+              state.mentors.filter(m=>m.active).reduce((total,m)=>total+Math.max(0,m.capacity-m.assignedCount),0),
               "orange",
+              "Across active mentors · individual limits apply",
             ],
           ])}
           <div className="mm-card">
@@ -629,7 +633,7 @@ export default function MentorManagement() {
                       "Mentor ID",
                       "Mentor Name",
                       "Department",
-                      "Max. Load",
+                      "Mentee capacity",
                       "Assigned",
                       "Available",
                       "Status",
@@ -712,7 +716,7 @@ export default function MentorManagement() {
             </div>
             <footer className="mm-table-footer">
               Showing {filtered.length} of {state.mentors.length} mentors
-              <span>Capacity is checked before every allocation.</span>
+              <span>Capacity is set per mentor and checked before every allocation.</span>
             </footer>
           </div>
         </>
