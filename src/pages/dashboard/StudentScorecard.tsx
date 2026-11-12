@@ -6,7 +6,7 @@ export default function StudentScorecard({studentId,sessionId,role,assessedAt,re
  const key=`students/${encodeURIComponent(studentId)}/reports/${encodeURIComponent(sessionId)}/scorecard`;
  const [result,setResult]=useState<{key:string;report:ScorecardView}|null>(null),[error,setError]=useState('');
  const [photo,setPhoto]=useState<{student:string;url:string}|null>(null);
- useEffect(()=>{let alive=true;void cachedAssessmentRequest<{photo?:string}>(`attendance/photos/students/${encodeURIComponent(studentId)}?optional=true`).then(value=>{if(alive&&value.photo)setPhoto({student:studentId,url:value.photo})}).catch(()=>{});return()=>{alive=false}},[studentId]);
+ useEffect(()=>{let alive=true;void cachedAssessmentRequest<{photo?:string}>(readOnly?`mentors/photos/students/${encodeURIComponent(studentId)}`:`attendance/photos/students/${encodeURIComponent(studentId)}?optional=true`).then(value=>{if(alive&&value.photo)setPhoto({student:studentId,url:value.photo})}).catch(()=>{});return()=>{alive=false}},[studentId,readOnly]);
  useEffect(()=>{let alive=true;void cachedAssessmentRequest<{student_id:string;session_id:string;report:ScorecardView}>(key).then(value=>{if(value.student_id!==studentId||value.session_id!==sessionId)throw new Error('Scorecard identity mismatch');if(alive)setResult({key,report:value.report})}).catch(reason=>{if(alive)setError(collegeError(reason))});return()=>{alive=false}},[key,studentId,sessionId]);
  if(error)return <p role="alert">{error}</p>;
  if(!result||result.key!==key)return <p role="status">Loading student scorecard…</p>;

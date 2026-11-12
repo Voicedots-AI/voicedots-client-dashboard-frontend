@@ -721,7 +721,7 @@ function ATSMatchInfo({driveId,candidate,cutoff,compact=false,onOpen}:{driveId:s
   </div>;
 }
 
-export function ATSResumeFile({ driveId, studentId }: { driveId: string; studentId: string }) {
+export function ATSResumeFile({ driveId, studentId, filePath }: { driveId?: string; studentId: string; filePath?:string }) {
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [url, setUrl] = useState("");
   const [mime, setMime] = useState("");
@@ -729,7 +729,7 @@ export function ATSResumeFile({ driveId, studentId }: { driveId: string; student
     let active = true;
     let objectUrl = "";
     setState("loading");
-    collegeApi.file(`drives/${driveId}/candidates/${studentId}/resume-file`).then(file => {
+    collegeApi.file(filePath||`drives/${driveId}/candidates/${studentId}/resume-file`).then(file => {
       if (!active) return;
       if (!file.size) { setState("missing"); return; }
       objectUrl = URL.createObjectURL(file);
@@ -741,7 +741,7 @@ export function ATSResumeFile({ driveId, studentId }: { driveId: string; student
       setState((error as { response?: { status?: number } })?.response?.status === 404 ? "missing" : "error");
     });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [driveId, studentId]);
+  }, [driveId, studentId, filePath]);
   return <section className="rounded-xl border p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-semibold">Original resume</h4><p className="text-xs text-slate-500">Source document used for resume-to-JD ATS Fit.</p></div>{state === "ready" && <a className={btn} href={url} download>Download resume</a>}</div>{state === "loading" && <p className="mt-3 text-sm text-slate-500">Loading the candidate’s resume…</p>}{state === "missing" && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">No resume document is available for this candidate.</p>}{state === "error" && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">The resume document could not be loaded. Try opening the candidate details again.</p>}{state === "ready" && mime === "application/pdf" && <iframe title="Candidate resume PDF preview" src={`${url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`} className="mt-3 h-[82vh] min-h-[680px] max-h-[1100px] w-full rounded-lg border" />}{state === "ready" && mime !== "application/pdf" && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">Preview is unavailable for this document format. Use Download resume to review the original file.</p>}</section>;
 }
 function Bar({

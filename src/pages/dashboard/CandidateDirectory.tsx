@@ -34,7 +34,7 @@ export default function CandidateDirectory({driveId,driveMaxAttempts,onCandidate
  useEffect(()=>{setAssessmentView('scorecard');setFull(false)},[candidate,profileTab,params.get('candidateAttempt')]);
  const setIndex=(index:number)=>{const selected=bundle?.reports[index];if(selected)showTab('assessments',selected.session_id)};
 
- useEffect(()=>{setPhoto('');if(!candidate)return;const c=new AbortController();collegeApi.get<{photo?:string}>(`attendance/photos/students/${encodeURIComponent(candidate)}?optional=true`,c.signal).then(v=>{if(!c.signal.aborted)setPhoto(v.photo||'')}).catch(()=>{});return()=>c.abort()},[candidate]);
+ useEffect(()=>{setPhoto('');if(!candidate)return;const c=new AbortController();collegeApi.get<{photo?:string}>(mentorView?`mentors/photos/students/${encodeURIComponent(candidate)}`:`attendance/photos/students/${encodeURIComponent(candidate)}?optional=true`,c.signal).then(v=>{if(!c.signal.aborted)setPhoto(v.photo||'')}).catch(()=>{});return()=>c.abort()},[candidate,mentorView]);
  useEffect(()=>{
   if(candidate)return;
   const controller=new AbortController();setBusy(true);setError('');setStudents([]);setAssignedGroups([]);setTotal(0);setDirectoryPhotos({});
@@ -56,14 +56,14 @@ export default function CandidateDirectory({driveId,driveMaxAttempts,onCandidate
     const student=students[next++];if(!student)return;
     const id=student.student_id||student.id;if(!id)continue;
     try{
-     const value=await collegeApi.get<{photo?:string}>(`attendance/photos/students/${encodeURIComponent(id)}?optional=true`,controller.signal);
+     const value=await collegeApi.get<{photo?:string}>(mentorView?`mentors/photos/students/${encodeURIComponent(id)}`:`attendance/photos/students/${encodeURIComponent(id)}?optional=true`,controller.signal);
      if(!controller.signal.aborted)setDirectoryPhotos(previous=>({...previous,[id]:value.photo||''}));
     }catch{ /* Optional photos fall back to initials; directory access is unchanged. */ }
    }
   };
   void Promise.all(Array.from({length:Math.min(4,students.length)},worker));
   return()=>controller.abort();
- },[students,candidate]);
+ },[students,candidate,mentorView]);
  useEffect(()=>{if(!candidate){setBundle(null);return}const c=new AbortController();setProfileBusy(true);setError('');setBundle(null);setFull(false);collegeApi.get<Bundle>(`students/${encodeURIComponent(candidate)}/reports?profile=true`,c.signal).then(value=>{if(!c.signal.aborted){if(String(value.student?.id)!==candidate)throw new Error('The returned profile does not match the selected student. Please retry.');setBundle(value)}}).catch(error=>{if(!c.signal.aborted)setError(collegeError(error))}).finally(()=>{if(!c.signal.aborted)setProfileBusy(false)});return()=>c.abort()},[candidate,driveId,profileVersion]);
  useEffect(()=>{if(mentorView)return;const c=new AbortController();collegeApi.get<{role_targets:Record<string,Record<string,number>>}>('intelligence/settings',c.signal).then(v=>setTargets(v.role_targets||{})).catch(()=>{});return()=>c.abort()},[mentorView]);
  useEffect(()=>{if(!mentorView||!candidate)return;const c=new AbortController();setMentorProfile(null);collegeApi.get<{studentId:string;profile:MentorStudentSnapshot}>(`mentors/students/${encodeURIComponent(candidate)}/progress?include_profile=true`,c.signal).then(value=>{if(!c.signal.aborted&&value.studentId===candidate&&value.profile.student.id===candidate)setMentorProfile({id:candidate,profile:value.profile})}).catch(()=>{});return()=>c.abort()},[mentorView,candidate,profileVersion]);

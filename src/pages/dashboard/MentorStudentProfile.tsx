@@ -1,3 +1,5 @@
+import {lazy,Suspense} from 'react';
+const ResumeFile=lazy(()=>import('./DriveManagement').then(module=>({default:module.ATSResumeFile})));
 import {useRef,useState} from 'react';
 import {FileText,GraduationCap,UserRound,X} from 'lucide-react';
 import {CandidateProfileOverview,attendanceLabel,type ProfileStudent,type ProfileContext} from './CandidateProfileOverview';
@@ -13,6 +15,7 @@ export default function MentorStudentProfile({profile}:{profile:MentorStudentSna
  <dialog className="mp-profile-dialog" ref={dialog} aria-labelledby="mp-profile-dialog-title"><header><div><span className="mp-eyebrow">ASSIGNED MENTEE · READ ONLY</span><h2 id="mp-profile-dialog-title">{profile.student.full_name}</h2></div><button type="button" autoFocus aria-label="Close student details" onClick={()=>dialog.current?.close()}><X size={19}/></button></header><nav className="mp-view-switch" aria-label="Student detail sections">{[['profile','Profile & academics'],['marks','Academic marks'],['resume','Saved resume']].map(([key,label])=><button type="button" key={key} aria-current={section===key?'page':undefined} onClick={()=>setSection(key)}>{label}</button>)}</nav>
  {section==='profile'&&<div className="candidate-directory placement-scheme candidate360-ui"><CandidateProfileOverview section="academics" student={profile.student} context={profile.context} drives={[]} reports={[]} photo="" onPhotoError={()=>{}}/></div>}
  {section==='marks'&&(marks.length?<PagedItems items={marks} pageSize={6} label="marks">{rows=><div className="mp-academic-table"><table><thead><tr><th>Subject</th><th>Exam</th><th>Semester</th><th>Score</th><th>Grade</th></tr></thead><tbody>{rows.map((row,index)=><tr key={index}><td>{row.subject}</td><td>{row.exam||'Not recorded'}</td><td>{row.semester??'—'}</td><td>{row.marks??'—'} / {row.maximum??'—'}</td><td>{row.grade||'—'}</td></tr>)}</tbody></table></div>}</PagedItems>:<Empty title="No academic marks recorded">Marks appear here when entered in the student’s academic records.</Empty>)}
+ {section==='resume'&&<Suspense fallback={<p role="status">Loading resume viewer…</p>}><ResumeFile studentId={profile.student.id||''} filePath={`mentors/students/${encodeURIComponent(profile.student.id||'')}/resume-file`}/></Suspense>}
  {section==='resume'&&(profile.resumeText?<><p className="mp-caption">Text extracted from the student’s saved Main Resume.</p><pre className="mp-resume-text">{profile.resumeText}</pre></>:<Empty title="No readable resume available">The student can upload their Main Resume from their portal.</Empty>)}
  </dialog></>;
 }
