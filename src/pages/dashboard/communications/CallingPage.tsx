@@ -5,18 +5,17 @@ import { outboundCallsApi, type AiHealth, type OutboundAgent, type OutboundCallS
 import { outboundBatchesApi, type BatchDetails, type BatchFilters, type BatchSummary, type BatchUploadResult } from '@/api/outboundBatches';
 import { OutboundCallTracker } from '@/components/calling/OutboundCallTracker';
 import CallingOverviewTab from '@/components/calling/CallingOverviewTab';
+import { apiErrorDetail } from '@/lib/apiError';
 import { BTN, BTN_SECONDARY, CARD, ChannelHero, CommsItem, CommsShell, HeroButton, HeroSelect, HeroStatus, IconChip, INPUT, SectionHeader, SegmentTabs } from '@/components/comms/CommsKit';
 
 const consentText = 'I confirm every recipient in this file consented to receive this call and the campaign complies with applicable calling rules.';
 const OUTCOMES = ['Interested', 'Follow-up requested', 'Not interested', 'Connected — inconclusive', 'No response', 'Call not lifted', 'Call not connected'];
 const CALL_STATUSES = ['connected', 'failed', 'queued', 'dialing', 'pending', 'blocked', 'skipped'];
-type ApiError = { response?: { data?: { detail?: string | { reasons?: string[]; message?: string } } } };
 type CampaignGroup = { name: string; batches: BatchSummary[]; total: number; completed: number; failed: number; pending: number; status: string; latest: string };
 
-const errorMessage = (error: unknown, fallback: string) => {
-  const detail = (error as ApiError)?.response?.data?.detail;
-  return typeof detail === 'string' ? detail : detail?.reasons?.join(' · ') || detail?.message || fallback;
-};
+// Reads string, {reasons,message} and 422 validation-array details, so an
+// invalid number says why instead of the generic "Call could not be queued."
+const errorMessage = (error: unknown, fallback: string) => apiErrorDetail(error) || fallback;
 const formatDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 const statusLabel = (value: string) => value === 'failed' ? 'Call not connected' : value.replaceAll('_', ' ');
 
@@ -55,7 +54,7 @@ export default function CallingPage() {
   const config = useMemo(() => outbound.find((item) => item.id === selected?.id) || null, [outbound, selected]);
   const capacity = selected?.dids.reduce((total, did) => total + did.channel_limit, 0) || 0;
   const ready = !!config && config.platform_enabled && config.enabled && (config.mode === 'outbound' || config.mode === 'both') && config.status === 'active' && !!config.outbound_trunk_id;
-  const reasons = !config ? ['No outbound configuration is assigned to this agent.'] : [!config.platform_enabled ? 'Outbound calling is paused by the administrator.' : '', !config.enabled ? 'This agent is not enabled for outbound calls.' : '', config.mode === 'inbound' ? 'This agent is configured for inbound calls only.' : '', !config.outbound_trunk_id ? 'No outbound trunk is assigned.' : ''].filter(Boolean);
+  const reasons = !config ? ['No outbound configuration is assigned to this agent.'] : [!config.platform_enabled ? 'Outbound calling is paused by the administrator.' : '', !config.enabled ? 'This agent is not enabled for outbound calls.' : '', config.mode === 'inbound' ? 'This agent is configured for inbound calls only.' : '', config.status !== 'active' ? 'This agent is not active yet. Ask your administrator to publish it.' : '', !config.outbound_trunk_id ? 'No outbound trunk is assigned.' : ''].filter(Boolean);
   const campaigns = useMemo<CampaignGroup[]>(() => {
     const groups = new Map<string, BatchSummary[]>();
     batches.forEach((batch) => { const key = batch.campaign_name || batch.agent_name; groups.set(key, [...(groups.get(key) || []), batch]); });
@@ -67,6 +66,10 @@ export default function CallingPage() {
   const filters = useMemo<BatchFilters>(() => ({ outcome, callStatus, search, page, limit: 100 }), [outcome, callStatus, search, page]);
   const loadBatches = useCallback(async () => { try { setBatches(await outboundBatchesApi.list()); } catch (error) { setMessage(errorMessage(error, 'Unable to load campaign history.')); } }, []);
   const loadDetails = useCallback(async (id: string, selectedFilters: BatchFilters = {}) => { try { setDetails(await outboundBatchesApi.get(id, selectedFilters)); } catch (error) { setMessage(errorMessage(error, 'Unable to load campaign details.')); } }, []);
+  // Re-read readiness so "calls used today" counts a call as soon as it is placed.
+  const refreshOutbound = useCallback(async () => { try { setOutbound(await outboundCallsApi.list()); } catch { /* keep the last known counts */ } }, []);
+  const activeCallStatus = activeCall?.status;
+  useEffect(() => { if (activeCallStatus && ['connected', 'failed', 'blocked'].includes(activeCallStatus)) void refreshOutbound(); }, [activeCallStatus, refreshOutbound]);
 
   useEffect(() => {
     Promise.allSettled([phoneAgentsApi.list(), outboundCallsApi.list(), outboundBatchesApi.list()]).then(([agentResult, outboundResult, batchResult]) => {
@@ -98,15 +101,16 @@ export default function CallingPage() {
   }, [config?.id, ready]);
 
   const checkAi = async () => { if (!config || !ready) return; setCheckingAi(true); setAiHealth(null); setMessage('Checking Gemini voice readiness…'); try { const result = await outboundCallsApi.health(config.id); setAiHealth(result); setMessage(result.message); } catch (error) { setMessage(errorMessage(error, 'Unable to check AI readiness.')); } finally { setCheckingAi(false); } };
-  const placeCall = async () => { if (!config || !ready) return; if (!name.trim() || !number.trim() || !singleConsent) { setMessage('Enter a contact, use an international number, and confirm consent.'); return; } setCalling(true); setMessage(''); try { const result = await outboundCallsApi.create({ phone_agent_id: config.id, destination: number.trim(), contact_name: name.trim(), consent_confirmed: true }); setActiveCall({ id: result.id, status: 'queued', contact_name: name.trim(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), user_message: result.user_message }); setMessage(result.user_message || 'Call queued. Preparing the voice agent…'); setName(''); setNumber(''); setSingleConsent(false); } catch (error) { setMessage(errorMessage(error, 'Call could not be queued.')); } finally { setCalling(false); } };
+  const placeCall = async () => { if (!config || !ready) { setMessage(reasons[0] || 'Outbound calling is not set up for this agent.'); return; } if (!name.trim() || !number.trim() || !singleConsent) { setMessage('Enter the contact name and mobile number, and confirm consent.'); return; } setCalling(true); setMessage(''); try { const result = await outboundCallsApi.create({ phone_agent_id: config.id, destination: number.trim(), contact_name: name.trim(), consent_confirmed: true }); setActiveCall({ id: result.id, status: 'queued', contact_name: name.trim(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), user_message: result.user_message }); setMessage(result.user_message || 'Call queued. Preparing the voice agent…'); setName(''); setNumber(''); setSingleConsent(false); void refreshOutbound(); } catch (error) { setMessage(errorMessage(error, 'Call could not be queued.')); } finally { setCalling(false); } };
   const uploadBatch = async () => { if (!config || !file || !batchConsent || !campaignName.trim()) { setMessage('Enter a campaign name, select a contact file, and confirm consent.'); return; } setBusy(true); setMessage(''); try { const result = await outboundBatchesApi.upload({ file, phoneAgentId: config.id, campaignName: campaignName.trim(), consentDeclaration: consentText, concurrency: Math.max(1, Math.min(capacity || 1, 20)) }); setUploadResult(result); await loadDetails(result.id); await loadBatches(); setMessage(`${result.accepted} contacts accepted${result.rejected_count ? `; ${result.rejected_count} rejected` : ''}. Review and start the campaign.`); } catch (error) { setMessage(errorMessage(error, 'Contact file could not be uploaded.')); } finally { setBusy(false); } };
-  const startBatch = async (id: string) => { setBusy(true); setMessage(''); try { await outboundBatchesApi.start(id); await Promise.all([loadDetails(id), loadBatches()]); setUploadResult(null); setFile(null); setBatchConsent(false); setShowCreate(false); setSelectedCampaign(campaignName.trim()); setMessage('Campaign started. Progress updates automatically.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be started.')); } finally { setBusy(false); } };
+  const startBatch = async (id: string) => { setBusy(true); setMessage(''); try { await outboundBatchesApi.start(id); await Promise.all([loadDetails(id), loadBatches(), refreshOutbound()]); setUploadResult(null); setFile(null); setBatchConsent(false); setShowCreate(false); setSelectedCampaign(campaignName.trim()); setMessage('Campaign started. Progress updates automatically.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be started.')); } finally { setBusy(false); } };
   const cancelBatch = async (id: string) => { if (!window.confirm('Stop this campaign run? Calls already in progress will finish.')) return; setBusy(true); try { await outboundBatchesApi.cancel(id); await Promise.all([loadDetails(id, filters), loadBatches()]); setMessage('Campaign run cancelled.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be cancelled.')); } finally { setBusy(false); } };
   const openRun = (batch: BatchSummary) => { setOutcome(''); setCallStatus(''); setSearch(''); setPage(1); loadDetails(batch.id); };
   const exportReport = async () => { if (!details) return; setBusy(true); try { await outboundBatchesApi.downloadReport(details.id, details.campaign_name, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Report could not be exported.')); } finally { setBusy(false); } };
   const exportCampaign = async () => { if (!selectedCampaign) return; setBusy(true); try { await outboundBatchesApi.downloadCampaignReport(selectedCampaign, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Campaign report could not be exported.')); } finally { setBusy(false); } };
 
 
+  const downloadTemplate = async () => { try { await outboundBatchesApi.downloadTemplate(); } catch (error) { setMessage(errorMessage(error, 'The Excel template could not be downloaded. Please try again.')); } };
   const openCreate = () => { setTab('campaigns'); setSelectedCampaign(null); setShowCreate(true); };
   const lineStatus = ready
     ? `Outbound line ready${config?.did ? `, caller ID ${config.did}` : ''}${capacity ? `, ${capacity} parallel calls` : ''}`
@@ -167,8 +171,8 @@ export default function CallingPage() {
                 </label>
                 <label className="block text-[13px] font-medium text-[#33415F] dark:text-slate-300">
                   Phone number
-                  <input className={INPUT} value={number} onChange={(event) => setNumber(event.target.value)} placeholder="+919876543210" inputMode="tel" />
-                  <span className="mt-1 block text-xs font-normal text-[#6B7A99]">Include the country code, for example +91.</span>
+                  <input className={INPUT} value={number} onChange={(event) => setNumber(event.target.value)} placeholder="9876543210" inputMode="tel" />
+                  <span className="mt-1 block text-xs font-normal text-[#6B7A99]">A 10-digit Indian mobile, or an international number with its country code.</span>
                 </label>
               </div>
               <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#F4F9FF] p-3.5 text-sm ring-1 ring-sky-100 dark:bg-slate-950 dark:ring-slate-700">
@@ -185,7 +189,7 @@ export default function CallingPage() {
               <SectionHeader title="Call safeguards" description="Limits set by your administrator." />
               <dl className="mt-5 space-y-3">
                 {[
-                  { icon: Gauge, from: '#137EFD', to: '#5AB8FF', label: 'Daily call limit', value: config?.daily_limit ?? '—' },
+                  { icon: Gauge, from: '#137EFD', to: '#5AB8FF', label: 'Calls today (resets at midnight IST)', value: config ? `${config.used_today ?? 0} of ${config.daily_limit} used` : '—' },
                   { icon: Timer, from: '#7732FD', to: '#A779FF', label: 'Longest call', value: config ? `${Math.round(config.max_duration_seconds / 60)} minutes` : '—' },
                   { icon: ShieldCheck, from: '#1FB867', to: '#6FE0A0', label: 'Caller ID', value: config?.did || 'Not assigned' },
                 ].map((row) => (
@@ -207,7 +211,7 @@ export default function CallingPage() {
               <button onClick={() => setShowCreate((value) => !value)} className={`${BTN} h-10`}><Plus size={17} />{showCreate ? 'Close' : 'New campaign'}</button>
             </SectionHeader>
             {showCreate && (
-              <CreateCampaign campaignName={campaignName} setCampaignName={setCampaignName} setFile={setFile} batchConsent={batchConsent} setBatchConsent={setBatchConsent} uploadResult={uploadResult} uploadBatch={uploadBatch} startBatch={startBatch} busy={busy} ready={ready} file={file} />
+              <CreateCampaign campaignName={campaignName} setCampaignName={setCampaignName} setFile={setFile} batchConsent={batchConsent} setBatchConsent={setBatchConsent} uploadResult={uploadResult} uploadBatch={uploadBatch} startBatch={startBatch} busy={busy} ready={ready} file={file} downloadTemplate={downloadTemplate} />
             )}
             {campaigns.length ? (
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -281,12 +285,13 @@ type CreateProps = {
   busy: boolean;
   ready: boolean;
   file: File | null;
+  downloadTemplate: () => void;
 };
 function CreateCampaign(p: CreateProps) {
   return (
     <section className={`${CARD} p-5 sm:p-6`}>
       <SectionHeader title="Create campaign" description="Name it, upload the contact sheet, then review before any call goes out.">
-        <button type="button" onClick={() => void outboundBatchesApi.downloadTemplate()} className={`${BTN_SECONDARY} text-[13px]`}><Download size={15} />Excel template</button>
+        <button type="button" onClick={p.downloadTemplate} className={`${BTN_SECONDARY} text-[13px]`}><Download size={15} />Excel template</button>
       </SectionHeader>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <label className="text-[13px] font-medium text-[#33415F] dark:text-slate-300">
@@ -300,7 +305,7 @@ function CreateCampaign(p: CreateProps) {
             <span className="truncate text-[#6B7A99]">{p.file ? p.file.name : 'Choose a file'}</span>
             <input type="file" accept=".csv,.xlsx" className="sr-only" onChange={(e) => p.setFile(e.target.files?.[0] || null)} />
           </span>
-          <span className="mt-1 block text-xs font-normal text-[#6B7A99]">Name and Phone are required. The example row is skipped.</span>
+          <span className="mt-1 block text-xs font-normal text-[#6B7A99]">Name and Phone are required. Use the Excel template for the expected columns.</span>
         </label>
       </div>
       <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#F4F9FF] p-3.5 text-sm ring-1 ring-sky-100 dark:bg-slate-950 dark:ring-slate-700">

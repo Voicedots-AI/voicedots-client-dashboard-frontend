@@ -1,5 +1,5 @@
 import {apiClient} from './apiClient';
-export type OutboundAgent={id:string;display_name:string;mode:string;status:string;did?:string;outbound_trunk_id?:string;platform_enabled:boolean;enabled:boolean;daily_limit:number;max_duration_seconds:number};
+export type OutboundAgent={id:string;display_name:string;mode:string;status:string;did?:string;outbound_trunk_id?:string;platform_enabled:boolean;enabled:boolean;daily_limit:number;max_duration_seconds:number;used_today?:number};
 export type OutboundCallStatus={id:string;status:'queued'|'dialing'|'connected'|'failed'|'blocked';contact_name?:string;created_at:string;updated_at:string;error?:string|null;failure_code?:string|null;user_message?:string|null};
 export type AiHealth={status:'ok'|'unavailable';agent_id:string;message:string;details?:Record<string,unknown>};
 export const outboundCallsApi={

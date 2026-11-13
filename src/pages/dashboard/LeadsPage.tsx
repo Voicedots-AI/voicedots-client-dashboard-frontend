@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback, useDeferredValue, useRef } from "react";
+import { useEffect, useState, useCallback, useDeferredValue } from "react";
 import { format, parseISO } from "date-fns";
 import { CheckCircle2, Download, Loader2, Percent, Phone, Search, Trash2, UserPlus, Users } from "lucide-react";
 import leadsApi from "@/api/leads";
 import { LeadDetailsDrawer } from "@/components/LeadDetailsDrawer";
 import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import type { Lead } from "@/types/lead.types";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/context/AuthContext";
 import {
   CARD,
@@ -72,7 +73,6 @@ export function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const exportRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -118,21 +118,6 @@ export function LeadsPage() {
   useEffect(() => {
     setPage(1);
   }, [startDate, endDate, statusFilter, search]);
-
-  // Close the export menu on outside click / Escape.
-  useEffect(() => {
-    if (!exportMenuOpen) return;
-    const onDown = (e: MouseEvent) => {
-      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportMenuOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setExportMenuOpen(false);
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [exportMenuOpen]);
 
   const handleDeleteLead = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
@@ -210,20 +195,18 @@ export function LeadsPage() {
                 </HeroStatus>
               }
               actions={
-                <div ref={exportRef} className="relative">
-                  <HeroButton
-                    primary
-                    tone="leads"
-                    aria-haspopup="menu"
-                    aria-expanded={exportMenuOpen}
-                    onClick={() => setExportMenuOpen((v) => !v)}
-                    disabled={leads.length === 0}
-                  >
-                    {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                    Export CSV
-                  </HeroButton>
-                  {exportMenuOpen && (
-                    <div role="menu" className={`${CARD} absolute left-0 top-full z-50 mt-2 w-52 p-1 text-[#0B1B3F] dark:text-slate-100`}>
+                // The hero clips its overflow, so the menu renders in a portal
+                // (Radix popover) rather than inside the hero, where it was cut
+                // off. Radix also handles outside click, Escape and focus return.
+                <Popover open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
+                  <PopoverTrigger asChild>
+                    <HeroButton primary tone="leads" disabled={leads.length === 0}>
+                      {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                      Export CSV
+                    </HeroButton>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" showArrow={false} className="w-52 p-1 text-[#0B1B3F] dark:text-slate-100">
+                    <div role="menu" aria-label="Export leads">
                       <button
                         role="menuitem"
                         type="button"
@@ -246,8 +229,8 @@ export function LeadsPage() {
                         <span className="block text-[11px] font-normal text-[#6B7A99] dark:text-slate-400">{pagination.total.toLocaleString()} leads</span>
                       </button>
                     </div>
-                  )}
-                </div>
+                  </PopoverContent>
+                </Popover>
               }
             />
           </CommsItem>

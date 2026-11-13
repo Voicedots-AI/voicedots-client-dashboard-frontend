@@ -3,6 +3,7 @@ import { Inbox, MailPlus, Send, Sparkles, Link2, Loader2, Paperclip, RefreshCw, 
 import { BTN, BTN_DANGER, BTN_SECONDARY, CARD, EmptyState, INPUT, LABEL, SectionHeader } from "@/components/comms/CommsKit";
 import CampaignAudienceSelector, { type SelectedContact } from "@/components/campaigns/CampaignAudienceSelector";
 import emailApi, { type EmailAccount, type EmailTemplate, type EmailThread, type EmailThreadDetail } from "@/api/emailApi";
+import { apiErrorDetail } from "@/lib/apiError";
 
 type ThreadResponse = { threads: EmailThread[] };
 
@@ -341,15 +342,19 @@ export function TemplatesPage() {
     try {
       if (selected) await emailApi.updateTemplate(selected.id, p);
       else await emailApi.createTemplate(p);
-      setNotice(selected ? "New version saved." : "Template created.");
-      setSelected(null);
-      setPreview(null);
-      await load();
-    } catch {
-      setNotice("The template couldn't be saved. Check the fields and try again.");
-    } finally {
+    } catch (error) {
+      // Show the server's reason (e.g. a name already in use) instead of a
+      // generic message that sent people re-checking fields that were fine.
+      setNotice(apiErrorDetail(error) || "The template couldn't be saved. Check the fields and try again.");
       setSaving(false);
+      return;
     }
+    setNotice(selected ? "New version saved." : "Template created.");
+    setSelected(null);
+    setPreview(null);
+    setSaving(false);
+    // The save already succeeded; a failed refresh must not report it as failed.
+    await load().catch(() => setNotice("Template saved. Refresh the page to see it in the list."));
   };
 
   const runPreview = async (form: HTMLFormElement | null) => {
