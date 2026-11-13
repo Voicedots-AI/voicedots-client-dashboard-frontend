@@ -3,6 +3,7 @@ import { Inbox, MailPlus, Send, Sparkles, Link2, Loader2, Paperclip, RefreshCw, 
 import { BTN, BTN_DANGER, BTN_SECONDARY, CARD, EmptyState, INPUT, LABEL, SectionHeader } from "@/components/comms/CommsKit";
 import CampaignAudienceSelector, { type SelectedContact } from "@/components/campaigns/CampaignAudienceSelector";
 import emailApi, { type EmailAccount, type EmailTemplate, type EmailThread, type EmailThreadDetail } from "@/api/emailApi";
+import { apiErrorDetail } from "@/lib/apiError";
 
 type ThreadResponse = { threads: EmailThread[] };
 
@@ -341,15 +342,19 @@ export function TemplatesPage() {
     try {
       if (selected) await emailApi.updateTemplate(selected.id, p);
       else await emailApi.createTemplate(p);
-      setNotice(selected ? "New version saved." : "Template created.");
-      setSelected(null);
-      setPreview(null);
-      await load();
-    } catch {
-      setNotice("The template couldn't be saved. Check the fields and try again.");
-    } finally {
+    } catch (error) {
+      // Show the server's reason (e.g. a name already in use) instead of a
+      // generic message that sent people re-checking fields that were fine.
+      setNotice(apiErrorDetail(error) || "The template couldn't be saved. Check the fields and try again.");
       setSaving(false);
+      return;
     }
+    setNotice(selected ? "New version saved." : "Template created.");
+    setSelected(null);
+    setPreview(null);
+    setSaving(false);
+    // The save already succeeded; a failed refresh must not report it as failed.
+    await load().catch(() => setNotice("Template saved. Refresh the page to see it in the list."));
   };
 
   const runPreview = async (form: HTMLFormElement | null) => {
@@ -434,6 +439,8 @@ export function TemplatesPage() {
     </div>
   );
 }
+const BREVO = "brevo";
+
 export function CampaignsPage() {
   const [items, setItems] = useState<Array<Record<string, any>>>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -447,6 +454,8 @@ export function CampaignsPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
+  // A connected Gmail account id, or BREVO for a verified Brevo sender address.
+  const [senderAccountId, setSenderAccountId] = useState("");
   const [manualRecipients, setManualRecipients] = useState("");
   const [stagedContacts, setStagedContacts] = useState<SelectedContact[]>([]);
   const [stagedFile, setStagedFile] = useState<File | null>(null);
@@ -464,12 +473,14 @@ export function CampaignsPage() {
     emailApi.templates().then(setTemplates).catch(() => {});
     emailApi.accounts().then((accs) => {
       setAccounts(accs);
-      if (accs.length > 0 && !senderEmail) {
-        setSenderEmail(accs[0].email_address);
-        setSenderName(accs[0].display_name || "VoiceDots Mailer");
-      }
-    }).catch(() => {});
+      const gmail = accs.find((a) => a.provider === "google" && a.status === "connected");
+      setSenderAccountId(gmail ? gmail.id : BREVO);
+      if (gmail) setSenderName((name) => name || gmail.display_name || "");
+    }).catch(() => setSenderAccountId(BREVO));
   }, []);
+
+  const gmailAccounts = accounts.filter((a) => a.provider === "google");
+  const sendingAccount = gmailAccounts.find((a) => a.id === senderAccountId);
 
   const totalSelectedRecipients = stagedContacts.length + (manualRecipients ? manualRecipients.split(/[\n,]/).filter((x) => x.trim().includes("@")).length : 0);
 
@@ -483,8 +494,14 @@ export function CampaignsPage() {
       if (!selectedTemplateId) {
         throw new Error("Please select an approved email template.");
       }
-      if (!senderEmail.trim()) {
-        throw new Error("Please enter a verified sender email.");
+      if (sendingAccount && sendingAccount.status !== "connected") {
+        throw new Error(`${sendingAccount.email_address} is not connected. Reconnect it in Email settings first.`);
+      }
+      if (!sendingAccount && !senderEmail.trim()) {
+        throw new Error("Please enter the verified Brevo sender email.");
+      }
+      if (scheduleMode === "timer" && scheduledFor && new Date(scheduledFor).getTime() < Date.now()) {
+        throw new Error("The scheduled time is in the past. Pick a later time or choose Send now.");
       }
       if (scheduleMode === "timer" && !scheduledFor) {
         throw new Error("Please pick a date and time for the scheduled timer.");
@@ -497,10 +514,11 @@ export function CampaignsPage() {
       const campaign: any = await emailApi.createCampaign({
         name: campaignName.trim(),
         template_version_id: selectedTemplateId,
-        sender_email: senderEmail.trim(),
         sender_name: senderName.trim() || "VoiceDots Mailer",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        transport: "brevo",
+        ...(sendingAccount
+          ? { transport: "gmail", email_account_id: sendingAccount.id }
+          : { transport: "brevo", sender_email: senderEmail.trim() }),
       });
 
       // 2. ADD RECIPIENTS FROM LEADS / STUDENTS / MANUAL
@@ -546,12 +564,21 @@ export function CampaignsPage() {
           ? new Date(scheduledFor).toISOString()
           : new Date().toISOString();
 
-      await emailApi.scheduleCampaign(campaign.id, targetTime);
-
+      let result: { queued?: number; skipped?: number; missing_variables?: string[] };
+      try {
+        result = await emailApi.scheduleCampaign(campaign.id, targetTime);
+      } catch (err) {
+        await load();
+        throw new Error(`${apiErrorDetail(err) || "The campaign couldn't be scheduled."} It was saved as a draft.`);
+      }
+      const via = sendingAccount ? ` from ${sendingAccount.email_address}` : "";
+      const skipped = result?.skipped
+        ? ` ${result.skipped} recipient(s) were skipped because they have no value for ${(result.missing_variables || []).map((v) => `{{${v}}}`).join(", ") || "the template variables"}.`
+        : "";
       setNotice(
-        scheduleMode === "timer"
-          ? `Campaign scheduled successfully with timer for ${new Date(targetTime).toLocaleString()}.`
-          : "Campaign scheduled and launched successfully."
+        (scheduleMode === "timer"
+          ? `Campaign scheduled${via} for ${new Date(targetTime).toLocaleString()}.`
+          : `Campaign is sending${via}.`) + skipped
       );
 
       // Reset form
@@ -563,7 +590,7 @@ export function CampaignsPage() {
       await load();
     } catch (err: any) {
       console.error(err);
-      setError(err?.response?.data?.detail || err.message || "Failed to create campaign.");
+      setError(apiErrorDetail(err) || err.message || "Failed to create campaign.");
     } finally {
       setBusy(false);
     }
@@ -651,16 +678,39 @@ export function CampaignsPage() {
 
           <div>
             <label className={LABEL}>
-              Sender Email *
+              Send From *
             </label>
-            <input
-              type="email"
-              required
-              value={senderEmail}
-              onChange={(e) => setSenderEmail(e.target.value)}
-              placeholder="Verified Brevo/Gmail sender email"
+            <select
+              value={senderAccountId}
+              onChange={(e) => {
+                setSenderAccountId(e.target.value);
+                const acc = gmailAccounts.find((a) => a.id === e.target.value);
+                if (acc?.display_name) setSenderName(acc.display_name);
+              }}
               className={INPUT}
-            />
+            >
+              {gmailAccounts.map((a) => (
+                <option key={a.id} value={a.id} disabled={a.status !== "connected"}>
+                  {a.email_address} (Gmail{a.status !== "connected" ? ` – ${a.status}, reconnect in Settings` : ""})
+                </option>
+              ))}
+              <option value={BREVO}>Other verified sender (Brevo)</option>
+            </select>
+            {senderAccountId === BREVO && (
+              <input
+                type="email"
+                required
+                value={senderEmail}
+                onChange={(e) => setSenderEmail(e.target.value)}
+                placeholder="Sender email verified in Brevo"
+                className={`${INPUT} mt-2`}
+              />
+            )}
+            {!gmailAccounts.length && (
+              <p className="mt-1 text-[11px] text-[#6B7A99] dark:text-slate-400">
+                Connect a Gmail account in Email settings to send campaigns from it.
+              </p>
+            )}
           </div>
         </div>
 
