@@ -93,13 +93,20 @@ export default function CampaignAudienceSelector({
     const fetchStudents = async () => {
       setLoadingStudents(true);
       try {
-        const res = await collegeApi.get<{ items?: CollegeStudent[]; candidates?: CollegeStudent[] }>(
-          "students?limit=500"
-        );
-        if (active) {
-          const list = res.candidates || res.items || [];
-          setStudents(list);
+        // The student service caps a page at 100 (limit=500 was a 422, so the
+        // College Students list stayed empty). Page through instead, which also
+        // removes the old 500-student ceiling for a whole-college campaign.
+        const PAGE = 100, MAX = 5000;
+        const list: CollegeStudent[] = [];
+        for (let offset = 0; offset < MAX; offset += PAGE) {
+          const res = await collegeApi.get<{ items?: CollegeStudent[]; candidates?: CollegeStudent[]; total?: number }>(
+            `students?limit=${PAGE}&offset=${offset}`
+          );
+          const page = res.candidates || res.items || [];
+          list.push(...page);
+          if (page.length < PAGE || (res.total != null && list.length >= res.total)) break;
         }
+        if (active) setStudents(list);
       } catch (err) {
         console.error("Failed to load college students", err);
       } finally {
@@ -785,7 +792,9 @@ export default function CampaignAudienceSelector({
                 setUploadSuccess("");
                 try {
                   await onUploadFile(uploadedFile);
-                  setUploadSuccess(`Uploaded and processed "${uploadedFile.name}" successfully!`);
+                  // Some callers only stage the file until the campaign is created, so this
+                  // must not claim the contacts were already processed.
+                  setUploadSuccess(`Sheet "${uploadedFile.name}" added to this campaign.`);
                 } catch (err: any) {
                   setUploadError(err.message || "Failed to upload file.");
                 }

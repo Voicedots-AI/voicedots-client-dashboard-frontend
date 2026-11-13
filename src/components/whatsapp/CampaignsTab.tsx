@@ -55,6 +55,11 @@ import Messages from "./MessagesTab";
 import CampaignAudienceSelector, { type SelectedContact } from "@/components/campaigns/CampaignAudienceSelector";
 
 const label = "text-[10px] font-medium uppercase tracking-wider text-[#6B7A99]";
+/** A datetime-local value in the viewer's own time zone. toISOString() is UTC,
+ *  which let IST users pick a time up to 5½ hours in the past (sent at once). */
+const localInputValue = (date: Date) =>
+  new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+const earliestSchedule = () => localInputValue(new Date(Date.now() + 60000));
 const rate = (value?: number | null) => (value == null ? "—" : `${value}%`);
 function csvCell(value: string) {
   return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -144,6 +149,10 @@ export default function Campaigns({
   const [manualNumbers, setManualNumbers] = useState("");
 
   const selectedTemplate = templates.find((t) => t.id === templateId);
+  // Templates with variables need each one mapped to a sheet column or a fixed
+  // value before /start can render the messages. The quick form has no mapping
+  // step, so those campaigns continue in the editor at "Template & mapping".
+  const needsMapping = (selectedTemplate?.slot_fields || []).length > 0;
 
   const handleCreateAndLaunchCampaign = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -171,13 +180,38 @@ export default function Campaigns({
       return;
     }
 
-    setBusy(true);
-    try {
-      const targetTime =
-        scheduleMode === "timer" && scheduledTime
-          ? new Date(scheduledTime).toISOString()
-          : undefined;
+    const targetTime =
+      scheduleMode === "timer" && scheduledTime
+        ? new Date(scheduledTime).toISOString()
+        : undefined;
+    if (targetTime && new Date(targetTime).getTime() <= Date.now()) {
+      notify("The scheduled time has already passed. Pick a time in the future.");
+      return;
+    }
 
+    const resetForm = () => {
+      setName("");
+      setTemplateId("");
+      setStagedContacts([]);
+      setStagedFile(null);
+      setManualNumbers("");
+      setScheduledTime("");
+      setScheduleMode("now");
+    };
+    // Hand the draft to the editor below, which opens at the first unfinished
+    // step (mapping, preview or launch) and keeps the chosen time.
+    const continueInEditor = async (campaignId: string, message: string) => {
+      resetForm();
+      setCreating(false);
+      setSelected(campaignId);
+      notify(message);
+      await load().catch(() => undefined);
+      window.setTimeout(() => editor.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    };
+
+    setBusy(true);
+    let created: Campaign | undefined;
+    try {
       // 1. Create campaign draft
       const c = await api.saveCampaign({
         account_id: account.id,
@@ -186,6 +220,7 @@ export default function Campaigns({
         mapping: {},
         scheduled_at: targetTime,
       });
+      created = c;
 
       // 2. Add staged contacts (Leads + College students + Manual numbers)
       const contactsToAdd = [
@@ -210,27 +245,33 @@ export default function Campaigns({
         await api.upload(c.id, stagedFile);
       }
 
+      if (needsMapping) {
+        await continueInEditor(
+          c.id,
+          `Recipients added to "${c.name}". Map the template's variables below, then preview and ${targetTime ? "schedule" : "send"}.`,
+        );
+        return;
+      }
+
       // 4. Start / Schedule campaign
       await api.start(c.id, consent, targetTime);
 
       notify(
-        scheduleMode === "timer" && scheduledTime
-          ? `Campaign "${c.name}" scheduled successfully with timer for ${new Date(scheduledTime).toLocaleString()}.`
+        targetTime
+          ? `Campaign "${c.name}" scheduled for ${new Date(targetTime).toLocaleString()}.`
           : `Campaign "${c.name}" launched successfully.`
       );
-
-      // Reset form
-      setName("");
-      setTemplateId("");
-      setStagedContacts([]);
-      setStagedFile(null);
-      setManualNumbers("");
-      setScheduledTime("");
-      setScheduleMode("now");
+      resetForm();
       setSelected(c.id);
       await load();
     } catch (error) {
-      notify(errorText(error));
+      if (created) {
+        // The draft exists; open it so the problem can be fixed there rather
+        // than leaving it to be found later under Drafts.
+        await continueInEditor(created.id, `${errorText(error)} The campaign was saved as a draft and is open below.`);
+      } else {
+        notify(errorText(error));
+      }
     } finally {
       setBusy(false);
     }
@@ -465,7 +506,7 @@ export default function Campaigns({
                       type="datetime-local"
                       required={scheduleMode === "timer"}
                       value={scheduledTime}
-                      min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                      min={earliestSchedule()}
                       onChange={(e) => setScheduledTime(e.target.value)}
                       className="w-full rounded-xl border border-sky-100 bg-white p-2.5 text-xs outline-none focus:border-[#137EFD] dark:border-slate-700 dark:bg-slate-900"
                     />
@@ -485,18 +526,23 @@ export default function Campaigns({
                 >
                   {busy ? (
                     <Loader2 className="animate-spin" size={16} />
+                  ) : needsMapping ? (
+                    <ArrowRightLeft size={16} />
                   ) : scheduleMode === "timer" ? (
                     <Clock size={16} />
                   ) : (
                     <Send size={16} />
                   )}
-                  {scheduleMode === "timer"
-                    ? "Schedule WhatsApp Campaign with Timer"
-                    : "Launch WhatsApp Campaign Now"}
+                  {needsMapping
+                    ? "Add recipients & map variables"
+                    : scheduleMode === "timer"
+                      ? "Schedule WhatsApp Campaign with Timer"
+                      : "Launch WhatsApp Campaign Now"}
                   {stagedContacts.length > 0 && ` (${stagedContacts.length} recipients)`}
                 </button>
 
                 <p className="text-[11px] text-[#9AA8C2]">
+                  {needsMapping && "This template has variables, so you'll map them next, then preview and launch. "}
                   Messages use your connected WhatsApp Business sender. Meta delivery limits apply.
                 </p>
               </div>
@@ -530,6 +576,7 @@ export default function Campaigns({
               ["all", "All"],
               ["completed", "Completed"],
               ["running", "In progress"],
+              ["scheduled", "Scheduled"],
               ["draft", "Drafts"],
             ].map(([key, title]) => (
               <button
@@ -793,6 +840,13 @@ function CampaignEditor({
           setName(c.name);
           setTemplateId(c.template_id);
           setMapping(c.mapping);
+          // A draft created with a timer keeps that time, so finishing it
+          // here schedules it rather than silently sending it now.
+          const when = c.status === "draft" && c.scheduled_for ? new Date(c.scheduled_for) : null;
+          if (when && when.getTime() > Date.now()) {
+            setScheduleMode("timer");
+            setScheduledTime(localInputValue(when));
+          }
         }
       })
       .catch((e) => notify(errorText(e)));
@@ -1548,7 +1602,7 @@ function CampaignEditor({
                       type="datetime-local"
                       required={scheduleMode === "timer"}
                       value={scheduledTime}
-                      min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                      min={earliestSchedule()}
                       onChange={(e) => setScheduledTime(e.target.value)}
                       className="w-full rounded-xl border border-sky-100 bg-white p-2.5 text-xs outline-none focus:border-[#137EFD] dark:border-slate-700 dark:bg-slate-900"
                     />
