@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AlertTriangle, ArrowLeft, Bot, CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, Gauge, LayoutDashboard, Loader2, Megaphone, Phone, PhoneCall, PhoneOutgoing, Plus, RefreshCw, ShieldCheck, Sparkles, Square, Timer, Upload, Users, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Bot, CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, Gauge, LayoutDashboard, Loader2, Megaphone, Phone, PhoneCall, PhoneOutgoing, Play, Plus, RefreshCw, ShieldCheck, Sparkles, Square, Timer, Upload, Users, type LucideIcon } from 'lucide-react';
 import { phoneAgentsApi, type ClientPhoneAgent } from '@/api/phoneAgents';
 import { outboundCallsApi, type AiHealth, type OutboundAgent, type OutboundCallStatus } from '@/api/outboundCalls';
-import { outboundBatchesApi, type BatchDetails, type BatchFilters, type BatchSummary, type BatchUploadResult } from '@/api/outboundBatches';
+import { outboundBatchesApi, type BatchDetails, type BatchFilters, type BatchStartResult, type BatchSummary, type BatchUploadResult } from '@/api/outboundBatches';
 import { OutboundCallTracker } from '@/components/calling/OutboundCallTracker';
 import CallingOverviewTab from '@/components/calling/CallingOverviewTab';
 import { apiErrorDetail } from '@/lib/apiError';
@@ -103,7 +103,18 @@ export default function CallingPage() {
   const checkAi = async () => { if (!config || !ready) return; setCheckingAi(true); setAiHealth(null); setMessage('Checking Gemini voice readiness…'); try { const result = await outboundCallsApi.health(config.id); setAiHealth(result); setMessage(result.message); } catch (error) { setMessage(errorMessage(error, 'Unable to check AI readiness.')); } finally { setCheckingAi(false); } };
   const placeCall = async () => { if (!config || !ready) { setMessage(reasons[0] || 'Outbound calling is not set up for this agent.'); return; } if (!name.trim() || !number.trim() || !singleConsent) { setMessage('Enter the contact name and mobile number, and confirm consent.'); return; } setCalling(true); setMessage(''); try { const result = await outboundCallsApi.create({ phone_agent_id: config.id, destination: number.trim(), contact_name: name.trim(), consent_confirmed: true }); setActiveCall({ id: result.id, status: 'queued', contact_name: name.trim(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), user_message: result.user_message }); setMessage(result.user_message || 'Call queued. Preparing the voice agent…'); setName(''); setNumber(''); setSingleConsent(false); void refreshOutbound(); } catch (error) { setMessage(errorMessage(error, 'Call could not be queued.')); } finally { setCalling(false); } };
   const uploadBatch = async () => { if (!config || !file || !batchConsent || !campaignName.trim()) { setMessage('Enter a campaign name, select a contact file, and confirm consent.'); return; } setBusy(true); setMessage(''); try { const result = await outboundBatchesApi.upload({ file, phoneAgentId: config.id, campaignName: campaignName.trim(), consentDeclaration: consentText, concurrency: Math.max(1, Math.min(capacity || 1, 20)) }); setUploadResult(result); await loadDetails(result.id); await loadBatches(); setMessage(`${result.accepted} contacts accepted${result.rejected_count ? `; ${result.rejected_count} rejected` : ''}. Review and start the campaign.`); } catch (error) { setMessage(errorMessage(error, 'Contact file could not be uploaded.')); } finally { setBusy(false); } };
-  const startBatch = async (id: string) => { setBusy(true); setMessage(''); try { await outboundBatchesApi.start(id); await Promise.all([loadDetails(id), loadBatches(), refreshOutbound()]); setUploadResult(null); setFile(null); setBatchConsent(false); setShowCreate(false); setSelectedCampaign(campaignName.trim()); setMessage('Campaign started. Progress updates automatically.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be started.')); } finally { setBusy(false); } };
+  const startBatch = async (id: string, campaign?: string) => {
+    setBusy(true); setMessage('');
+    try {
+      const result = await outboundBatchesApi.start(id);
+      await Promise.all([loadDetails(id), loadBatches(), refreshOutbound()]);
+      setUploadResult(null); setFile(null); setBatchConsent(false); setShowCreate(false);
+      // Started from the run screen the create form is empty, so keep the campaign that is open.
+      const name = (campaign || campaignName).trim();
+      if (name) setSelectedCampaign(name);
+      setMessage(startedMessage(result));
+    } catch (error) { setMessage(errorMessage(error, 'Campaign could not be started.')); } finally { setBusy(false); }
+  };
   const cancelBatch = async (id: string) => { if (!window.confirm('Stop this campaign run? Calls already in progress will finish.')) return; setBusy(true); try { await outboundBatchesApi.cancel(id); await Promise.all([loadDetails(id, filters), loadBatches()]); setMessage('Campaign run cancelled.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be cancelled.')); } finally { setBusy(false); } };
   const openRun = (batch: BatchSummary) => { setOutcome(''); setCallStatus(''); setSearch(''); setPage(1); loadDetails(batch.id); };
   const exportReport = async () => { if (!details) return; setBusy(true); try { await outboundBatchesApi.downloadReport(details.id, details.campaign_name, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Report could not be exported.')); } finally { setBusy(false); } };
@@ -255,7 +266,7 @@ export default function CallingPage() {
             )}
           </div>
         ) : (
-          <CampaignDetails activeCampaign={activeCampaign} selectedCampaign={selectedCampaign} details={details} setDetails={setDetails} setSelectedCampaign={setSelectedCampaign} openRun={openRun} outcome={outcome} setOutcome={setOutcome} callStatus={callStatus} setCallStatus={setCallStatus} search={search} setSearch={setSearch} page={page} setPage={setPage} busy={busy} exportReport={exportReport} exportCampaign={exportCampaign} cancelBatch={cancelBatch} />
+          <CampaignDetails activeCampaign={activeCampaign} selectedCampaign={selectedCampaign} details={details} setDetails={setDetails} setSelectedCampaign={setSelectedCampaign} openRun={openRun} outcome={outcome} setOutcome={setOutcome} callStatus={callStatus} setCallStatus={setCallStatus} search={search} setSearch={setSearch} page={page} setPage={setPage} busy={busy} exportReport={exportReport} exportCampaign={exportCampaign} cancelBatch={cancelBatch} startBatch={startBatch} />
         )}
       </CommsItem>
     </CommsShell>
@@ -355,6 +366,7 @@ type DetailProps = {
   exportReport: () => void;
   exportCampaign: () => void;
   cancelBatch: (id: string) => void;
+  startBatch: (id: string, campaign?: string) => void;
 };
 function CampaignDetails(p: DetailProps) {
   const runs = p.activeCampaign?.batches || [];
@@ -425,10 +437,24 @@ const PIPELINE = [
   { icon: CheckCircle2, title: 'Outcome saved', text: 'The conversation, sentiment and next step are recorded.' },
 ];
 
+function startedMessage(r: BatchStartResult) {
+  const queued = r.queued_now || 0;
+  const waiting = r.pending || 0;
+  let text = queued ? `Campaign started: ${queued} call${queued === 1 ? '' : 's'} queued now.` : 'Campaign started, but no calls could be queued yet.';
+  if (waiting) text += ` ${waiting} contact${waiting === 1 ? '' : 's'} waiting.`;
+  if (r.held_reason) text += ` ${r.held_reason}`;
+  return text;
+}
+
 function RunDetails(p: DetailProps & { details: BatchDetails }) {
   const d = p.details;
   return (
     <section className={`${CARD} min-w-0 overflow-hidden`}>
+      {d.status === 'draft' && (
+        <div className="flex items-center gap-2 bg-[#FFF6E0] px-5 py-3 text-[13px] font-medium text-[#8A5A00] dark:bg-amber-500/10 dark:text-amber-300">
+          <AlertTriangle size={15} />This run was uploaded but not started. Nobody is called until you press Start run.
+        </div>
+      )}
       {d.status === 'running' && (
         <div className="bg-gradient-to-r from-[#0B1B3F] to-[#1E2F6B] p-5 text-white">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -461,9 +487,14 @@ function RunDetails(p: DetailProps & { details: BatchDetails }) {
             <button onClick={p.exportReport} disabled={p.busy || !d.report_ready} className={BTN_SECONDARY}>
               <Download size={16} />{p.outcome || p.callStatus ? 'Export filtered CSV' : 'Export CSV'}
             </button>
-            {d.status === 'running' && (
+            {d.status === 'draft' && (
+              <button onClick={() => p.startBatch(d.id, d.campaign_name)} disabled={p.busy} className={`${BTN} bg-[#1FB867] shadow-[0_6px_16px_rgba(31,184,103,0.3)] hover:bg-[#18A35A]`}>
+                <Play size={14} />Start run
+              </button>
+            )}
+            {(d.status === 'running' || d.status === 'draft') && (
               <button onClick={() => p.cancelBatch(d.id)} disabled={p.busy} className={`${BTN} bg-[#ED5173] shadow-[0_6px_16px_rgba(237,81,115,0.3)] hover:bg-[#D9405F]`}>
-                <Square size={14} />Stop run
+                <Square size={14} />{d.status === 'draft' ? 'Discard' : 'Stop run'}
               </button>
             )}
           </div>
