@@ -54,6 +54,7 @@ export default function CallingPage() {
   const config = useMemo(() => outbound.find((item) => item.id === selected?.id) || null, [outbound, selected]);
   const capacity = selected?.dids.reduce((total, did) => total + did.channel_limit, 0) || 0;
   const ready = !!config && config.platform_enabled && config.enabled && (config.mode === 'outbound' || config.mode === 'both') && config.status === 'active' && !!config.outbound_trunk_id;
+  const dailyLimitReached = !!config && (config.used_today ?? 0) >= config.daily_limit;
   const reasons = !config ? ['No outbound configuration is assigned to this agent.'] : [!config.platform_enabled ? 'Outbound calling is paused by the administrator.' : '', !config.enabled ? 'This agent is not enabled for outbound calls.' : '', config.mode === 'inbound' ? 'This agent is configured for inbound calls only.' : '', config.status !== 'active' ? 'This agent is not active yet. Ask your administrator to publish it.' : '', !config.outbound_trunk_id ? 'No outbound trunk is assigned.' : ''].filter(Boolean);
   const campaigns = useMemo<CampaignGroup[]>(() => {
     const groups = new Map<string, BatchSummary[]>();
@@ -195,6 +196,7 @@ export default function CallingPage() {
                 Start call
               </button>
               {!ready && <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">This agent can’t place outbound calls yet. Choose an outbound agent in the panel above.</p>}
+              {ready && dailyLimitReached && <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">Daily call limit reached. Calls reset at midnight IST.</p>}
             </section>
             <section className={`${CARD} p-5 sm:p-6`}>
               <SectionHeader title="Call safeguards" description="Limits set by your administrator." />
