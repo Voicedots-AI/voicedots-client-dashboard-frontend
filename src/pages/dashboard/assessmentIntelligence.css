@@ -28,3 +28,8 @@
 
 /* Reference placement: solid blue Coach action at the far right. */
 .ai-coach-placeholder,.ai-coach-placeholder:disabled{background:#0969cd;border-color:#0969cd;color:#fff;opacity:1;box-shadow:0 1px 2px #12376518}.assessment-intelligence .ai-student-actions>.ai-coach-placeholder{order:10;min-width:96px;margin-left:3px}.assessment-intelligence .ai-drive-actions>.ai-coach-placeholder{justify-self:end;background:#0969cd;border-color:#0969cd;color:#fff}
+
+/* Keep the full AI Coach Progress action readable in drive tables. */
+.ai-drive-actions .ai-coach-button{white-space:nowrap;min-width:max-content}
+.ai-journey-dialog>header h2{flex-wrap:wrap;overflow-wrap:anywhere}
+@media(max-width:640px){.ai-journey-dialog>header{flex-wrap:wrap}.ai-progress-header-actions{flex-wrap:wrap;max-width:100%}}

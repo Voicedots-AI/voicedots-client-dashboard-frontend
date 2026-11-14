@@ -24,7 +24,7 @@ export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBun
    if(controller.signal.aborted)return;
    validateStudentJourney(value,bundle.student.id,driveId);
    setResult({key,data:value});
-  }).catch(reason=>{if(!controller.signal.aborted)setResult({key,error:endpointMissing(reason)?'Progress is not available on this server yet.':collegeError(reason)})});
+  }).catch(reason=>{if(!controller.signal.aborted)setResult({key,error:endpointMissing(reason)?'AI Coach Progress is not available on this server yet.':collegeError(reason)})});
   return()=>controller.abort();
  },[path,bundle.student.id,driveId,key]);
  useEffect(()=>{
@@ -43,12 +43,12 @@ export default function AssessmentCoach({bundle,driveId,onClose}:{bundle:FullBun
  },[]);
  return createPortal(<div className="ai-coach-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}>
   <section ref={dialog} className="ai-coach-dialog ai-journey-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-progress-title">
-   <header><div><span className="ai-eyebrow">STUDENT PROGRESS</span><h2 id="ai-progress-title"><TrendingUp size={21}/>Progress · {bundle.student.full_name}</h2><p>{drive?.company_name} · {drive?.role_title}</p></div><div className="ai-progress-header-actions"><button className="ai-button" disabled={loading} onClick={()=>setVersion(value=>value+1)}><RefreshCw size={15}/>Refresh progress</button><button autoFocus className="ai-button" onClick={onClose} aria-label="Close progress"><X size={18}/></button></div></header>
+   <header><div><span className="ai-eyebrow">AI COACH PROGRESS</span><h2 id="ai-progress-title"><TrendingUp size={21}/>AI Coach Progress · {bundle.student.full_name}</h2><p>{drive?.company_name} · {drive?.role_title}</p></div><div className="ai-progress-header-actions"><button className="ai-button" disabled={loading} onClick={()=>setVersion(value=>value+1)}><RefreshCw size={15}/>Refresh AI Coach Progress</button><button autoFocus className="ai-button" onClick={onClose} aria-label="Close AI Coach Progress"><X size={18}/></button></div></header>
    <div className="ai-coach-content">
 
-    {error?<div className="ai-empty ai-error" role="alert"><p>{error}</p><button className="ai-button" onClick={()=>setVersion(value=>value+1)}>Retry progress</button></div>:loading&&!data?<p role="status" className="ai-inline-loading">Loading student journey…</p>:data&&<MentorCoachProgress key={path} data={data} degree={[bundle.student.program,bundle.student.department_code].filter(Boolean).join(' ')} studentName={bundle.student.full_name} companyName={drive?.company_name} roleTitle={drive?.role_title}/>}
+    {error?<div className="ai-empty ai-error" role="alert"><p>{error}</p><button className="ai-button" onClick={()=>setVersion(value=>value+1)}>Retry AI Coach Progress</button></div>:loading&&!data?<p role="status" className="ai-inline-loading">Loading AI Coach Progress…</p>:data&&<MentorCoachProgress key={path} data={data} degree={[bundle.student.program,bundle.student.department_code].filter(Boolean).join(' ')} studentName={bundle.student.full_name} companyName={drive?.company_name} roleTitle={drive?.role_title}/>}
 
-   </div><footer><p>Read-only. The student completes learning and validation in their own portal.</p><button className="ai-button" onClick={onClose}>Close progress</button></footer>
+   </div><footer><p>Read-only. The student completes learning and validation in their own portal.</p><button className="ai-button" onClick={onClose}>Close AI Coach Progress</button></footer>
   </section>
  </div>,document.body);
 }
