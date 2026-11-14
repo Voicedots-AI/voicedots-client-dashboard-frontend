@@ -1,9 +1,13 @@
+import MentorProfilePhoto from "../pages/dashboard/MentorProfilePhoto";
 import { useMemo } from "react";
 import { collegeApi, collegeError } from "../api/collegeApi";
 import ConnectedMentoringWorkspace, {
   type WorkspaceTransport,
 } from "./ConnectedMentoringWorkspace";
 import MentoringWorkspace, { type WorkspaceData } from "./MentoringWorkspace";
+const renderStudentPhoto = (studentId: string, name: string) => (
+  <MentorProfilePhoto kind="students" id={studentId} name={name} />
+);
 export default function MentorCollaboration({
   mentorId,
   demo,
@@ -54,6 +58,7 @@ export default function MentorCollaboration({
     );
   return (
     <ConnectedMentoringWorkspace
+      renderStudentPhoto={renderStudentPhoto}
       key={mentorId}
       activeView={activeView}
       onViewChange={onViewChange}
