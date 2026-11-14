@@ -24,7 +24,9 @@ export type Mentor = {
   assignedCount: number;
   employeeCode?: string;
 };
+export type AcademicYear = {id:string;label:string;starts_on?:string;ends_on?:string};
 export type Mentee = {
+  academicYearIds?:string[];
   student_status?:string;
   hasPhoto?:boolean;
   aiProgress?:number|null;
@@ -78,6 +80,7 @@ export type Faculty = {
   mentor_id: string | null;
 };
 export type MentorState = {
+  academicYears?:AcademicYear[];
   mentors: Mentor[];
   students: Mentee[];
   faculty: Faculty[];

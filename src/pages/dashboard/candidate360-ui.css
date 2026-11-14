@@ -15,3 +15,31 @@
 @media(max-width:600px){.candidate360-ui .candidate-card-grid{grid-template-columns:minmax(0,1fr)}.candidate-directory.placement-scheme.candidate360-ui .pi-hero.c360-directory-hero{padding:23px 20px;border-radius:17px}.candidate-directory.placement-scheme.candidate360-ui .pi-hero h1{font-size:28px}.candidate-directory.placement-scheme.candidate360-ui .pi-hero>div>span{font-size:13px}.c360-hero-art{display:none}.candidate-directory.placement-scheme.candidate360-ui .c360-search-panel{padding:17px;gap:12px;grid-template-columns:minmax(0,1fr) auto}.c360-search-panel label{grid-column:1/-1}.candidate-directory.placement-scheme.candidate360-ui .c360-search-panel .pc-primary{padding:0 18px;height:42px}.c360-directory-count{grid-column:2;grid-row:2;text-align:right}.candidate360-ui .c360-candidate-card{padding:22px}.candidate-directory.placement-scheme.candidate360-ui .pi-card{padding:21px}.candidate-directory.placement-scheme.candidate360-ui .c360-hero{padding:21px}.candidate360-ui .c360-hero .candidate-profile-avatar{width:62px;height:70px}.candidate360-ui .candidate-identity{gap:15px}.candidate-directory.placement-scheme.candidate360-ui .candidate-identity h1{font-size:23px}.candidate360-ui .c360-summary{gap:12px}.candidate360-ui .c360-summary article{padding:18px}.candidate360-ui .c360-summary strong{font-size:27px}.candidate360-ui .c360-summary strong.c360-summary-status{font-size:18px}.candidate360-ui .c360-details,.candidate360-ui .c360-compact-profile .c360-details{grid-template-columns:minmax(0,1fr);gap:20px}.candidate360-ui .c360-details dd{font-size:15px}.c360-fee-pagination{flex-wrap:wrap}.c360-fee-pagination>span{order:3;flex-basis:100%;text-align:center}.c360-section-title{align-items:start}.c360-read-only{font-size:10px}.candidate360-ui .c360-card-score>div{font-size:12px}.candidate360-ui .c360-profile-tabs button{padding:10px 15px;font-size:13px}}
 @media(prefers-reduced-motion:reduce){.candidate360-ui *{transition:none!important;scroll-behavior:auto!important}}
 .candidate360-ui .c360-card-academics dt{font-size:12px}.candidate360-ui .c360-card-academics dd{font-size:14px}.candidate360-ui .c360-card-metrics>span{font-size:12px}.candidate360-ui .c360-card-metrics b{font-size:13px}.candidate360-ui .c360-card-score>div{font-size:13px}.candidate360-ui .c360-card-score strong{font-size:14px}.candidate360-ui .c360-card-score p,.candidate360-ui .c360-card-data-note{font-size:12px}.candidate360-ui .c360-card-identity>a{font-size:12px}.candidate360-ui .c360-student-status{font-size:11px}
+
+.candidate360-ui .c360-competency-list{display:grid;gap:9px;margin:15px 0 10px}.candidate360-ui .c360-competency-list>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px}.candidate360-ui .c360-competency-list dt{font-size:12px;color:var(--c360-muted)}.candidate360-ui .c360-competency-list dd{margin:0;font-size:13px;font-weight:650;white-space:nowrap;color:var(--c360-ink)}.candidate360-ui .c360-competency-list small{font-size:10px;font-weight:400;color:var(--c360-muted)}.candidate360-ui .c360-card-academics{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.candidate360-ui .c360-card-academics>div:nth-child(2){grid-column:1/-1;grid-row:2}.c360-full-profile{margin-bottom:22px}
+
+/* Compact competency lines keep skill evidence at the centre of each card. */
+.candidate360-ui .c360-card-competencies{padding:17px 14px 12px;border:1px solid var(--c360-border);border-radius:13px;background:var(--c360-soft)}
+.candidate360-ui .c360-card-competencies h3{margin:0 0 17px;font-size:14px;font-weight:700;color:var(--c360-ink)}
+.candidate360-ui .c360-competency-bars{display:grid;gap:13px;margin:0}
+.candidate360-ui .c360-competency-bars>div{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:center;gap:10px;--competency-start:#ffce55;--competency-end:#f5a623}
+.candidate360-ui .c360-competency-bars dt{font-size:11px;font-weight:550;line-height:1.45;color:var(--c360-ink);overflow-wrap:anywhere}
+.candidate360-ui .c360-competency-bars dd{display:flex;align-items:center;gap:8px;margin:0;min-width:0}
+.candidate360-ui .c360-competency-bars strong{font-size:11px;min-width:30px;text-align:right;color:var(--c360-ink)}
+.candidate360-ui .c360-competency-bars progress{appearance:none;display:block;flex:1;min-width:0;width:100%;height:9px;border:0;border-radius:20px;overflow:hidden;background:var(--c360-border)}
+.candidate360-ui .c360-competency-bars progress::-webkit-progress-bar{background:var(--c360-border);border-radius:20px}
+.candidate360-ui .c360-competency-bars progress::-webkit-progress-value{border-radius:20px;background:linear-gradient(90deg,var(--competency-start),var(--competency-end))}
+.candidate360-ui .c360-competency-bars progress::-moz-progress-bar{border-radius:20px;background:linear-gradient(90deg,var(--competency-start),var(--competency-end))}
+.candidate360-ui .c360-competency-tone-1{--competency-start:#ffb13c!important;--competency-end:#ff871b!important}
+.candidate360-ui .c360-competency-tone-2{--competency-start:#d399ff!important;--competency-end:#ac6df4!important}
+.candidate360-ui .c360-competency-tone-3{--competency-start:#6fb7ff!important;--competency-end:#3b82f6!important}
+.candidate360-ui .c360-competency-tone-4{--competency-start:#48dfa8!important;--competency-end:#12bf88!important}
+.candidate360-ui .c360-card-competencies p{margin:14px 0 0;font-size:10px;line-height:1.6;color:var(--c360-muted)}
+.candidate360-ui .c360-card-data-note:empty{display:none}
+
+.candidate360-ui .c360-card-tags{display:flex;flex-wrap:wrap;align-content:start;gap:7px;margin:14px 0 17px;padding:0;border:0;background:none}
+.candidate360-ui .c360-card-tags>div{display:inline-flex;align-items:baseline;gap:6px;min-width:0;max-width:100%;padding:5px 9px;border:1px solid var(--c360-border);border-radius:7px;background:var(--c360-soft);line-height:1.5}
+.candidate360-ui .c360-card-tags dt{font-size:11px;font-weight:450;color:var(--c360-muted);white-space:nowrap}
+.candidate360-ui .c360-card-tags dd{margin:0;font-size:12px;font-weight:600;color:var(--c360-ink);overflow-wrap:anywhere;line-height:1.5}
+.candidate360-ui .c360-card-tags dd small{font-size:10px;font-weight:450;color:var(--c360-muted)}
+.candidate360-ui .c360-card-tags abbr{text-decoration:none;cursor:help}

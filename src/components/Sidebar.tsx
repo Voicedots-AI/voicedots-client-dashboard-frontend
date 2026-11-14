@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  Building2, BarChart3, BriefcaseBusiness, GraduationCap, Home, MessageSquare, Mic, Settings, LogOut, Users, Radio, ChevronDown, BookOpen, TicketCheck, FileText,
+  Building2, BarChart3, BriefcaseBusiness, GraduationCap, Home, MessageSquare, Mic, Settings, LogOut, Users, Radio, ChevronDown, BookOpen, TicketCheck, FileText, CalendarDays, LayoutDashboard,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import authApi from "@/api/authApi";
@@ -44,11 +44,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     ],
   };
 
-  const placementChildren:NavChild[]=[{id:'placement-dashboard',label:'Dashboard',path:'/dashboard/placement-management?view=dashboard'},{id:'placement-feedback',label:'Feedback Dashboard',path:'/dashboard/placement-management?view=feedback'},{id:'placement-drives',label:'Placement drives',path:'/dashboard/placement-management?view=placements'},{id:'assessment-intelligence',label:'Assessment Intelligence',path:'/dashboard/placement-management?view=assessment-intelligence'},...(collegeAccess?.mentor_management_enabled?[{id:'mentor-management',label:'Mentor Management',path:'/dashboard/placement-management?view=mentors'}]:[])];
   const mentorOnly = collegeAccess?.is_mentor && collegeAccess.erp_role !== 'college_admin';
+  const placementChildren:NavChild[]=[{id:'placement-dashboard',label:'Dashboard',path:'/dashboard/placement-management?view=dashboard'},{id:'placement-feedback',label:'Feedback Dashboard',path:'/dashboard/placement-management?view=feedback'},{id:'placement-drives',label:'Placement drives',path:'/dashboard/placement-management?view=placements'},{id:'assessment-intelligence',label:'Assessment Intelligence',path:'/dashboard/placement-management?view=assessment-intelligence'},...(collegeAccess?.mentor_management_enabled?[{id:'mentor-management',label:'Mentor Management',path:'/dashboard/placement-management?view=mentors'}]:[])];
   const navItems: NavItem[] = user?.portal_role === "placement_staff" && collegeAccessLoading ? [] : mentorOnly ? [
-    {id:'mentor-management',icon:GraduationCap,label:'Mentor Management',path:'/dashboard/placement-management?view=mentors'},
-    {id:'candidates',icon:Users,label:'Candidate 360°',path:'/dashboard/placement-management?view=candidates'},
+    {id:'mentor-dashboard',icon:LayoutDashboard,label:'Mentor Dashboard',path:'/dashboard/placement-management?view=mentors&mentorSection=dashboard'},
+    {id:'mentee-360',icon:Users,label:'Mentee 360°',path:'/dashboard/placement-management?view=mentors&mentorSection=mentees'},
+    {id:'mentor-discussions',icon:MessageSquare,label:'Discussions',path:'/dashboard/placement-management?view=mentors&mentorSection=discussions'},
+    {id:'mentor-tasks',icon:CalendarDays,label:'Tasks & Schedule',path:'/dashboard/placement-management?view=mentors&mentorSection=tasks'},
   ] : user?.portal_role === "placement_staff" ? [
     { id: "drives", icon: BriefcaseBusiness, label: "Placement management", path: "/dashboard/placement-management",children:placementChildren },
     { id: "candidates", icon: Users, label: "Candidates", path: "/dashboard/placement-management?view=candidates" },
@@ -83,7 +85,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
     const [pathname, query = ""] = path.split("?");
     if (location.pathname !== pathname) return false;
     const view = new URLSearchParams(query).get("view");
-    return view ? (new URLSearchParams(location.search).get("view") || "placements") === view : true;
+    const actual=new URLSearchParams(location.search), expected=new URLSearchParams(query);
+    if(view&&(actual.get('view')||'placements')!==view)return false;
+    const section=expected.get('mentorSection');
+    return !section || (actual.has('candidate')?'mentees':actual.get('mentorSection')||'dashboard')===section;
   };
   const inGroup = (item: NavItem) =>
     matchesRoute(item.path) || !!item.children?.some((child) => matchesRoute(child.path)) || (item.id === "question-papers" && location.pathname.startsWith(`${item.path}/`));
@@ -119,7 +124,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed }: SidebarProps) {
         <div className="flex flex-col h-full">
           <SidebarLogo isCollapsed={isCollapsed} onClose={onClose} />
 
-          <nav className="min-h-0 flex-1 px-3 pb-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+          <nav aria-label={mentorOnly?"Mentor navigation":"Main navigation"} className="min-h-0 flex-1 px-3 pb-4 space-y-1.5 overflow-y-auto custom-scrollbar">
             {navItems.map((item) => {
               const isActive = item.path === "/dashboard"
                 ? location.pathname === "/dashboard"

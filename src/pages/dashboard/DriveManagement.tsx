@@ -349,7 +349,7 @@ function ResumeMatchSummary({ driveId, candidate, onOpen }: { driveId: string; c
   </span>;
 }
 
-export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequirements,initialAssessment,cutoff,onOpenCoach}:{driveId:string;candidate:Candidate;drive:Drive|null;onClose:()=>void;onReviewRequirements:()=>void;initialAssessment?:Data;cutoff?:number|null;onOpenCoach?:()=>void}) {
+export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequirements,initialAssessment,cutoff,onOpenCoach}:{driveId:string;candidate:Candidate;drive:Drive|null;onClose:()=>void;onReviewRequirements?:()=>void;initialAssessment?:Data;cutoff?:number|null;onOpenCoach?:()=>void}) {
   const dialogRef=useRef<HTMLElement>(null);
   const closeRef=useRef(onClose);
   useEffect(()=>{closeRef.current=onClose},[onClose]);

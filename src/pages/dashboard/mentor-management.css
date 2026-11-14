@@ -14,13 +14,13 @@
 .mentor-management * {
   box-sizing: border-box;
 }
-.mentor-management button,
-.mentor-management input,
-.mentor-management select,
-.mentor-management textarea {
+.mentor-management button:where(:not(.assessment-intelligence *, .mw-shell *)),
+.mentor-management input:where(:not(.assessment-intelligence *, .mw-shell *)),
+.mentor-management select:where(:not(.assessment-intelligence *, .mw-shell *)),
+.mentor-management textarea:where(:not(.assessment-intelligence *, .mw-shell *)) {
   font: inherit;
 }
-.mentor-management button {
+.mentor-management button:where(:not(.assessment-intelligence *, .mw-shell *)) {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -37,14 +37,14 @@
     background 0.15s,
     transform 0.15s;
 }
-.mentor-management button:hover {
+.mentor-management button:where(:not(.assessment-intelligence *, .mw-shell *)):hover {
   background: #eff0ff;
 }
-.mentor-management button:disabled {
+.mentor-management button:where(:not(.assessment-intelligence *, .mw-shell *)):disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.mentor-management :focus-visible {
+.mentor-management :focus-visible:where(:not(.assessment-intelligence *, .mw-shell *)) {
   outline: 3px solid #8a79ff;
   outline-offset: 3px;
 }
@@ -223,9 +223,9 @@
   gap: 6px;
   min-width: 0;
 }
-.mentor-management input:not([type="checkbox"]),
-.mentor-management select,
-.mentor-management textarea {
+.mentor-management input:where(:not(.assessment-intelligence *, .mw-shell *)):not([type="checkbox"]),
+.mentor-management select:where(:not(.assessment-intelligence *, .mw-shell *)),
+.mentor-management textarea:where(:not(.assessment-intelligence *, .mw-shell *)) {
   width: 100%;
   padding: 9px 11px;
   border: 1px solid #d0d8ec;
@@ -234,11 +234,11 @@
   color: var(--mm-ink);
   min-height: 37px;
 }
-.mentor-management input:disabled {
+.mentor-management input:where(:not(.assessment-intelligence *, .mw-shell *)):disabled {
   background: #edf0f7;
   color: #73788c;
 }
-.mentor-management input[type="checkbox"] {
+.mentor-management input[type="checkbox"]:where(:not(.mw-shell *)) {
   accent-color: #7500ff;
   width: 16px;
   height: 16px;
@@ -273,30 +273,30 @@
 .mm-table-wrap {
   overflow-x: auto;
 }
-.mentor-management table {
+.mentor-management table:where(:not(.assessment-intelligence *, .mw-shell *)) {
   border-collapse: collapse;
   width: 100%;
   text-align: left;
   white-space: nowrap;
   font-size: 12px;
 }
-.mentor-management th {
+.mentor-management th:where(:not(.assessment-intelligence *, .mw-shell *)) {
   padding: 12px 9px;
   background: linear-gradient(#eef2ff, #e6edff);
   font-size: 11px;
   font-weight: 750;
 }
-.mentor-management th:first-child {
+.mentor-management th:where(:not(.assessment-intelligence *, .mw-shell *)):first-child {
   border-radius: 7px 0 0 7px;
 }
-.mentor-management th:last-child {
+.mentor-management th:where(:not(.assessment-intelligence *, .mw-shell *)):last-child {
   border-radius: 0 7px 7px 0;
 }
-.mentor-management td {
+.mentor-management td:where(:not(.assessment-intelligence *, .mw-shell *)) {
   padding: 11px 9px;
   border-bottom: 1px solid #edf0f8;
 }
-.mentor-management tbody tr:nth-child(even) {
+.mentor-management tbody tr:nth-child(even):where(:not(.assessment-intelligence *, .mw-shell *)) {
   background: #f7f9ff;
 }
 .mm-person {
@@ -373,7 +373,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
-.mentor-management h2 {
+.mentor-management h2:where(:not(.assessment-intelligence *, .mw-shell *)) {
   font-size: 15px;
   letter-spacing: -0.3px;
   font-weight: 750;
@@ -553,7 +553,7 @@
 .mm-report-row > b:first-child {
   flex: 1;
 }
-.mentor-management progress {
+.mentor-management progress:where(:not(.assessment-intelligence *, .mw-shell *)) {
   width: 75px;
   height: 9px;
   accent-color: #09c844;
@@ -561,11 +561,11 @@
   border-radius: 10px;
   overflow: hidden;
 }
-.mentor-management progress::-webkit-progress-bar {
+.mentor-management progress:where(:not(.assessment-intelligence *, .mw-shell *))::-webkit-progress-bar {
   background: #e8eaf1;
   border-radius: 10px;
 }
-.mentor-management progress::-webkit-progress-value {
+.mentor-management progress:where(:not(.assessment-intelligence *, .mw-shell *))::-webkit-progress-value {
   background: linear-gradient(90deg, #41e35f, #03b638);
   border-radius: 10px;
 }
@@ -774,7 +774,7 @@
   .mm-kpi strong {
     font-size: 30px;
   }
-  .mentor-management td {
+  .mentor-management td:where(:not(.assessment-intelligence *, .mw-shell *)) {
     padding: 14px 10px;
   }
   .mm-card {

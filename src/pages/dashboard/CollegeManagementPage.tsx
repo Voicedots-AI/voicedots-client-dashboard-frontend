@@ -339,6 +339,10 @@ export default function CollegeManagementPage() {
       p.delete("candidate");p.delete("candidateTab");p.delete("candidateAttempt");
       return p;
     });
+  if(tab==="candidates"&&access.is_mentor&&access.erp_role!=="college_admin"){
+    const next=new URLSearchParams(params);next.set("view","mentors");next.set("mentorSection","mentees");
+    return <Navigate to={`/dashboard/placement-management?${next}`} replace/>;
+  }
   if (tab === "mentors") return <MentorManagement/>;
   if (tab === "candidates") return <CandidateDirectory mentorView={!!access.is_mentor && access.erp_role !== "college_admin"}/>;
   if (tab === "assessment-intelligence") return <AssessmentIntelligence/>;
