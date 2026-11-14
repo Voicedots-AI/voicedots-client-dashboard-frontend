@@ -8,3 +8,8 @@ The admin sidebar and placement navigation remain unchanged. Updated mentoring a
 Both portals share authenticated database-backed mentoring APIs. Allocation and tenant ownership, optimistic versions, bounded attachments, current-assignment access, and student/staff permissions are enforced by the backend. Production never loads local sample records. New discussions, tasks and sessions appear as users create them; absent records use empty states.
 
 Backend migrations 0139 (saved coach conversations shown in Mentee 360) and 0140 (assignment-scoped mentoring workspace) are additive. The deployment requires both API services and both frontend releases. Existing milestone tasks retain their original coaching data and completion state.
+
+## Placement oversight
+Institute administrators and placement officers review mentoring work in read-only mode within their authorised institute/student scope. They retain allocation, reassignment, mentor profile and permission management, but cannot create or change workspace conversations, tasks, sessions, reactions, bookmarks or participant read receipts. The older coaching update endpoint enforces the same boundary. Assigned mentors and students retain their existing participant permissions.
+
+The overview labels counts as mentees in scope and awaiting mentor review; pending review counts use the assigned mentor's unread state. Reviewing as an officer does not clear that state. Conversation screens disclose authorised staff review to participants. Workspace reviews are audited with actor, scope and counts, throttled to one event per actor/mentor selection per five minutes; attachment reviews are audited individually. Message text and attachment contents are not copied into audit metadata.

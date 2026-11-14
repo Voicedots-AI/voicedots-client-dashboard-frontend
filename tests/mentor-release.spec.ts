@@ -49,3 +49,42 @@ test('student attention boundaries and old communications redirect',async({page}
  await page.goto('http://127.0.0.1:5197/mentor?section=communications');await expect(page).toHaveURL(/section=discussions/);await expect(page.getByRole('heading',{name:'Discussions',exact:true})).toBeVisible();
  await page.setViewportSize({width:390,height:844});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy();
 });
+
+test('placement oversight shows conversations without participant controls',async({page})=>{
+ await setup(page,false);
+ const discussion={id:'thread-1',title:'Project review',preview:'Saved mentor feedback',studentId:'student-1',studentName:'Test Student',mentorName:'Test Mentor',time:new Date().toISOString(),unread:1,resolved:false,messages:[{id:'message-1',author:'Test Mentor',role:'Mentor',time:new Date().toISOString(),text:'Saved mentor feedback',attachments:[],likes:1}]};
+ let writes=0;
+ await page.route('**/v3/college/mentors/workspace**',r=>{
+  if(r.request().method()!=='GET')writes++;
+  return r.fulfill({json:{...data,oversightMode:true,canCollaborate:true,canAssign:true,discussions:[discussion]}});
+ });
+ await page.goto('/dashboard/placement-management?view=mentors&mentorSection=discussions');
+ await expect(page.getByRole('complementary',{name:'Read-only placement oversight'})).toBeVisible();
+ await page.locator('.mw-discussion-list').getByRole('button').click();
+ await expect(page.getByRole('heading',{name:'Project review',exact:true})).toBeVisible();
+ await expect(page.getByText('Authorised placement staff can review this conversation.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('textbox',{name:'Reply message'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Reply',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Mark as Resolved',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Star discussion',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/Like message/})).toHaveCount(0);
+ await page.goto('/dashboard/placement-management?view=mentors&mentorSection=tasks');
+ await expect(page.getByRole('heading',{name:'Tasks & Schedule',exact:true})).toBeVisible();
+ await expect(page.getByRole('checkbox',{name:/Complete /})).toHaveCount(0);
+ await expect(page.getByRole('combobox',{name:/Status for/})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'New Task',exact:true})).toHaveCount(0);
+ await page.getByRole('tab',{name:'Schedule (Calendar)',exact:true}).click();
+ await expect(page.getByRole('button',{name:'New Session',exact:true})).toHaveCount(0);
+ expect(writes).toBe(0);
+});
+
+test('assigned mentor keeps reply controls and sees oversight disclosure',async({page})=>{
+ await setup(page,true);
+ await page.route('**/v3/college/mentors/workspace**',r=>r.fulfill({json:{...data,canCollaborate:true,canAssign:true,oversightMode:false,discussions:[{id:'thread-1',title:'Project review',preview:'Saved feedback',studentId:'student-1',studentName:'Test Student',mentorName:'Test Mentor',time:new Date().toISOString(),unread:0,resolved:false,messages:[{id:'message-1',author:'Test Student',role:'Mentee',time:new Date().toISOString(),text:'Here is my update.',attachments:[],likes:0}]}]}}));
+ await page.goto('/dashboard/placement-management?view=mentors&mentorSection=discussions');
+ await page.locator('.mw-discussion-list').getByRole('button').click();
+ await expect(page.getByRole('textbox',{name:'Reply message'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Mark as Resolved',exact:true})).toBeVisible();
+ await expect(page.getByText('Authorised placement staff can review this conversation.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('complementary',{name:'Read-only placement oversight'})).toHaveCount(0);
+});
