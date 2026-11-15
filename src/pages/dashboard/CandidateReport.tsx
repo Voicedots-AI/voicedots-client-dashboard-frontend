@@ -1,3 +1,4 @@
+import "./candidate-report-responsive.css";
 import InterviewAgentScores from './InterviewAgentScores';
 import {interviewAgentScores} from './interviewAgentScores';
 import {ReferenceScorecard} from '@/shared-assessment/ReferenceScorecard';

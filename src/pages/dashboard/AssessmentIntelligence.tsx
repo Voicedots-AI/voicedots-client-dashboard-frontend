@@ -1,3 +1,5 @@
+import AssessmentStudentOverview from './AssessmentStudentOverview';
+import PlacementAssessmentTable from './PlacementAssessmentTable';
 import { assessmentProgramOptions } from './assessmentProgramOptions';
 import AssessmentCoach from './AssessmentCoach';
 import {RosterExpandControl} from '@/shared-assessment/RosterExpandControl';
@@ -19,16 +21,6 @@ const pageSize=25;
 const scoreLabel=(value:unknown)=>validScore(value)?`${Math.round(value*10)/10}/100`:'Not assessed';
 const date=(value?:string)=>value?formatPlacementDateTime(value):'—';
 const shortDate=(value?:string)=>value?new Date(value).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Kolkata'}):'—';
-function StudentAvatar({student}:{student:CollegeStudent}){
- const [photo,setPhoto]=useState<{id:string;url:string}|null>(null);
- useEffect(()=>{if(!student.has_photo)return;const controller=new AbortController();void cachedAssessmentRequest<{photo?:string}>(`attendance/photos/students/${encodeURIComponent(student.id)}?optional=true`).then(result=>{if(!controller.signal.aborted&&result.photo)setPhoto({id:student.id,url:result.photo})}).catch(()=>{});return()=>controller.abort()},[student.id,student.has_photo]);
- const url=photo?.id===student.id?photo.url:null;
- return url?<img className="ai-student-avatar" src={url} alt=""/>:<span className="ai-student-avatar" aria-hidden="true">{student.full_name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join('').toUpperCase()||'—'}</span>;
-}
-function ATSChip({row,cutoff,loading,onOpen}:{row?:AssessmentATS;cutoff?:number|null;loading:boolean;onOpen:()=>void}){
- const score=currentATSScore(row),above=atsAboveDriveCutoff(row,cutoff),required=atsDriveCutoff(row,cutoff);
- return <button type="button" className={`ai-ats-chip ${above===null?'neutral':above?'good':'low'}`} title={required===null?'Drive ATS cutoff is unavailable':`Drive ATS cutoff: ${required}%. Green requires a score above this cutoff.`} onClick={onOpen} aria-label={`View ATS Fit ${score===null?'assessment':`${score}%`}`}>{score===null?loading?'Loading…':row?.ats_status==='processing'?'Processing…':'Not assessed':`${score}%`}<ArrowUpRight size={12}/></button>;
-}
 export default function AssessmentIntelligence(){
  const [params,setParams]=useSearchParams();
  const studentId=params.get('student'),assessmentDrive=params.get('assessment_drive');
@@ -41,6 +33,7 @@ export default function AssessmentIntelligence(){
  const [bundles,setBundles]=useState<Record<string,FullBundle>>(saved?.bundles||{}),[historyErrors,setHistoryErrors]=useState<Record<string,string>>(saved?.historyErrors||{}),[ats,setATS]=useState<Record<string,ATSState>>(saved?.ats||{});
  const [loading,setLoading]=useState(!saved),[background,setBackground]=useState(0),[error,setError]=useState('');
  const [expandedStudents,setExpandedStudents]=useState<Set<string>>(new Set(saved?.expanded||[]));
+ const expandedRef=useRef(expandedStudents);expandedRef.current=expandedStudents;
  const [drivePages,setDrivePages]=useState<Record<string,number>>(saved?.drivePages||{});
  const [progress,setProgress]=useState<{bundle:FullBundle;driveId:string}|null>(null);
  const closeProgress=useCallback(()=>setProgress(null),[]);
@@ -57,7 +50,8 @@ export default function AssessmentIntelligence(){
   let alive=true;void cachedAssessmentRequest<{programs:Program[];graduation_years:number[]}>('academic-catalog').then(result=>{if(alive)setCatalog({programs:result.programs||[],graduation_years:result.graduation_years||[]})}).catch(()=>{});return()=>{alive=false};
  },[]);
  useEffect(()=>{
-  let alive=true;
+  let alive=true,lastRefresh=Date.now();
+  let loadedIds:string[]=[];
   const timers=new Set<ReturnType<typeof setTimeout>>();
   const selectedAtLoad=new URLSearchParams(window.location.search).get('student');
   const values=JSON.parse(academicKey) as Pick<AssessmentFilters,'q'|'minCGPA'|'program'|'year'|'active'>;
@@ -87,12 +81,15 @@ export default function AssessmentIntelligence(){
    setRoster(students);setTotal(Number.isFinite(result.total)?Number(result.total):students.length);setGroups(result.assigned_groups||[]);setLoading(false);
    setExpandedStudents(current=>{if(globalExpansion.current!==null)return new Set(globalExpansion.current?students.map(student=>student.id):[]);const next=[...current].filter(id=>students.some(student=>student.id===id)||id===selectedAtLoad);if(selectedAtLoad)next.push(selectedAtLoad);return new Set(next.length?next:students.slice(0,2).map(student=>student.id))});
    const ids=[...new Set([...(selectedAtLoad?[selectedAtLoad]:[]),...students.map(student=>student.id)])];
+   loadedIds=ids;
    setBackground(ids.length);
    // Every record loads independently of scroll position. One batched response
    // carries all drive scores and the shared resume parse for each student.
    for(const id of ids)void commit(id).finally(()=>{if(alive)setBackground(value=>Math.max(0,value-1))});
   }).catch(reason=>{if(alive){setError(collegeError(reason));setLoading(false)}});
-  return()=>{alive=false;timers.forEach(clearTimeout)};
+  const refreshVisible=()=>{if(document.hidden||Date.now()-lastRefresh<30000)return;lastRefresh=Date.now();for(const id of loadedIds.filter(id=>expandedRef.current.has(id)))void commit(id,true)};
+  window.addEventListener('focus',refreshVisible);document.addEventListener('visibilitychange',refreshVisible);
+  return()=>{alive=false;timers.forEach(clearTimeout);window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible)};
  },[academicKey,offset,version]);
  useEffect(()=>saveAssessmentView<ViewState>({expansionMode:globalExpansion.current,contract:"student-ats-v1",draft,filters,offset,showFilters,roster,total,groups,catalog,bundles,ats,historyErrors,expanded:[...expandedStudents],drivePages}),[draft,filters,offset,showFilters,roster,total,groups,catalog,bundles,ats,historyErrors,expandedStudents,drivePages]);
  const refresh=()=>{clearAssessmentCache();setVersion(value=>value+1)};
@@ -141,17 +138,12 @@ export default function AssessmentIntelligence(){
    const visibleDrives=rows.slice(drivePage*6,drivePage*6+6);
 
    return <article className={`ai-student-card ${expanded?'expanded':''}`} key={student.id}>
-    <div className="ai-student-overview"><div className="ai-student-identity"><StudentAvatar student={student}/><div><button className="ai-student-name" onClick={()=>toggleStudent(student.id)} aria-expanded={expanded} aria-controls={`ai-history-${student.id}`}>{student.full_name}</button><p>{student.email||student.roll_number}</p></div></div>
-     <div className="ai-student-academics"><p>{[student.program,student.department_code,student.graduation_year,student.cgpa!=null?`CGPA ${student.cgpa}`:null].filter(Boolean).map((text,index)=><span key={index}>{text}</span>)}<span className={`ai-status ${student.status==='active'?'good':'neutral'}`}>{displayName(student.status)}</span></p><div className="ai-student-metrics"><span title="Currently evaluated ATS scores above each drive’s configured cutoff">ATS above cutoff <b>{summary?.eligible??'—'}</b></span><span>Participated <b>{summary?.participated??'—'}</b></span><span title="Average of currently evaluated ATS results only">Avg. ATS <b>{summary?.averageATS!=null?`${Math.round(summary.averageATS)}%`:'—'}</b></span><span>Best score <b>{summary?.bestScore!=null?`${summary.bestScore}/100`:'—'}</b></span></div>{summary&&(summary.pending||summary.failed)&&<small className="ai-data-note">{summary.failed?'Some ATS results unavailable':`ATS: ${summary.assessed} of ${summary.drives} assessed`}</small>}</div>
-     <div className="ai-student-performance"><div><span>Best interview score</span><strong>{summary?.bestScore==null?'Not assessed':`${summary.bestScore}/100`}</strong></div>{summary?.bestScore!=null&&<progress max={100} value={summary.bestScore} aria-label="Best recorded interview score"/>}<p>{rows.find(row=>row.report?.readiness)?.report?.readiness||'No interview readiness recorded.'}</p><div className="ai-student-actions"><button type="button" className="ai-button ai-small" aria-expanded={expanded} onClick={()=>toggleStudent(student.id)}>{expanded?'Collapse':'Expand'}</button><button type="button" className="ai-button ai-small" onClick={()=>setProfile({student,drive:rows[0]?.drive.drive_id})}>Resume &amp; biodata</button><button type="button" className="ai-button ai-small" disabled={!rows.some(row=>row.report?.session_id&&validScore(row.report.overall_score))} onClick={()=>{const row=rows.find(row=>row.report?.session_id&&validScore(row.report.overall_score));if(row?.report?.session_id)setScorecard({student:student.id,drive:row.drive.drive_id,session:row.report.session_id,role:row.drive.role_title||row.report.role_title,assessedAt:row.report.completed_at})}}>View scorecards</button></div></div>
-    </div>
+    <AssessmentStudentOverview student={student} bundle={bundle} ats={ats} expanded={expanded} onToggle={()=>toggleStudent(student.id)} onProfile={drive=>setProfile({student,drive})} onScorecard={({drive,report})=>{if(report?.session_id)setScorecard({student:student.id,drive:drive.drive_id,session:report.session_id,role:drive.role_title||report.role_title,assessedAt:report.completed_at})}}/>
     {expanded&&<div id={`ai-history-${student.id}`} className="ai-student-history">
      {historyErrors[student.id]?<div className="ai-empty ai-error" role="alert">{historyErrors[student.id]}<button className="ai-button" onClick={refresh}>Retry history</button></div>:!bundle?<p className="ai-inline-loading" role="status">Loading student history…</p>:!rows.length?<div className="ai-empty"><h3>No assessment history yet</h3><p>No placement assignments or drive reports have been recorded for this student.</p></div>:<>
       <div className="ai-history-caption"><span>Current resume ATS fit · latest recorded interview per drive</span><button className="ai-text-button" onClick={refresh}>Refresh assessments</button></div>
-      <div className="ai-drive-table-wrap"><table className="ai-drive-table"><caption className="ai-sr-only">{student.full_name} placement assessment history</caption><thead><tr>{['Drive / company','Date range','ATS Fit','Scorecard','Interview status','Readiness','Action'].map(label=><th key={label} scope="col">{label}</th>)}</tr></thead><tbody>{visibleDrives.map(({drive,report})=>{
-       const state=ats[atsKey(student.id,drive.drive_id)];
-       return <tr key={drive.drive_id}><td><strong>{drive.company_name||report?.company_name||'Company unavailable'} <span>{drive.role_title||report?.role_title||'Role unavailable'}</span></strong></td><td title={`${date(drive.campaign_opens_at)} – ${date(drive.campaign_deadline_at)} · Assigned ${date(drive.assigned_at)}`}>{drive.campaign_opens_at?`${shortDate(drive.campaign_opens_at)} – ${shortDate(drive.campaign_deadline_at)}`:'Not supplied'}</td><td><ATSChip row={state?.row} cutoff={drive.criteria_ats_fit} loading={!state} onOpen={()=>openAssessment(student.id,drive.drive_id)}/>{state?.error&&<button className="ai-text-button ai-error" title={state.error} onClick={refresh}>Retry ATS</button>}</td><td>{validScore(report?.overall_score)&&report?.session_id?<button type="button" className="ai-scorecard-chip" aria-label={`Open scorecard for ${student.full_name} at ${drive.company_name||report.company_name||'this company'}`} onClick={()=>setScorecard({student:student.id,drive:drive.drive_id,session:report.session_id!,role:drive.role_title||report.role_title,assessedAt:report.completed_at})}>Score {scoreLabel(report.overall_score)}<ArrowUpRight size={12}/></button>:<span>{scoreLabel(report?.overall_score)}</span>}</td><td><span className={`ai-status ${drive.assignment_status==='completed'?'good':drive.assignment_status==='in_progress'?'partial':'neutral'}`}>{displayName(drive.assignment_status||report?.assignment_status||drive.drive_status||'not_assessed')}</span></td><td>{report?.readiness?displayName(report.readiness):'Not assessed'}</td><td><div className="ai-drive-actions"><button type="button" className="ai-text-button" onClick={()=>setProfile({student,drive:drive.drive_id})}>Resume &amp; biodata</button><button type="button" className="ai-button ai-small ai-coach-button" onClick={()=>setProgress({bundle,driveId:drive.drive_id})} aria-label={`AI Coach Progress for ${drive.company_name} ${drive.role_title}`}>AI Coach Progress</button></div></td></tr>;
-      })}</tbody></table></div>{rows.length>6&&<nav className="ai-drive-pagination" aria-label={`${student.full_name} drive pages`}><span>{drivePage*6+1}–{Math.min(rows.length,drivePage*6+6)} of {rows.length} drives</span><div><button className="ai-button ai-small" disabled={drivePage===0} onClick={()=>setDrivePages(current=>({...current,[student.id]:drivePage-1}))}>Previous drives</button><button className="ai-button ai-small" disabled={(drivePage+1)*6>=rows.length} onClick={()=>setDrivePages(current=>({...current,[student.id]:drivePage+1}))}>Next drives</button></div></nav>}
+      <PlacementAssessmentTable bundle={bundle} rows={visibleDrives} ats={ats} onATS={drive=>openAssessment(student.id,drive)} onScorecard={({drive,report})=>{if(report?.session_id)setScorecard({student:student.id,drive:drive.drive_id,session:report.session_id,role:drive.role_title||report.role_title,assessedAt:report.completed_at})}} onProfile={drive=>setProfile({student,drive})} onProgress={driveId=>setProgress({bundle,driveId})} onRetry={refresh}/>
+      {rows.length>6&&<nav className="ai-drive-pagination" aria-label={`${student.full_name} drive pages`}><span>{drivePage*6+1}–{Math.min(rows.length,drivePage*6+6)} of {rows.length} drives</span><div><button className="ai-button ai-small" disabled={drivePage===0} onClick={()=>setDrivePages(current=>({...current,[student.id]:drivePage-1}))}>Previous drives</button><button className="ai-button ai-small" disabled={(drivePage+1)*6>=rows.length} onClick={()=>setDrivePages(current=>({...current,[student.id]:drivePage+1}))}>Next drives</button></div></nav>}
      </>}
     </div>}
    </article>;

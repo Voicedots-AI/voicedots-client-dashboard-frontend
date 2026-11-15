@@ -5,6 +5,7 @@ import path from 'path'
 export default defineConfig(({mode}) => {
   const env=loadEnv(mode,process.cwd(),'');
   return {
+  optimizeDeps: { include: ["@tiptap/core", "@tiptap/pm/state", "@tiptap/pm/view"] },
   plugins: [react()],
   server: {
     host: true,
