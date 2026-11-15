@@ -2,7 +2,7 @@ import {useEffect,useState} from "react";
 import AssessmentPopup from "./AssessmentPopup";
 import DriveDescriptionPreview from "./DriveDescriptionPreview";
 import {loadStudentAssessment,loadAllStudentAssessments,type FullBundle,type FullAssessment} from "../pages/dashboard/assessmentClient";
-import {driveHistory,atsKey} from "../pages/dashboard/assessmentIntelligenceData";
+import {driveHistory,atsKey,atsDriveCutoff} from "../pages/dashboard/assessmentIntelligenceData";
 import PlacementAssessmentTable from "../pages/dashboard/PlacementAssessmentTable";
 import {ATSFitDetails} from "../pages/dashboard/DriveManagement";
 import StudentScorecard from "../pages/dashboard/StudentScorecard";
@@ -18,6 +18,6 @@ export default function DriveAssessment({id,studentId,company,role,close}:{id:st
   if(view==="progress")return <AssessmentCoach bundle={data.bundle} driveId={id} onClose={()=>setView("summary")}/>;
  }
  return <AssessmentPopup title={role||row?.drive.role_title||"Placement drive"} company={company||row?.drive.company_name} onClose={close}>
-  {error?<p role="alert">{error}<button onClick={()=>setRetry(value=>value+1)}>Retry</button></p>:!data?<p role="status">Loading drive assessment…</p>:!row?<p>No assessment history is available for this drive.</p>:view==="score"&&row.report?.session_id?<StudentScorecard studentId={studentId} sessionId={row.report.session_id} role={row.drive.role_title}/>:<><DriveDescriptionPreview driveId={id} studentId={studentId}/><PlacementAssessmentTable allowPopup={false} bundle={data.bundle} rows={[row]} ats={Object.fromEntries(Object.entries(data.ats).map(([drive,row])=>[atsKey(studentId,drive),{row}]))} onATS={()=>setView("ats")} onScorecard={()=>setView("score")} onProfile={()=>setView("profile")} onProgress={()=>setView("progress")} onRetry={()=>setRetry(value=>value+1)}/></>}
+  {error?<p role="alert">{error}<button onClick={()=>setRetry(value=>value+1)}>Retry</button></p>:!data?<p role="status">Loading drive assessment…</p>:!row?<p>No assessment history is available for this drive.</p>:view==="score"&&row.report?.session_id?<StudentScorecard studentId={studentId} sessionId={row.report.session_id} role={row.drive.role_title}/>:<><DriveDescriptionPreview driveId={id} studentId={studentId} cutoff={atsDriveCutoff(data.ats[id],row.drive.criteria_ats_fit)}><h3 className="da-student-heading">{data.bundle.student.full_name} · Assessment</h3><PlacementAssessmentTable allowPopup={false} bundle={data.bundle} rows={[row]} ats={Object.fromEntries(Object.entries(data.ats).map(([drive,row])=>[atsKey(studentId,drive),{row}]))} onATS={()=>setView("ats")} onScorecard={()=>setView("score")} onProfile={()=>setView("profile")} onProgress={()=>setView("progress")} onRetry={()=>setRetry(value=>value+1)}/></DriveDescriptionPreview></>}
  </AssessmentPopup>;
 }
