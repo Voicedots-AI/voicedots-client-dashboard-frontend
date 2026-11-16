@@ -50,19 +50,21 @@ test('keeps the profile within a mobile viewport while placement history scrolls
  await page.screenshot({path:'/home/prajapati/voicedots-github/.local/candidate360-release/mobile-profile.png',fullPage:true});
 });
 
-test('candidate cards show the same ATS and interview summary as Assessment Intelligence',async({page})=>{
+test('candidate cards match mentee academic tags and cumulative competency profile',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
  await page.route(/^http:\/\/127\.0\.0\.1:5194\/api\//,route=>route.fulfill({json:{}}));
  await page.route('**/v1/users/me',route=>route.fulfill({json:{name:'Admin',email:'admin@example.test'}}));
  await page.route('**/v3/college/access',route=>route.fulfill({json:{enabled:true}}));
  await page.route('**/v3/college/students?*',route=>route.fulfill({json:{items:[{...student,cgpa:8.86}],total:1}}));
- await page.route('**/v3/college/students/student-a/reports?include_assessments=true',route=>route.fulfill({json:{student:{...student,cgpa:8.86},assessment_contract:'student-ats-v1',drives:[{drive_id:'a',assignment_status:'completed',criteria_ats_fit:60},{drive_id:'b',assignment_status:'in_progress',criteria_ats_fit:60}],reports:[{drive_id:'a',session_id:'session-a',overall_score:80,readiness:'Ready',completed_at:'2026-11-10'}],assessments:{a:{student_id:'student-a',ats_status:'evaluated',ats_fit_score:59,criteria_ats_fit:60},b:{student_id:'student-a',ats_status:'evaluated',ats_fit_score:61,criteria_ats_fit:60}}}}));
+ await page.route('**/v3/college/students/student-a/reports?include_assessments=true',route=>route.fulfill({json:{student:{...student,cgpa:8.86},assessment_contract:'student-ats-v1',drives:[{drive_id:'a',assignment_status:'completed',criteria_ats_fit:60},{drive_id:'b',assignment_status:'in_progress',criteria_ats_fit:60}],reports:[{drive_id:'a',session_id:'session-a',overall_score:80,readiness:'Ready',completed_at:'2026-11-10',detail:{core_dimensions:[{dimension:'communication',label:'Communication',percentage:0},{dimension:'domain_knowledge',label:'Domain Knowledge',percentage:75}]}}],assessments:{a:{student_id:'student-a',ats_status:'evaluated',ats_fit_score:59,criteria_ats_fit:60},b:{student_id:'student-a',ats_status:'evaluated',ats_fit_score:61,criteria_ats_fit:60}}}}));
  await page.goto('/dashboard/placement-management?view=candidates');
  const card=page.getByRole('article',{name:'Candidate Profile Student',exact:true});
- await expect(card.getByText('80/100',{exact:true})).toBeVisible();
- await expect(card.locator('.c360-card-metrics')).toContainText('ATS above cutoff 1');
- await expect(card.locator('.c360-card-metrics')).toContainText('Participated 2');
- await expect(card.locator('.c360-card-metrics')).toContainText('Avg. ATS 60%');
+ await expect(card.getByRole('heading',{name:'Competency Profile',exact:true})).toBeVisible();
+ await expect(card.getByRole('progressbar',{name:'Communication cumulative score',exact:true})).toHaveAttribute('value','0');
+ await expect(card.getByRole('progressbar',{name:'Domain Knowledge cumulative score',exact:true})).toHaveAttribute('value','75');
+ await expect(card.locator('.c360-card-tags')).toContainText('CourseBTECH');
+ await expect(card.locator('.c360-card-tags')).toContainText('DepartmentCSE');
+ await expect(card.locator('.c360-card-metrics')).toHaveCount(0);
  await expect(card.getByText('8.86',{exact:false})).toBeVisible();
  await expect(card.getByRole('button',{name:'View details',exact:true})).toBeVisible();
  await page.screenshot({path:'/home/prajapati/voicedots-github/.local/candidate360-release/summary-card-desktop.png',fullPage:true});
