@@ -1,53 +1,51 @@
 import {test,expect,type Page} from '@playwright/test';
-const student={id:'student-a',full_name:'Profile Student',roll_number:'REG001',email:'student@example.test',phone:'9876543210',program:'BTECH',department_code:'CSE',department_display_name:'Computer Science',graduation_year:2027,batch_label:'2023–2027',cgpa:0,status:'active',has_readable_resume:true,skills:['SQL','Python']};
-const bundle=()=>({student:{...student},reports:[],drives:[{assignment_id:'assignment-a',drive_id:'drive-a',company_name:'Example Technologies',role_title:'Data Analyst',assignment_status:'invited',drive_status:'active',drive_type:'official_placement',job_type:'full_time',location:'Chennai',package_min_lpa:0,package_max_lpa:6,package_currency:'INR',attempt_number:1,max_attempts:2,evaluation_status:'pending',officer_decision:'shortlist',window_start_at:'2026-11-10T04:00:00Z',window_end_at:'2026-11-20T12:00:00Z'}],profile_context:{college_name:'Example Institute',academic_year:'2026–2027',semester:7,section:'A',mentor:{name:'Assigned Faculty',email:'faculty@example.test',active:true}}});
-async function setup(page:Page,data=bundle()){
+const student={id:'student-a',full_name:'Profile Student',roll_number:'REG001',email:'student@example.test',phone:'9876543210',program:'BTECH',department_code:'CSE',graduation_year:2027,cgpa:0,status:'active'};
+const bundle=()=>({student:{...student},assessment_contract:'student-ats-v1',reports:[],drives:[{drive_id:'drive-a',company_name:'Example Technologies',role_title:'Data Analyst',assignment_status:'invited',drive_status:'active',window_start_at:'2026-11-10T04:00:00Z',window_end_at:'2026-11-20T12:00:00Z'}],assessments:{'drive-a':{student_id:'student-a',drive_id:'drive-a',ats_status:'evaluated',ats_fit_score:75,criteria_ats_fit:60}}});
+async function setup(page:Page,data=bundle(),path='/dashboard/placement-management?view=candidates&candidate=student-a'){
  await page.addInitScript(()=>localStorage.setItem('access_token','test-session'));
  await page.route(/^http:\/\/127\.0\.0\.1:5194\/api\//,route=>route.fulfill({json:{}}));
  await page.route('**/v1/users/me',route=>route.fulfill({json:{name:'Admin',email:'admin@example.test'}}));
  await page.route('**/v3/college/access',route=>route.fulfill({json:{enabled:true,college_name:'Example Institute'}}));
  await page.route('**/v3/college/students?*',route=>route.fulfill({json:{items:[student],total:1}}));
- await page.route('**/v3/college/students/student-a/reports?profile=true',route=>route.fulfill({json:data}));
- await page.goto('/dashboard/placement-management?view=candidates&candidate=student-a');
+ await page.route('**/v3/college/students/student-a/reports?include_assessments=true',route=>route.fulfill({json:data}));
+ await page.goto(path);
 }
-test('shows academics, real zero CGPA, contact, mentor and placement details without inventing a placement',async({page})=>{
+test('candidate details use the mentee placement workspace and resume biodata',async({page})=>{
  await setup(page);
- await expect(page.getByRole('heading',{name:'Profile Student',exact:true})).toBeVisible();
- await expect(page.getByText('0.00 / 10',{exact:true})).toBeVisible();
- await expect(page.locator('.c360-summary-status')).toHaveText('Not recorded');
- await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:'Academics',exact:true}).click();
- await expect(page).toHaveURL(/candidateTab=academics/);
- await expect(page.getByText('2026–2027',{exact:true})).toBeVisible();
- await expect(page.getByRole('link',{name:'student@example.test',exact:true}).first()).toBeVisible();
- await expect(page.getByText('Assigned Faculty',{exact:true})).toBeVisible();
- await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:/^Placement/}).click();
- await expect(page.getByRole('cell',{name:/Example Technologies/})).toBeVisible();
- await expect(page.getByText('0 – 6 LPA · INR',{exact:true})).toBeVisible();
- await expect(page.getByText('Shortlist',{exact:true})).toBeVisible();
- await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:/^Assessments/}).click();
- await expect(page.getByRole('heading',{name:'No completed assessments yet',exact:true})).toBeVisible();
+ const workspace=page.getByRole('region',{name:'Placement assessment intelligence'});
+ await expect(workspace.getByRole('button',{name:'Profile Student',exact:true})).toBeVisible();
+ await expect(workspace.getByText('CGPA 0',{exact:true})).toBeVisible();
+ await expect(workspace.getByRole('button',{name:'AI Coach Progress for Example Technologies Data Analyst',exact:true})).toBeVisible();
+ await expect(workspace.getByRole('button',{name:'View ATS Fit 75%',exact:true})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Candidate profile sections'})).toHaveCount(0);
+ await workspace.locator('.ai-student-actions').getByRole('button',{name:'Resume & biodata',exact:true}).click();
+ await expect(page.getByRole('dialog')).toContainText('Candidate biodata');
+ await expect(page.getByRole('dialog')).toContainText('student@example.test');
+ await page.getByRole('button',{name:'Close candidate details'}).click();
+ await page.getByRole('button',{name:'All candidates',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Candidate 360°',exact:true})).toBeVisible();
 });
-test('shows honest empty states for a student without placement or optional academic records',async({page})=>{
- const data=bundle();data.drives=[];data.profile_context={college_name:'Example Institute'} as typeof data.profile_context;
- data.student={...data.student,cgpa:null,has_readable_resume:false,skills:[]} as unknown as typeof data.student;
- await setup(page,data);
- await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:'Academics',exact:true}).click();
- await expect(page.getByText('No mentor assignment recorded.',{exact:true})).toBeVisible();
- await expect(page.getByText('Not uploaded',{exact:true})).toBeVisible();
- await expect(page.getByText('0.00 / 10',{exact:true})).toHaveCount(0);
- await page.getByRole('navigation',{name:'Candidate profile sections'}).getByRole('button',{name:/^Placement/}).click();
- await expect(page.getByText('No placement assignments recorded for this student.',{exact:true})).toBeVisible();
+test('shows an honest empty state for a candidate without drives',async({page})=>{
+ const data=bundle();data.drives=[];data.assessments={} as typeof data.assessments;await setup(page,data);
+ await expect(page.getByText('No placement assignments or drive reports have been recorded for this student.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'View scorecards',exact:true})).toBeDisabled();
 });
-test('rejects a mismatched student response rather than displaying another candidate',async({page})=>{
+test('rejects a mismatched student response',async({page})=>{
  const data=bundle();data.student.id='another-student';data.student.full_name='Wrong Student';await setup(page,data);
- await expect(page.getByRole('alert')).toContainText('Unable to complete the request');
- await expect(page.getByRole('heading',{name:'Wrong Student',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('alert')).toContainText('Placement assessments unavailable');
+ await expect(page.getByRole('button',{name:'Wrong Student',exact:true})).toHaveCount(0);
 });
-test('keeps the profile within a mobile viewport while placement history scrolls inside its table',async({page})=>{
+test('shared candidate details fit a mobile viewport',async({page})=>{
  await page.setViewportSize({width:390,height:844});await setup(page);
- await expect(page.getByRole('heading',{name:'Profile Student',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Profile Student',exact:true})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBeTruthy();
- await page.screenshot({path:'/home/prajapati/voicedots-github/.local/candidate360-release/mobile-profile.png',fullPage:true});
+});
+test('candidate directory opens the same placement details from View details',async({page})=>{
+ await setup(page,bundle(),'/dashboard/placement-management?view=candidates');
+ await page.getByRole('button',{name:'View details',exact:true}).click();
+ await expect(page).toHaveURL(/candidate=student-a/);
+ await expect(page.getByRole('region',{name:'Placement assessment intelligence'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'All candidates',exact:true})).toBeVisible();
 });
 
 test('candidate cards match mentee academic tags and cumulative competency profile',async({page})=>{
