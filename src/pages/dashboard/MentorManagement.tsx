@@ -525,16 +525,17 @@ export default function MentorManagement() {
           {tab === "Mentor Master" ? (
             <>
               <button
+                title="Download an Excel file prefilled with eligible faculty. Fill in their mentor details, then upload it."
                 onClick={async()=>{try{const blob=await collegeApi.file('mentors/template');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mentor-import-template.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){setError(collegeError(e))}}}
               >
-                <Download size={16} /> Import Template
+                <Download size={16} /> Download Excel Template
               </button>
-              <label className="mm-import-button">
-                <Upload size={16} /> Bulk Import (Excel / CSV)
+              <label className="mm-import-button" title="Choose a completed Excel or CSV file to add multiple mentors.">
+                <Upload size={16} /> Upload Mentors (Excel / CSV)
                 <input
                   type="file"
                   accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  aria-label="Bulk import mentors"
+                  aria-label="Upload mentors from an Excel or CSV file"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     e.target.value = "";
@@ -550,13 +551,14 @@ export default function MentorManagement() {
                   }}
                 />
               </label>
-              <button onClick={exportMentors}>
-                <Download size={16} /> Export CSV
+              <button onClick={exportMentors} title="Download the mentor list currently shown below as a CSV file.">
+                <Download size={16} /> Download Mentor List (CSV)
               </button>
               <button
                 disabled={saving}
                 className="mm-primary"
-                onClick={() => {
+                onClick={async () => {
+                  await load();
                   setReadOnly(false);
                   setEditing(emptyMentor());
                   setFormTab(0);

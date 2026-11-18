@@ -27,3 +27,19 @@ for (const rejected of [false,true]) {
   else {await expect(page.getByText('Mentor deleted.',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Delete Free Mentor',exact:true})).toHaveCount(0)}
  });
 }
+
+test('newly added staff appears by name in Add Mentor without reloading the page',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('access_token','test'));
+ await page.route(/^https?:\/\/[^/]+\/api\//,r=>r.fulfill({json:{}}));
+ await page.route('**/v1/users/me',r=>r.fulfill({json:{name:'Placement Officer',portal_role:'client'}}));
+ await page.route('**/v3/college/access',r=>r.fulfill({json:{enabled:true,mentor_management_enabled:true,is_mentor:false,erp_role:'college_admin'}}));
+ let reads=0;
+ await page.route('**/v3/college/mentors/state',r=>r.fulfill({json:{mentors:[],students:[],faculty:++reads>1?[{id:'ram-staff',name:'Ram',email:'ram@example.com',employee_code:'',mentor_id:null}]:[],logs:[],transfers:[],academicYears:[],access:{can_manage:true,mentor_id:null}}}));
+ await page.route('**/v3/college/academic-catalog',r=>r.fulfill({json:{programs:[]}}));
+ await page.goto('/dashboard/placement-management?view=mentors');
+ await page.getByRole('button',{name:'Add Mentor',exact:true}).click();
+ const picker=page.getByLabel('Existing faculty');
+ await expect(picker.locator('option',{hasText:'Ram · ram@example.com'})).toHaveCount(1);
+ await picker.selectOption('ram-staff');
+ await expect(page.getByLabel('Mentor Name *',{exact:true})).toHaveValue('Ram');
+});
