@@ -138,7 +138,6 @@ export default function MentorManagement() {
     [dashboardScope, setDashboardScope] = useState("all"),
     [academicYearId,setAcademicYearId]=useState("all"),
     [studentFilters, setStudentFilters] = useState<MenteeFilters>(emptyMenteeFilters),
-    [studentFilterDraft,setStudentFilterDraft] = useState<MenteeFilters>(emptyMenteeFilters),
     [studentPage,setStudentPage] = useState(1);
   const [deleting, setDeleting] = useState<Mentor | null>(null);
   const [photoDraft,setPhotoDraft]=useState<string|null>(null),[photoReading,setPhotoReading]=useState(false);
@@ -301,7 +300,7 @@ export default function MentorManagement() {
     setStep(1);
     setNotice("");
     setStudentFilters(emptyMenteeFilters());
-    setStudentFilterDraft(emptyMenteeFilters());
+
     setStudentPage(1);
   };
   const mentor = state.mentors.find((m) => m.id === mentorId),
@@ -327,7 +326,7 @@ export default function MentorManagement() {
   const visibleStudents=students.slice((currentStudentPage-1)*20,currentStudentPage*20);
   const selectablePage=selectableMentees(visibleStudents);
   const selectedOutsideFilters=selected.filter(id=>!students.some(student=>student.id===id)).length;
-  const resetStudentFilters=()=>{setStudentFilterDraft(emptyMenteeFilters());setStudentFilters(emptyMenteeFilters());setStudentPage(1)};
+  const resetStudentFilters=()=>{setStudentFilters(emptyMenteeFilters());setStudentPage(1)};
   const toggle = (id: string) =>
     setSelected((v) =>
       v.includes(id) ? v.filter((x) => x !== id) : [...v, id],
@@ -785,11 +784,11 @@ export default function MentorManagement() {
               <p className="mm-assignment-hint">Review the mentor’s profile and available capacity, then choose students to assign.</p>
             ) : step === 2 ? (
               <>
-                <form className="mm-student-filters" aria-label="Filter mentees" onSubmit={event=>{event.preventDefault();setStudentFilters({...studentFilterDraft});setStudentPage(1)}}>
+                <form className="mm-student-filters" aria-label="Filter mentees" onSubmit={event=>event.preventDefault()}>
                   <div className="mm-student-filter-fields">
-                    {([['batch','Batch'],['degree','Degree'],['department','Department'],['semester','Semester']] as const).map(([key,label])=><label key={key}>{label}<select aria-label={`Filter students by ${label.toLowerCase()}`} value={studentFilterDraft[key]} onChange={event=>setStudentFilterDraft(current=>({...current,[key]:event.target.value}))}><option value="">All {label==='Batch'?'batches':label==='Degree'?'degrees':label==='Department'?'departments':'semesters'}</option>{menteeFilterOptions(state.students,key).map(value=><option value={value} key={value}>{value}</option>)}</select></label>)}
+                    {([['batch','Batch'],['degree','Degree'],['department','Department'],['semester','Semester']] as const).map(([key,label])=><label key={key}>{label}<select aria-label={`Filter students by ${label.toLowerCase()}`} value={studentFilters[key]} onChange={event=>{setStudentFilters(current=>({...current,[key]:event.target.value}));setStudentPage(1)}}><option value="">All {label==='Batch'?'batches':label==='Degree'?'degrees':label==='Department'?'departments':'semesters'}</option>{menteeFilterOptions(state.students,key).map(value=><option value={value} key={value}>{value}</option>)}</select></label>)}
                   </div>
-                  <div className="mm-student-filter-actions"><label className="mm-search"><Search size={16}/><input aria-label="Search students" placeholder="Name, registration number or email" value={studentFilterDraft.query} onChange={event=>setStudentFilterDraft(current=>({...current,query:event.target.value}))}/></label><button type="submit" className="mm-primary"><Search size={15}/>Search Students</button><button type="button" onClick={resetStudentFilters}>Clear filters</button></div>
+                  <div className="mm-student-filter-actions"><label className="mm-search"><Search size={16}/><input aria-label="Search students" placeholder="Name, registration number or email" value={studentFilters.query} onChange={event=>{setStudentFilters(current=>({...current,query:event.target.value}));setStudentPage(1)}}/></label><button type="button" onClick={resetStudentFilters}>Clear filters</button></div>
                 </form>
                 <div className="mm-student-results" aria-live="polite"><span><b>{students.length}</b> matching students · {selectableMentees(students).length} available to assign</span><span>{selected.length} selected{selectedOutsideFilters>0?` · ${selectedOutsideFilters} outside current filters`:''}{selected.length>0&&<button type="button" onClick={()=>setSelected([])}>Clear selection</button>}</span></div>
                 <div className="mm-assignment-workspace"><div className="mm-assignment-roster"><div className="mm-table-wrap">

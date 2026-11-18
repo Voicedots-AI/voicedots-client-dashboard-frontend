@@ -43,3 +43,35 @@ test('newly added staff appears by name in Add Mentor without reloading the page
  await picker.selectOption('ram-staff');
  await expect(page.getByLabel('Mentor Name *',{exact:true})).toHaveValue('Ram');
 });
+
+test('assignment filters and search apply immediately and preserve selected students',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('access_token','test'));
+ await page.route(/^https?:\/\/[^/]+\/api\//,r=>r.fulfill({json:{}}));
+ await page.route('**/v1/users/me',r=>r.fulfill({json:{name:'Officer',portal_role:'client'}}));
+ await page.route('**/v3/college/access',r=>r.fulfill({json:{enabled:true,mentor_management_enabled:true,is_mentor:false,erp_role:'college_admin'}}));
+ const students=[
+ {id:'alice',name:'Alice',rollNumber:'REG-A',email:'alice@example.com',batch:'2023-2027',degree:'B.Tech',department:'CSE',semester:'5',mentorId:''},
+ {id:'bob',name:'Bob',rollNumber:'REG-B',email:'bob@example.com',batch:'2024-2028',degree:'BBA',department:'BBA',semester:'3',mentorId:''},
+ {id:'carol',name:'Carol',rollNumber:'REG-C',email:'carol@example.com',batch:'2023-2027',degree:'B.Tech',department:'IT',semester:'5',mentorId:''}];
+ await page.route('**/v3/college/mentors/state',r=>r.fulfill({json:{mentors:[{id:'mentor',staffId:'staff',name:'Test Mentor',active:true,capacity:60,assignedCount:0}],students,faculty:[],logs:[],transfers:[],academicYears:[],access:{can_manage:true,mentor_id:null}}}));
+ await page.goto('/dashboard/placement-management?view=mentors');
+ await page.getByRole('button',{name:'Assign Mentee',exact:true}).click();
+ await page.getByRole('button',{name:'Choose Students',exact:true}).last().click();
+ const rows=page.locator('.mm-assignment-roster tbody tr');
+ await expect(rows).toHaveCount(3);
+ await page.getByRole('checkbox',{name:'Select Alice',exact:true}).check();
+ for(const [field,value,count] of [['batch','2024-2028',1],['degree','BBA',1],['department','CSE',1],['semester','5',2]] as const){
+  await page.getByLabel('Filter students by '+field,{exact:true}).selectOption(value);
+  await expect(rows).toHaveCount(count);
+  await page.getByRole('button',{name:'Clear filters',exact:true}).click();
+  await expect(rows).toHaveCount(3);
+ }
+ await page.getByLabel('Filter students by degree',{exact:true}).selectOption('B.Tech');
+ await page.getByLabel('Search students',{exact:true}).fill('REG-C');
+ await expect(rows).toHaveCount(1);await expect(rows).toContainText('Carol');
+ await page.getByLabel('Search students',{exact:true}).fill('unmatched');
+ await expect(page.getByText('No students match these filters. Try another selection or clear the filters.',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Clear filters',exact:true}).click();
+ await expect(rows).toHaveCount(3);await expect(page.getByRole('checkbox',{name:'Select Alice',exact:true})).toBeChecked();
+ await expect(page.getByRole('button',{name:'Search Students',exact:true})).toHaveCount(0);
+});
