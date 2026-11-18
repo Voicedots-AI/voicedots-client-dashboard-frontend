@@ -14,6 +14,7 @@ import {
   Download,
   Search,
   Pencil,
+  Trash2,
   Eye,
   ArrowRight,
   ArrowLeft,
@@ -139,6 +140,7 @@ export default function MentorManagement() {
     [studentFilters, setStudentFilters] = useState<MenteeFilters>(emptyMenteeFilters),
     [studentFilterDraft,setStudentFilterDraft] = useState<MenteeFilters>(emptyMenteeFilters),
     [studentPage,setStudentPage] = useState(1);
+  const [deleting, setDeleting] = useState<Mentor | null>(null);
   const [photoDraft,setPhotoDraft]=useState<string|null>(null),[photoReading,setPhotoReading]=useState(false);
   const [catalog,setCatalog]=useState<Program[]>([]),[catalogError,setCatalogError]=useState(''),[catalogLoading,setCatalogLoading]=useState(false),[catalogVersion,setCatalogVersion]=useState(0);
   useEffect(()=>{setPhotoDraft(null);setPhotoReading(false)},[editing?.id,editing?.staffId]);
@@ -152,6 +154,26 @@ export default function MentorManagement() {
   const departmentOptions=Array.from(new Map(catalog.flatMap(program=>program.departments||[]).map(department=>[department.code,department])).values()).sort((a,b)=>a.display_name.localeCompare(b.display_name));
   const selectedDepartment=departmentOptions.find(item=>[item.code,item.display_name].some(value=>value.toLowerCase()===editing?.department.trim().toLowerCase()));
   mentorRef.current = mentorId;
+  async function removeMentor() {
+    if (!deleting || mutating.current || !state.access.can_manage) return;
+    mutating.current = true;
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await collegeApi.remove(`mentors/profiles/${deleting.id}`);
+      setDeleting(null);
+      setNotice("Mentor deleted.");
+      await load();
+    } catch (error) {
+      setDeleting(null);
+      await load();
+      setError(collegeError(error));
+    } finally {
+      mutating.current = false;
+      setSaving(false);
+    }
+  }
   const commit = async (next: MentorState, action: string, _detail: string) => {
     if (mutating.current) return false;
     mutating.current = true;
@@ -697,6 +719,15 @@ export default function MentorManagement() {
                             </button>
                             <button
                               className="mm-icon-button"
+                              aria-label={`Delete ${m.name}`}
+                              disabled={saving || count > 0}
+                              title={count > 0 ? "Reassign all mentees before deleting this mentor" : "Delete mentor"}
+                              onClick={() => setDeleting(m)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                            <button
+                              className="mm-icon-button"
                               aria-label={`Invitation status for ${m.name}`}
                               disabled={saving || !m.active}
                               title={`Resend Invitation · ${m.invitation}`}
@@ -929,6 +960,18 @@ export default function MentorManagement() {
             </div>
       )}
       {bulkOpen&&<MenteeBulkDialog onClose={()=>setBulkOpen(false)} onPreview={ids=>{setSelected(ids);setStep(3);setBulkOpen(false);setNotice(`${ids.length} students selected from Excel. Review before assigning.`)}}/>}
+      {deleting && (
+        <div className="mm-modal-backdrop">
+          <section className="mm-modal" role="dialog" aria-modal="true" aria-label="Delete mentor">
+            <header className="mm-heading"><h2>Delete mentor?</h2></header>
+            <p>Delete {deleting.name} from Mentor Management? Their faculty account and mentoring history will be preserved. Deletion is allowed only when no mentees are assigned.</p>
+            <footer className="mm-form-footer">
+              <button type="button" autoFocus disabled={saving} onClick={() => setDeleting(null)}>Cancel</button>
+              <button type="button" className="mm-primary" disabled={saving} onClick={() => void removeMentor()}>{saving ? "Deleting…" : "Delete mentor"}</button>
+            </footer>
+          </section>
+        </div>
+      )}
       {editing && (
         <div className="mm-modal-backdrop">
           <section
