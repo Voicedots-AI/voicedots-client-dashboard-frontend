@@ -1,3 +1,4 @@
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import DriveName from "../../drive-description/DriveName";
 import {atsIndicator} from '@/shared-assessment/atsCutoff';
 import {RosterExpandControl} from '@/shared-assessment/RosterExpandControl';
@@ -97,7 +98,7 @@ type Candidate = Data & {
 
 function shortEvidence(value:string) { const text=value.replace(/\s+/g,' ').trim(); const sentence=text.match(/^.{1,180}?[.!?](?:\s|$)/)?.[0]; return sentence?.trim() || (text.length>180 ? text.slice(0,177).trimEnd()+'…' : text); }
 
-function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: string; candidate: Candidate; onOpenReport: () => void }) {
+export function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: string; candidate: Candidate; onOpenReport: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -131,20 +132,20 @@ function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: s
     return [row.title, row.label, row.focus, row.strength, row.text, row.why, row.evidence, row.summary, row.description, row.problem, row.rationale]
       .find(value => typeof value === "string" && value.trim()) as string || "";
   };
-  return <span className="relative inline-flex">
-    <button type="button" className="text-sm font-semibold text-indigo-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600" aria-haspopup="dialog" aria-expanded={open} onClick={() => open ? setOpen(false) : void load()}>
+  return <Popover open={open} onOpenChange={nextOpen => { if (nextOpen) void load(); else setOpen(false); }}>
+    <PopoverTrigger asChild><button type="button" className="text-sm font-semibold text-indigo-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
       View strengths &amp; gaps <span aria-hidden="true">›</span>
-    </button>
-    {open && <span role="dialog" aria-label={`Interview strengths and gaps for ${candidate.full_name}`} className="absolute left-0 top-full z-40 mt-2 block w-[min(30rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 text-left shadow-xl sm:p-5">
+    </button></PopoverTrigger>
+    <PopoverContent align="start" collisionPadding={16} showArrow={false} aria-label={`Interview strengths and gaps for ${candidate.full_name}`} className="w-[min(30rem,calc(100vw-2rem))] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain break-words p-4 text-left sm:p-5">
       <span className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3"><span><strong className="text-sm text-slate-900">{candidate.full_name}</strong><span className="mt-0.5 block text-xs text-slate-500">Interview evidence · {candidate.recommendation || "AI recommendation unavailable"}</span></span><button type="button" aria-label="Close strengths and gaps" className="rounded-md px-2 text-lg leading-6 text-slate-500 hover:bg-slate-100" onClick={() => setOpen(false)}>×</button></span>
       {loading ? <span role="status" className="mt-4 block text-sm text-slate-500">Loading interview evidence…</span> : error ? <span role="alert" className="mt-4 block text-sm text-rose-700">{error}<button className="ml-2 font-semibold underline" onClick={() => { setLoaded(false); void load(); }}>Retry</button></span> : <span className="mt-4 grid gap-4 sm:grid-cols-2">
         <span><strong className="text-xs font-bold uppercase tracking-wide text-emerald-700">Strengths</strong>{strengthItems.length ? <span className="mt-2 block space-y-2">{strengthItems.slice(0,3).map((item,index)=><span key={`strength-${index}`} className="block text-sm leading-5 text-slate-700">{shortEvidence(textOf(item)) || "No text supplied for this report item."}</span>)}</span> : <span className="mt-2 block text-sm text-slate-500">No strengths were included in the available report.</span>}</span>
         <span><strong className="text-xs font-bold uppercase tracking-wide text-amber-700">Growth areas</strong>{gapItems.length ? <span className="mt-2 block space-y-2">{gapItems.slice(0,3).map((item,index)=><span key={`gap-${index}`} className="block text-sm leading-5 text-slate-700">{shortEvidence(textOf(item)) || "No text supplied for this report item."}</span>)}</span> : <span className="mt-2 block text-sm text-slate-500">No growth areas were included in the available report.</span>}</span>
       </span>}
       {loaded && rounds.length > 0 && <span className="mt-4 block border-t border-slate-100 pt-3"><strong className="text-xs font-bold uppercase tracking-wide text-slate-600">Interview rounds</strong><span className="mt-2 flex flex-wrap gap-2">{rounds.slice(0,4).map((item,index)=>{const row=(item||{}) as Data;return <span key={`round-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700">{String(row.agent_type || row.track || `Round ${index+1}`)}{row.score != null ? ` · ${String(row.score)}/100` : ""}</span>})}</span></span>}
-      <button type="button" onClick={onOpenReport} className="mt-4 inline-flex text-sm font-semibold text-indigo-700 hover:underline">Open full interview report <span aria-hidden="true" className="ml-1">↗</span></button>
-    </span>}
-  </span>;
+      <button type="button" onClick={() => { setOpen(false); onOpenReport(); }} className="mt-4 inline-flex text-sm font-semibold text-indigo-700 hover:underline">Open full interview report <span aria-hidden="true" className="ml-1">↗</span></button>
+    </PopoverContent>
+  </Popover>;
 }
 
 function CandidateOfficerActions({ driveId, candidate, onSaved }: { driveId: string; candidate: Candidate; onSaved: () => void }) {
