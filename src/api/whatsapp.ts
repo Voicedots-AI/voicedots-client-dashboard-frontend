@@ -89,6 +89,7 @@ export type Contact = {
 };
 export type MediaKind = "image" | "video" | "audio" | "document" | "sticker";
 export type Media = {
+  storage_key?: string;
   id: string;
   kind: MediaKind;
   filename: string;

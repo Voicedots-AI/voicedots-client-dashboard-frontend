@@ -38,6 +38,7 @@ function normalizeBrochure(b: any) {
   const name = b.name || b.filename || "Brochure.pdf";
   const size = typeof b.size === "number" ? b.size : (typeof b.size_bytes === "number" ? b.size_bytes : (Number(b.size) || Number(b.size_bytes) || 0));
   const key = b.key || b.cloud_storage_key || b.url || "";
+  if (!key && !b.media_id && !b.mediaId && !b.provider_media_id) return null;
   const mediaId = b.mediaId || b.provider_media_id || b.id || "";
   const id = b.id || b.attachment_id || mediaId || "";
   return {
@@ -81,6 +82,7 @@ export default function SettingsPage() {
   // =========================================================================
   // Automated Email Dispatch & Brochure State
   // =========================================================================
+  const [dispatchSettingsLoaded, setDispatchSettingsLoaded] = useState(false);
   const [emailAutoSend, setEmailAutoSend] = useState(true);
   const [emailTriggerEvent, setEmailTriggerEvent] = useState<"both" | "conversations" | "leads">("both");
   const [emailSubject, setEmailSubject] = useState("VoiceDots Academy - Information & Course Brochure");
@@ -92,12 +94,7 @@ export default function SettingsPage() {
     size: number;
     key: string;
     id?: string;
-  } | null>({
-    name: "VoiceDots_Course_Brochure_2026.pdf",
-    size: 2450000,
-    key: "email/org_default/attachments/f8a3c10b-8d54-4721-a08b/VoiceDots_Course_Brochure_2026.pdf",
-    id: "f8a3c10b-8d54-4721-a08b"
-  });
+  } | null>(null);
   const [isUploadingEmailBrochure, setIsUploadingEmailBrochure] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -116,12 +113,7 @@ export default function SettingsPage() {
     size: number;
     key: string;
     mediaId?: string;
-  } | null>({
-    name: "VoiceDots_Official_Brochure.pdf",
-    size: 1840000,
-    key: "whatsapp/documents/media_920194829104812/VoiceDots_Official_Brochure.pdf",
-    mediaId: "media_920194829104812"
-  });
+  } | null>(null);
   const [isUploadingWaBrochure, setIsUploadingWaBrochure] = useState(false);
   const [isSavingWa, setIsSavingWa] = useState(false);
   const [waStatus, setWaStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -146,6 +138,7 @@ export default function SettingsPage() {
 
     const initSettings = async () => {
       let savedWaTemplateId = "";
+      let savedWaAccountId = "";
 
       // 1. Fetch live dispatch settings from backend
       try {
@@ -158,45 +151,26 @@ export default function SettingsPage() {
           if (em.content) setEmailContent(em.content);
           if (em.enabled !== undefined) setEmailAutoSend(em.enabled);
           if (em.trigger_event) setEmailTriggerEvent(em.trigger_event);
-          if (em.brochure) setEmailBrochure(normalizeBrochure(em.brochure));
+          setEmailBrochure(normalizeBrochure(em.brochure));
+          if (em.brochure_error) setEmailStatus({ type: "error", text: em.brochure_error });
         }
         if (res?.data?.whatsapp) {
           const wa = res.data.whatsapp;
-          if (wa.account_id) setWaAccountId(wa.account_id);
+          if (wa.account_id) { savedWaAccountId = wa.account_id; setWaAccountId(wa.account_id); }
           if (wa.template_id) {
             savedWaTemplateId = wa.template_id;
             setSelectedWaTemplateId(wa.template_id);
           }
           if (wa.enabled !== undefined) setWaAutoSend(wa.enabled);
           if (wa.trigger_event) setWaTriggerEvent(wa.trigger_event);
-          if (wa.brochure) setWaBrochure(normalizeBrochure(wa.brochure));
+          setWaBrochure(normalizeBrochure(wa.brochure));
+          if (wa.brochure_error) setWaStatus({ type: "error", text: wa.brochure_error });
         }
+        setDispatchSettingsLoaded(true);
       } catch {
-        try {
-          const savedEmail = localStorage.getItem("voicedots_email_dispatch_settings");
-          if (savedEmail) {
-            const parsed = JSON.parse(savedEmail);
-            if (parsed.subject) setEmailSubject(parsed.subject);
-            if (parsed.content) setEmailContent(parsed.content);
-            if (parsed.enabled !== undefined) setEmailAutoSend(parsed.enabled);
-            if (parsed.triggerEvent) setEmailTriggerEvent(parsed.triggerEvent);
-            if (parsed.brochure) setEmailBrochure(normalizeBrochure(parsed.brochure));
-          }
-
-          const savedWa = localStorage.getItem("voicedots_whatsapp_dispatch_settings");
-          if (savedWa) {
-            const parsed = JSON.parse(savedWa);
-            if (parsed.templateId) {
-              savedWaTemplateId = parsed.templateId;
-              setSelectedWaTemplateId(parsed.templateId);
-            }
-            if (parsed.enabled !== undefined) setWaAutoSend(parsed.enabled);
-            if (parsed.triggerEvent) setWaTriggerEvent(parsed.triggerEvent);
-            if (parsed.brochure) setWaBrochure(normalizeBrochure(parsed.brochure));
-          }
-        } catch (e) {
-          console.warn("Could not load local messaging settings:", e);
-        }
+        if (!isMounted) return;
+        setEmailStatus({ type: "error", text: "Could not load saved settings. Reload before saving." });
+        setWaStatus({ type: "error", text: "Could not load saved settings. Reload before saving." });
       }
 
       // 2. Fetch live WhatsApp templates and match with saved template
@@ -206,13 +180,17 @@ export default function SettingsPage() {
 
         if (res?.accounts?.length) {
           setWaAccounts(res.accounts);
-          const accId = res.accounts[0].id;
+          const savedAccount = savedWaAccountId ? res.accounts.find(a => a.id === savedWaAccountId) : null;
+          if (savedWaAccountId && !savedAccount) {
+            throw new Error("The saved WhatsApp sender is unavailable.");
+          }
+          const accId = (savedAccount || res.accounts[0]).id;
           setWaAccountId(accId);
 
           const tpls = await whatsappApi.templates(accId);
           if (!isMounted) return;
 
-          const templateList = tpls || [];
+          const templateList = (tpls || []).filter(t => t.status === "APPROVED" && t.header_type === "DOCUMENT");
           setWaTemplates(templateList);
 
           // Select the template accurately without clobbering:
@@ -237,63 +215,8 @@ export default function SettingsPage() {
         }
       } catch {
         if (!isMounted) return;
-        setWaTemplates([
-          {
-            id: "tpl_welcome_brochure",
-            account_id: "acc_default",
-            name: "welcome_inquiry_with_brochure",
-            language: "en_US",
-            category: "MARKETING",
-            status: "APPROVED",
-            body: "Hello {{1}}, thank you for reaching out to VoiceDots! We have attached our official course brochure and admissions guide below. Feel free to review it and reply with any questions.",
-            variables: ["1"],
-            slots: ["body_1"],
-            slot_fields: [],
-            header_type: "DOCUMENT",
-            has_header_media: true,
-            button_count: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            structure: {
-              header: { format: "DOCUMENT", text: "", example: "", handle: "" },
-              body: "Hello {{1}}, thank you for reaching out to VoiceDots! We have attached our official course brochure and admissions guide below. Feel free to review it and reply with any questions.",
-              examples: ["Student"],
-              footer: "VoiceDots Admissions",
-              buttons: []
-            },
-            supported: true,
-            components: []
-          },
-          {
-            id: "tpl_lead_instant_prospectus",
-            account_id: "acc_default",
-            name: "instant_lead_prospectus_pdf",
-            language: "en_US",
-            category: "UTILITY",
-            status: "APPROVED",
-            body: "Hi {{1}}, thanks for speaking with our advisor today. As requested, here is our full college curriculum and prospectus attached for your reference.",
-            variables: ["1"],
-            slots: ["body_1"],
-            slot_fields: [],
-            header_type: "DOCUMENT",
-            has_header_media: true,
-            button_count: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            structure: {
-              header: { format: "DOCUMENT", text: "", example: "", handle: "" },
-              body: "Hi {{1}}, thanks for speaking with our advisor today. As requested, here is our full college curriculum and prospectus attached for your reference.",
-              examples: ["Candidate"],
-              footer: "Admissions Office",
-              buttons: []
-            },
-            supported: true,
-            components: []
-          }
-        ]);
-        if (!savedWaTemplateId) {
-          setSelectedWaTemplateId("tpl_welcome_brochure");
-        }
+        setWaTemplates([]);
+        setWaStatus({ type: "error", text: "Could not load WhatsApp senders and approved templates." });
       }
     };
 
@@ -429,18 +352,11 @@ export default function SettingsPage() {
       setIsUploadingEmailBrochure(true);
       setEmailStatus(null);
 
-      let uploadRes: { id: string; storage_key?: string } | null = null;
-      try {
-        uploadRes = await emailApi.uploadAttachment(file);
-      } catch {
-        const generatedId = crypto.randomUUID();
-        uploadRes = {
-          id: generatedId,
-          storage_key: `email/org_default/attachments/${generatedId}/${file.name.replace(/\s+/g, '_')}`
-        };
+      const uploadRes = await emailApi.uploadAttachment(file);
+      if (!uploadRes.id || !uploadRes.storage_key) {
+        throw new Error("Upload did not return a stored attachment. Please try again.");
       }
-
-      const cloudKey = uploadRes?.storage_key || `email/attachments/${uploadRes?.id || crypto.randomUUID()}/${file.name.replace(/\s+/g, '_')}`;
+      const cloudKey = uploadRes.storage_key;
 
       setEmailBrochure({
         name: file.name,
@@ -454,7 +370,7 @@ export default function SettingsPage() {
         text: `Brochure "${file.name}" uploaded to Cloud Storage successfully! (Key: ${cloudKey})`
       });
     } catch (err: any) {
-      setEmailStatus({ type: "error", text: "Cloud upload failed. Please try again." });
+      setEmailStatus({ type: "error", text: typeof err.response?.data?.detail === "string" ? err.response.data.detail : (err.message || "Cloud upload failed. Please try again.") });
     } finally {
       setIsUploadingEmailBrochure(false);
       if (emailBrochureInputRef.current) emailBrochureInputRef.current.value = "";
@@ -463,6 +379,14 @@ export default function SettingsPage() {
 
   const handleSaveEmailSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!dispatchSettingsLoaded || isUploadingEmailBrochure) {
+      setEmailStatus({ type: "error", text: "Wait for settings and uploads to finish before saving." });
+      return;
+    }
+    if (emailAutoSend && !emailBrochure) {
+      setEmailStatus({ type: "error", text: "Upload a PDF brochure before enabling automatic email." });
+      return;
+    }
     setIsSavingEmail(true);
     setEmailStatus(null);
 
@@ -499,7 +423,7 @@ export default function SettingsPage() {
       });
       setTimeout(() => setEmailStatus(null), 5000);
     } catch (err: any) {
-      setEmailStatus({ type: "error", text: "Failed to save email settings: " + (err.message || "Unknown error") });
+      setEmailStatus({ type: "error", text: typeof err.response?.data?.detail === "string" ? err.response.data.detail : ("Failed to save email settings: " + (err.message || "Unknown error")) });
     } finally {
       setIsSavingEmail(false);
     }
@@ -541,38 +465,28 @@ export default function SettingsPage() {
       setIsUploadingWaBrochure(true);
       setWaStatus(null);
 
-      let mediaId = "";
-      let cloudKey = "";
-
-      if (waAccountId) {
-        try {
-          const res = await whatsappApi.uploadMedia(waAccountId, file, "document");
-          mediaId = res.id;
-          cloudKey = `whatsapp/${waAccountId}/documents/${res.id}/${file.name.replace(/\s+/g, '_')}`;
-        } catch {
-          const fakeId = "meta_media_" + Math.random().toString(36).substring(2, 12);
-          mediaId = fakeId;
-          cloudKey = `whatsapp/documents/${fakeId}/${file.name.replace(/\s+/g, '_')}`;
-        }
-      } else {
-        const fakeId = "meta_media_" + Math.random().toString(36).substring(2, 12);
-        mediaId = fakeId;
-        cloudKey = `whatsapp/documents/${fakeId}/${file.name.replace(/\s+/g, '_')}`;
+      if (!waAccountId) {
+        throw new Error("Connect a WhatsApp account before uploading a brochure.");
       }
+      const res = await whatsappApi.uploadMedia(waAccountId, file, "document");
+      if (!res.id || !res.storage_key || res.status !== "uploaded") {
+        throw new Error(res.error || "WhatsApp upload did not complete. Please try again.");
+      }
+      const mediaId = res.id;
 
       setWaBrochure({
         name: file.name,
         size: file.size,
-        key: cloudKey,
+        key: res.storage_key,
         mediaId: mediaId
       });
 
       setWaStatus({
         type: "success",
-        text: `WhatsApp Brochure "${file.name}" uploaded to Cloud Storage successfully! (Key: ${cloudKey})`
+        text: `WhatsApp brochure "${file.name}" uploaded. Save WhatsApp settings to use it automatically.`
       });
     } catch (err: any) {
-      setWaStatus({ type: "error", text: "Failed to upload brochure to cloud storage." });
+      setWaStatus({ type: "error", text: typeof err.response?.data?.detail === "string" ? err.response.data.detail : (err.message || "Failed to upload brochure.") });
     } finally {
       setIsUploadingWaBrochure(false);
       if (waBrochureInputRef.current) waBrochureInputRef.current.value = "";
@@ -581,6 +495,14 @@ export default function SettingsPage() {
 
   const handleSaveWaSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!dispatchSettingsLoaded || isUploadingWaBrochure) {
+      setWaStatus({ type: "error", text: "Wait for settings and uploads to finish before saving." });
+      return;
+    }
+    if (waAutoSend && (!waBrochure || !waAccountId || !selectedWaTemplateId)) {
+      setWaStatus({ type: "error", text: "Select a sender, an approved template and an uploaded brochure." });
+      return;
+    }
     setIsSavingWa(true);
     setWaStatus(null);
 
@@ -619,7 +541,7 @@ export default function SettingsPage() {
       });
       setTimeout(() => setWaStatus(null), 5000);
     } catch (err: any) {
-      setWaStatus({ type: "error", text: "Failed to save WhatsApp settings: " + (err.message || "Unknown error") });
+      setWaStatus({ type: "error", text: typeof err.response?.data?.detail === "string" ? err.response.data.detail : ("Failed to save WhatsApp settings: " + (err.message || "Unknown error")) });
     } finally {
       setIsSavingWa(false);
     }
@@ -1009,7 +931,7 @@ export default function SettingsPage() {
                           <span>{emailBrochure.name || (emailBrochure as any).filename || "Brochure.pdf"}</span>
                           <span className="text-xs font-normal text-slate-400">({formatFileSize(emailBrochure.size ?? (emailBrochure as any).size_bytes)})</span>
                           <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 rounded-full flex items-center gap-1">
-                            <Check size={10} /> Cloud Uploaded
+                            <Check size={10} /> Configured
                           </span>
                         </div>
                         <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 break-all">
@@ -1250,12 +1172,12 @@ export default function SettingsPage() {
                           <span>{waBrochure.name || (waBrochure as any).filename || "Brochure.pdf"}</span>
                           <span className="text-xs font-normal text-slate-400">({formatFileSize(waBrochure.size ?? (waBrochure as any).size_bytes)})</span>
                           <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 rounded-full flex items-center gap-1">
-                            <Check size={10} /> Cloud Uploaded
+                            <Check size={10} /> Configured
                           </span>
                         </div>
                         <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 break-all">
-                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">cloud_key:</span>
-                          <span>{waBrochure.key || (waBrochure as any).cloud_storage_key}</span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">{waBrochure.key ? "cloud_key:" : "media_id:"}</span>
+                          <span>{waBrochure.key || waBrochure.mediaId}</span>
                         </div>
                       </div>
                     </div>
