@@ -1,3 +1,4 @@
+import SentimentAnalysis from "./SentimentAnalysis";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
@@ -165,6 +166,7 @@ export default function CollegeManagementPage() {
       | "assessment-intelligence"
       | "dashboard"
       | "feedback"
+      | "sentiment"
       | "placements"
       | "analytics"
       | "agents"
@@ -347,6 +349,7 @@ export default function CollegeManagementPage() {
   if (tab === "candidates") return <CandidateDirectory mentorView={!!access.is_mentor && access.erp_role !== "college_admin"}/>;
   if (tab === "assessment-intelligence") return <AssessmentIntelligence/>;
   if (tab === "dashboard") return <PlacementDashboard />;
+  if (tab === "sentiment") return <SentimentAnalysis/>;
   if (tab === "feedback") return <FeedbackDashboard/>;
   if (creating)
     return (
