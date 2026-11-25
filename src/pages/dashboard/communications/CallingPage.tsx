@@ -4,11 +4,12 @@ import { phoneAgentsApi, type ClientPhoneAgent } from '@/api/phoneAgents';
 import { outboundCallsApi, type AiHealth, type OutboundAgent, type OutboundCallStatus } from '@/api/outboundCalls';
 import { outboundBatchesApi, type BatchDetails, type BatchFilters, type BatchSummary, type BatchUploadResult } from '@/api/outboundBatches';
 import { OutboundCallTracker } from '@/components/calling/OutboundCallTracker';
+import CampaignAudienceSelector, { type SelectedContact } from '@/components/campaigns/CampaignAudienceSelector';
 import CallingOverviewTab from '@/components/calling/CallingOverviewTab';
 
 const card = 'rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900';
 const input = 'mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-3 dark:border-slate-700';
-const consentText = 'I confirm every recipient in this file consented to receive this call and the campaign complies with applicable calling rules.';
+const consentText = 'I confirm every selected recipient consented to receive this call and the campaign complies with applicable calling rules.';
 const OUTCOMES = ['Interested', 'Follow-up requested', 'Not interested', 'Connected — inconclusive', 'No response', 'Call not lifted', 'Call not connected'];
 const CALL_STATUSES = ['connected', 'failed', 'queued', 'dialing', 'pending', 'blocked', 'skipped'];
 type ApiError = { response?: { data?: { detail?: string | { reasons?: string[]; message?: string } } } };
@@ -40,6 +41,7 @@ export default function CallingPage() {
   const [batches, setBatches] = useState<BatchSummary[]>([]), [campaignName, setCampaignName] = useState('');
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null), [showCreate, setShowCreate] = useState(false);
   const [details, setDetails] = useState<BatchDetails | null>(null), [file, setFile] = useState<File | null>(null);
+  const [audience, setAudience] = useState<SelectedContact[]>([]);
   const [batchConsent, setBatchConsent] = useState(false), [uploadResult, setUploadResult] = useState<BatchUploadResult | null>(null);
   const [busy, setBusy] = useState(false), [outcome, setOutcome] = useState(''), [callStatus, setCallStatus] = useState('');
   const [activeCall, setActiveCall] = useState<OutboundCallStatus | null>(null);
@@ -95,7 +97,7 @@ export default function CallingPage() {
   const checkAi = async () => { if (!config || !ready) return; setCheckingAi(true); setAiHealth(null); setMessage('Checking Gemini voice readiness…'); try { const result = await outboundCallsApi.health(config.id); setAiHealth(result); setMessage(result.message); } catch (error) { setMessage(errorMessage(error, 'Unable to check AI readiness.')); } finally { setCheckingAi(false); } };
   const placeCall = async () => { if (!config || !ready) return; if (!name.trim() || !number.trim() || !singleConsent) { setMessage('Enter a contact, use an international number, and confirm consent.'); return; } setCalling(true); setMessage(''); try { const result = await outboundCallsApi.create({ phone_agent_id: config.id, destination: number.trim(), contact_name: name.trim(), consent_confirmed: true }); setActiveCall({ id: result.id, status: 'queued', contact_name: name.trim(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), user_message: result.user_message }); setMessage(result.user_message || 'Call queued. Preparing the voice agent…'); setName(''); setNumber(''); setSingleConsent(false); } catch (error) { setMessage(errorMessage(error, 'Call could not be queued.')); } finally { setCalling(false); } };
   const uploadBatch = async () => { if (!config || !file || !batchConsent || !campaignName.trim()) { setMessage('Enter a campaign name, select a contact file, and confirm consent.'); return; } setBusy(true); setMessage(''); try { const result = await outboundBatchesApi.upload({ file, phoneAgentId: config.id, campaignName: campaignName.trim(), consentDeclaration: consentText, concurrency: Math.max(1, Math.min(capacity || 1, 20)) }); setUploadResult(result); await loadDetails(result.id); await loadBatches(); setMessage(`${result.accepted} contacts accepted${result.rejected_count ? `; ${result.rejected_count} rejected` : ''}. Review and start the campaign.`); } catch (error) { setMessage(errorMessage(error, 'Contact file could not be uploaded.')); } finally { setBusy(false); } };
-  const startBatch = async (id: string) => { setBusy(true); setMessage(''); try { await outboundBatchesApi.start(id); await Promise.all([loadDetails(id), loadBatches()]); setUploadResult(null); setFile(null); setBatchConsent(false); setShowCreate(false); setSelectedCampaign(campaignName.trim()); setMessage('Campaign started. Progress updates automatically.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be started.')); } finally { setBusy(false); } };
+  const startBatch = async (id: string) => { setBusy(true); setMessage(''); try { await outboundBatchesApi.start(id); await Promise.all([loadDetails(id), loadBatches()]); setUploadResult(null); setFile(null); setAudience([]); setBatchConsent(false); setShowCreate(false); setSelectedCampaign(campaignName.trim()); setMessage('Campaign started. Progress updates automatically.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be started.')); } finally { setBusy(false); } };
   const cancelBatch = async (id: string) => { if (!window.confirm('Stop this campaign run? Calls already in progress will finish.')) return; setBusy(true); try { await outboundBatchesApi.cancel(id); await Promise.all([loadDetails(id, filters), loadBatches()]); setMessage('Campaign run cancelled.'); } catch (error) { setMessage(errorMessage(error, 'Campaign could not be cancelled.')); } finally { setBusy(false); } };
   const openRun = (batch: BatchSummary) => { setOutcome(''); setCallStatus(''); setSearch(''); setPage(1); loadDetails(batch.id); };
   const exportReport = async () => { if (!details) return; setBusy(true); try { await outboundBatchesApi.downloadReport(details.id, details.campaign_name, { outcome, callStatus }); } catch (error) { setMessage(errorMessage(error, 'Report could not be exported.')); } finally { setBusy(false); } };
@@ -256,9 +258,11 @@ export default function CallingPage() {
           </div>
           {showCreate && (
             <CreateCampaign
+              audience={audience}
+              setAudience={setAudience}
               campaignName={campaignName}
-              setCampaignName={setCampaignName}
-              setFile={setFile}
+              setCampaignName={(value) => { setCampaignName(value); setUploadResult(null); }}
+              setFile={(value) => { setFile(value); setUploadResult(null); }}
               batchConsent={batchConsent}
               setBatchConsent={setBatchConsent}
               uploadResult={uploadResult}
@@ -341,6 +345,8 @@ export default function CallingPage() {
 }
 
 type CreateProps = {
+  audience: SelectedContact[];
+  setAudience: (contacts: SelectedContact[]) => void;
   campaignName: string;
   setCampaignName: (v: string) => void;
   setFile: (v: File | null) => void;
@@ -354,6 +360,18 @@ type CreateProps = {
   file: File | null;
 };
 function CreateCampaign(p: CreateProps) {
+  const { audience, setAudience } = p;
+  const stageAudience = async (contacts: SelectedContact[]) => {
+    const unique = new Map(audience.map((contact) => [contact.destination.replace(/\D/g, ''), contact]));
+    contacts.forEach((contact) => unique.set(contact.destination.replace(/\D/g, ''), contact));
+    updateAudience(Array.from(unique.values()));
+  };
+  const updateAudience = (contacts: SelectedContact[]) => {
+    setAudience(contacts);
+    p.setBatchConsent(false);
+    const csv = ['Name,Phone', ...contacts.map((contact) => [contact.name, contact.destination].map((value) => '"' + value.replaceAll('"', '""') + '"').join(','))].join('\r\n');
+    p.setFile(contacts.length ? new File([csv], 'selected-call-audience.csv', { type: 'text/csv' }) : null);
+  };
   return (
     <section className={`${card} p-5`}>
       <div className="flex items-center gap-2">
@@ -386,11 +404,29 @@ function CreateCampaign(p: CreateProps) {
             type="file"
             accept=".csv,.xlsx"
             className={input}
-            onChange={(e) => p.setFile(e.target.files?.[0] || null)}
+            onChange={(e) => { setAudience([]); p.setBatchConsent(false); p.setFile(e.target.files?.[0] || null); }}
           />
           <span className="mt-1 block text-xs font-normal text-slate-500">
             Name and Phone are required. The example row is skipped automatically.
           </span>
+        </div>
+      </div>
+      <div className="mt-4 space-y-3">
+        <h3 className="text-sm font-semibold">Whom to call</h3>
+        <CampaignAudienceSelector channel="calling" busy={p.busy} onAddContacts={stageAudience} />
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm dark:border-blue-900 dark:bg-blue-950/20">
+          <strong>Selected audience: {audience.length} contact(s)</strong>
+          {p.file && <span className="ml-2">Contact file: {p.file.name}</span>}
+          {!!audience.length && <>
+            <button type="button" disabled={p.busy} onClick={() => updateAudience([])} className="ml-4 underline">Clear audience</button>
+            <ul className="mt-2 max-h-48 overflow-auto">
+              {audience.map((contact) => <li key={contact.destination} className="flex items-center justify-between gap-3 py-1">
+                <span>{contact.name} · {contact.destination}{contact.extra?.department ? ` · ${contact.extra.department}` : ''}</span>
+                <button type="button" disabled={p.busy} onClick={() => updateAudience(audience.filter((item) => item !== contact))} className="underline" aria-label={`Remove ${contact.name}`}>Remove</button>
+              </li>)}
+            </ul>
+          </>}
+          <p className="mt-2 text-xs">Choose leads or filter students by department and select all filtered students for department announcements. Uploading a sheet replaces this selection.</p>
         </div>
       </div>
       <label className="mt-4 flex items-start gap-3 rounded-xl border p-3 text-sm">
@@ -409,7 +445,7 @@ function CreateCampaign(p: CreateProps) {
           className="flex h-12 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 font-semibold text-white disabled:opacity-50"
         >
           {p.busy ? <Loader2 className="animate-spin" size={18} /> : <FileSpreadsheet size={18} />}
-          Upload & validate
+          Validate audience
         </button>
       </div>
       {p.uploadResult && (

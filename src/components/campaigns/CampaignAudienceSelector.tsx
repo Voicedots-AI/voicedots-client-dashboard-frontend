@@ -27,7 +27,7 @@ export type SelectedContact = {
 };
 
 interface CampaignAudienceSelectorProps {
-  channel: "whatsapp" | "email";
+  channel: "whatsapp" | "email" | "calling";
   onAddContacts: (contacts: SelectedContact[]) => Promise<void>;
   onUploadFile?: (file: File) => Promise<void>;
   busy?: boolean;
@@ -135,7 +135,7 @@ export default function CampaignAudienceSelector({
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       // Must have valid contact information for target channel
-      const dest = channel === "whatsapp" ? (lead.phone || lead.mobile) : lead.email;
+      const dest = channel !== "email" ? (lead.phone || lead.mobile) : lead.email;
       if (!dest || !dest.trim()) return false;
 
       if (leadStatusFilter !== "all" && lead.status !== leadStatusFilter) {
@@ -156,7 +156,7 @@ export default function CampaignAudienceSelector({
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       // Must have valid contact information for target channel
-      const dest = channel === "whatsapp" ? s.phone : s.email;
+      const dest = channel !== "email" ? s.phone : s.email;
       if (!dest || !dest.trim()) return false;
 
       if (selectedProgram !== "all" && s.program !== selectedProgram) {
@@ -227,7 +227,7 @@ export default function CampaignAudienceSelector({
     const selected = leads.filter((l) => selectedLeadIds.has(l.conversation_id));
     const payload: SelectedContact[] = selected
       .map((l) => {
-        const dest = channel === "whatsapp" ? (l.phone || l.mobile || "") : (l.email || "");
+        const dest = channel !== "email" ? (l.phone || l.mobile || "") : (l.email || "");
         return {
           name: l.name || "Lead",
           destination: dest,
@@ -261,7 +261,7 @@ export default function CampaignAudienceSelector({
     const selected = students.filter((s) => selectedStudentIds.has(s.id));
     const payload: SelectedContact[] = selected
       .map((s) => {
-        const dest = channel === "whatsapp" ? (s.phone || "") : (s.email || "");
+        const dest = channel !== "email" ? (s.phone || "") : (s.email || "");
         return {
           name: s.full_name || "Student",
           destination: dest,
@@ -338,7 +338,7 @@ export default function CampaignAudienceSelector({
               </span>
             )}
           </button>
-          <button
+          {channel !== "calling" && <button
             type="button"
             onClick={() => setActiveTab("sheet")}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
@@ -349,7 +349,7 @@ export default function CampaignAudienceSelector({
           >
             <FileSpreadsheet size={14} />
             Upload Excel / CSV
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -400,7 +400,7 @@ export default function CampaignAudienceSelector({
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>
               Showing {filteredLeads.length} lead{filteredLeads.length === 1 ? "" : "s"} with valid{" "}
-              {channel === "whatsapp" ? "phone number" : "email address"}
+              {channel !== "email" ? "phone number" : "email address"}
             </span>
             <button
               type="button"
@@ -446,7 +446,7 @@ export default function CampaignAudienceSelector({
                       />
                     </th>
                     <th className="px-3 py-2.5">Lead Name</th>
-                    <th className="px-3 py-2.5">{channel === "whatsapp" ? "Phone" : "Email"}</th>
+                    <th className="px-3 py-2.5">{channel !== "email" ? "Phone" : "Email"}</th>
                     <th className="px-3 py-2.5">Status</th>
                   </tr>
                 </thead>
@@ -454,7 +454,7 @@ export default function CampaignAudienceSelector({
                   {filteredLeads.map((lead) => {
                     const isSelected = selectedLeadIds.has(lead.conversation_id);
                     const contactVal =
-                      channel === "whatsapp" ? (lead.phone || lead.mobile) : lead.email;
+                      channel !== "email" ? (lead.phone || lead.mobile) : lead.email;
                     return (
                       <tr
                         key={lead.conversation_id}
@@ -603,7 +603,7 @@ export default function CampaignAudienceSelector({
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>
               Showing {filteredStudents.length} student{filteredStudents.length === 1 ? "" : "s"} with valid{" "}
-              {channel === "whatsapp" ? "phone number" : "email address"}
+              {channel !== "email" ? "phone number" : "email address"}
             </span>
             <button
               type="button"
@@ -652,13 +652,13 @@ export default function CampaignAudienceSelector({
                     <th className="px-3 py-2.5">Roll No</th>
                     <th className="px-3 py-2.5">Degree & Branch</th>
                     <th className="px-3 py-2.5">Class</th>
-                    <th className="px-3 py-2.5">{channel === "whatsapp" ? "Phone" : "Email"}</th>
+                    <th className="px-3 py-2.5">{channel !== "email" ? "Phone" : "Email"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredStudents.map((s) => {
                     const isSelected = selectedStudentIds.has(s.id);
-                    const contactVal = channel === "whatsapp" ? s.phone : s.email;
+                    const contactVal = channel !== "email" ? s.phone : s.email;
                     return (
                       <tr
                         key={s.id}
@@ -729,12 +729,12 @@ export default function CampaignAudienceSelector({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                Upload Spreadsheet with {channel === "whatsapp" ? "Phone Numbers" : "Emails"} & Usernames
+                Upload Spreadsheet with {channel !== "email" ? "Phone Numbers" : "Emails"} & Usernames
               </h4>
               <p className="mt-1 text-xs leading-relaxed text-slate-500">
                 Upload a <strong>.xlsx</strong> or <strong>.csv</strong> sheet containing columns:{" "}
                 <code className="rounded bg-violet-100 px-1 py-0.5 font-mono text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                  {channel === "whatsapp" ? "phone / mobile" : "email"}
+                  {channel !== "email" ? "phone / mobile" : "email"}
                 </code>{" "}
                 and{" "}
                 <code className="rounded bg-violet-100 px-1 py-0.5 font-mono text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
@@ -746,9 +746,9 @@ export default function CampaignAudienceSelector({
             <button
               type="button"
               onClick={() => {
-                const header = channel === "whatsapp" ? "username,phone\n" : "username,email\n";
+                const header = channel !== "email" ? "username,phone\n" : "username,email\n";
                 const sample =
-                  channel === "whatsapp"
+                  channel !== "email"
                     ? "John Doe,+919999999999\nJane Smith,+918888888888"
                     : "John Doe,john@example.com\nJane Smith,jane@example.com";
                 const blob = new Blob([header + sample], { type: "text/csv;charset=utf-8;" });
