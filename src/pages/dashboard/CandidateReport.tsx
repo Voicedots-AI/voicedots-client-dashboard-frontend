@@ -559,11 +559,20 @@ function CandidateReportDetails({
       ...((detail.domain_dimensions || []) as Data[]),
     ],
     rounds = (detail.agent_breakdown || []) as Data[],
-    reviews = (detail.question_reviews || []) as Data[],
+    turns = (transcript?.turns || []) as Data[],
+    // A failed evaluation must not hide the independently saved interview.
+    // Transcript evidence has no generated score or feedback to fall back to.
+    reviews = Array.isArray(detail.question_reviews) && detail.question_reviews.length
+      ? detail.question_reviews as Data[]
+      : turns.map(turn => ({
+          turn_id: turn.turn_id, agent_type: turn.agent_type,
+          question: turn.question_text, answer: turn.transcript,
+          asked_at: turn.asked_at, answer_started_at: turn.answer_started_at,
+          has_audio: turn.has_audio, answer_state: 'not_assessed',
+        })) as Data[],
     requirements = (detail.requirement_evidence_matrix ||
       detail.requirement_assessment ||
       []) as Data[],
-    turns = (transcript?.turns || []) as Data[],
     events = (integrity?.events || []) as Data[],
     history = (decisionData?.history || []) as Data[];
   const recommendationLabels = (resultSettings?.recommendation_labels || {}) as Data;
@@ -744,9 +753,9 @@ function CandidateReportDetails({
         <main className="candidate-report-content min-w-0 space-y-5">
           <section id="recording" className={`${reportPanel} scroll-mt-4`}>
             <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Evidence</p><h2 className="mt-1 text-lg font-bold">Interview recording</h2><p className="mt-1 text-xs text-slate-500">{recordingStatus === "ready" ? `Secure recording · ${durationLabel(recordingDuration)}${recording?.started_at || report.recording?.started_at ? ` · ${stamp(recording?.started_at ?? report.recording?.started_at)}` : ""}` : recordingStatus === "expired" ? "Recording retention period ended" : recordingStatus === "failed" ? "Video upload failed" : recordingStatus === "unavailable" || recordingStatus === "not_configured" ? "No recording is available for this attempt" : `Recording ${displayName(show(recordingStatus))}`}</p></div><details className="text-xs text-slate-500"><summary className="cursor-pointer">Session details</summary><p className="mt-1 break-all">{report.session_id || "Session ID unavailable"}</p></details></div>
-            {!videoReady ? <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4"><div><p className="text-sm text-slate-700">{recordingLoading ? "Checking recording availability…" : recordingStatus === "processing" || recordingStatus === "recording" ? "Recording is being prepared" : "Video is unavailable for this attempt"}</p><p className="mt-1 text-xs text-slate-500">{show(recording?.message, "The saved answers and feedback remain available.")}</p>{recordingError && <p role="alert" className="mt-2 text-xs text-rose-700">{recordingError}</p>}</div>{report.session_id && recordingStatus !== "expired" && <button type="button" className={`${btn} inline-flex items-center gap-2 whitespace-nowrap`} disabled={recordingLoading} onClick={() => void loadRecording()}>Refresh recording</button>}</div> : <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)]">
-              <div className="min-w-0">
+            {!videoReady && <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4"><div><p className="text-sm text-slate-700">{recordingLoading ? "Checking recording availability…" : recordingStatus === "processing" || recordingStatus === "recording" ? "Recording is being prepared" : "Video is unavailable for this attempt"}</p><p className="mt-1 text-xs text-slate-500">{show(recording?.message, "The saved answers and feedback remain available.")}</p>{recordingError && <p role="alert" className="mt-2 text-xs text-rose-700">{recordingError}</p>}</div>{report.session_id && recordingStatus !== "expired" && <button type="button" className={`${btn} inline-flex items-center gap-2 whitespace-nowrap`} disabled={recordingLoading} onClick={() => void loadRecording()}>Refresh recording</button>}</div>}
+            <div className={videoReady ? "mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)]" : "mt-4"}>
+              {videoReady && <div className="min-w-0">
                 <div className={`relative overflow-hidden rounded-xl ${videoReady ? "aspect-video bg-slate-950 text-white" : "min-h-36 border border-slate-200 bg-slate-50 text-slate-700"}`}>
                   {videoReady ? <video ref={videoRef} className="h-full w-full object-contain" src={recording.playback_url as string} controls playsInline preload="metadata" onError={recoverPlayback} aria-label="Interview recording" onTimeUpdate={event => setPlaybackTime(event.currentTarget.currentTime)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} /> : <div className="absolute inset-0 grid place-items-center px-5 text-center"><div><p className="text-sm font-semibold">{recordingLoading ? "Loading private recording…" : recordingStatus === "expired" ? "Recording is no longer available" : recordingStatus === "failed" ? "Recording could not be saved" : "No recording is available"}</p><p className="mt-1 text-xs text-slate-500">{recordingStatus === "expired" || recordingStatus === "failed" ? "Transcript and assessment evidence remain available below." : recordingLoading ? "Requesting secure playback." : "Review the saved answers and assessment below."}</p></div></div>}
                   {videoReady && <button type="button" disabled={!videoReady} title={videoReady ? (isPlaying ? "Pause interview video" : "Play interview video") : "Video unavailable for this candidate"} aria-label={videoReady ? (isPlaying ? "Pause interview video" : "Play interview video") : "Video unavailable for this candidate"} className={`absolute inset-0 m-auto grid h-14 w-14 place-items-center rounded-full bg-white/90 text-xl text-slate-900 shadow transition disabled:cursor-not-allowed disabled:opacity-60 ${isPlaying ? "pointer-events-none opacity-0" : "hover:bg-white"}`} onClick={() => { if (!videoRef.current) return; if (videoRef.current.paused) void videoRef.current.play(); else videoRef.current.pause(); }}>{isPlaying ? "Ⅱ" : "▶"}</button>}
@@ -771,7 +780,7 @@ function CandidateReportDetails({
                 </div>
                 {videoReady && Number(recording?.segment_count || 0) > 1 && <p className="mt-3 text-xs text-slate-500">This recording combines multiple capture segments, so wall-clock timeline markers cannot be aligned reliably.</p>}
 
-              </div>
+              </div>}
               <div className="min-w-0">
                 <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2" role="tablist" aria-label="Recording bookmarks">{[["all", "All"], ["question", "Questions"], ["proctor", "AI Proctor"], ["note", "My notes"]].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={bookmarkFilter === value} className={`rounded-md px-2.5 py-1.5 text-xs font-semibold ${bookmarkFilter === value ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100"}`} onClick={() => setBookmarkFilter(value)}>{label}</button>)}</div>
                 <div id="evidence" className="mt-2 max-h-[28rem] space-y-1 overflow-auto pr-1">{visibleBookmarks.length ? visibleBookmarks.map(item => {
@@ -781,10 +790,9 @@ function CandidateReportDetails({
                   }
                   return <button key={item.id} type="button" className="flex w-full items-start gap-2 rounded-md border border-slate-200 p-2 text-left text-xs hover:bg-slate-50" onClick={() => { if (item.event) { setActiveEvent(events.indexOf(item.event)); seekToEvent(item.event); } else if (item.seconds != null) seekToOffset(item.seconds); }}><span className="min-w-10 font-bold tabular-nums text-slate-700">{item.seconds == null ? "—" : timeLabel(item.seconds)}</span><span className="min-w-0"><strong className="block">{item.text}</strong>{"detail" in item && <span className="mt-0.5 block text-slate-500">{item.detail}</span>}{"saved" in item && !item.saved && <span className="mt-0.5 block text-indigo-700">Draft · not saved</span>}</span></button>;
                 }) : <p className="py-3 text-xs text-slate-500">{bookmarkFilter === "note" ? "No timestamped notes have been added." : bookmarkFilter === "proctor" ? "No proctor bookmarks are available." : "No recording bookmarks are available."}</p>}</div>
-                <form className="mt-3 rounded-lg border border-slate-200 p-3" onSubmit={event => { event.preventDefault(); addBookmarkNote(); }}><label htmlFor="bookmark-note" className="text-xs font-semibold">Add note at current time</label><div className="mt-2 flex gap-2"><input id="bookmark-note" className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-xs" maxLength={120} placeholder={videoReady ? "Add a review note…" : "Load recording to timestamp a note"} value={bookmarkNote} onChange={event => setBookmarkNote(event.target.value)} disabled={!videoReady}/><button type="submit" className={`${btn} px-2 py-1 text-xs`} disabled={!videoReady || !bookmarkNote.trim()}>Add</button></div><p className="mt-1 text-[10px] leading-4 text-slate-500">Notes are draft-only until copied into the officer note and saved with a decision.</p><p className="mt-2 text-[10px] text-slate-400"><kbd>Space</kbd> play · <kbd>←</kbd>/<kbd>→</kbd> seek · <kbd>N</kbd> next flag · <kbd>B</kbd> note</p></form>
+                {videoReady && <form className="mt-3 rounded-lg border border-slate-200 p-3" onSubmit={event => { event.preventDefault(); addBookmarkNote(); }}><label htmlFor="bookmark-note" className="text-xs font-semibold">Add note at current time</label><div className="mt-2 flex gap-2"><input id="bookmark-note" className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-xs" maxLength={120} placeholder={videoReady ? "Add a review note…" : "Load recording to timestamp a note"} value={bookmarkNote} onChange={event => setBookmarkNote(event.target.value)} disabled={!videoReady}/><button type="submit" className={`${btn} px-2 py-1 text-xs`} disabled={!videoReady || !bookmarkNote.trim()}>Add</button></div><p className="mt-1 text-[10px] leading-4 text-slate-500">Notes are draft-only until copied into the officer note and saved with a decision.</p><p className="mt-2 text-[10px] text-slate-400"><kbd>Space</kbd> play · <kbd>←</kbd>/<kbd>→</kbd> seek · <kbd>N</kbd> next flag · <kbd>B</kbd> note</p></form>}
               </div>
             </div>
-            </>}
           </section>
 
           <section id="deep-dive" className={`${reportPanel} scroll-mt-4 p-0`}>

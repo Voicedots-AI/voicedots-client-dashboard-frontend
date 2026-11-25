@@ -2171,3 +2171,21 @@ test('Assessment Intelligence scorecard entry uses the existing attempt pager',a
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
   await page.screenshot({path:'/tmp/attempt-results-mobile.png',fullPage:false});
 });
+
+test('unscored attempt shows saved questions and answers without inventing assessment feedback',async({page})=>{
+  await setup(page);
+  await mockAttemptReports(page,[{...attemptReports[0],overall_score:null,detail:{status:'incomplete',not_assessed_notice:'Evaluation could not be completed.'}}]);
+  await page.route('**/v3/college/students/s1/reports/saved-second/transcript',route=>route.fulfill({json:{turns:[
+    {turn_id:'answer-1',agent_type:'hr',question_text:'Describe your work.',transcript:'I tested payment failures.',has_audio:false},
+    {turn_id:'answer-2',agent_type:'domain',question_text:'How did you verify it?',transcript:'I checked the error logs.',has_audio:false},
+  ]}}));
+  await page.goto('/dashboard/placement-management?drive=drive-1&section=results&candidate=s1');
+  await expect(page.locator('#glance')).toContainText('2 questions');
+  await expect(page.locator('#glance')).toContainText('Evaluation could not be completed.');
+  await expect(page.locator('#recording summary').filter({hasText:'Q1 · Describe your work.'})).toBeVisible();
+  await page.locator('#recording summary').filter({hasText:'Q1 · Describe your work.'}).click();
+  await expect(page.locator('#answer-0')).toContainText('I tested payment failures.');
+  await expect(page.locator('#answer-0')).toContainText('Not assessed');
+  await expect(page.locator('#glance')).not.toContainText('78');
+  await expect(page.locator('#glance')).not.toContainText('Second attempt feedback');
+});
