@@ -1,0 +1,1286 @@
+import MentorCollaboration from '../../mentoring-workspace/MentorCollaboration';
+import MentorCombinedReports from './MentorCombinedReports';
+import MentorSelectionList from './MentorSelectionList';
+import './mentor-combined-reports.css';
+import {useSearchParams} from 'react-router-dom';
+import CandidateDirectory from './MenteeDirectory';
+import MenteeBulkDialog from './MenteeBulkDialog';
+import {emptyMenteeFilters,filterMentees,menteeFilterOptions,selectableMentees,toggleMenteePage,type MenteeFilters} from './mentee-filters';
+import MentorProfilePhoto,{MentorPhotoEditor} from './MentorProfilePhoto';
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Users,
+  UserRoundPlus,
+  Download,
+  Search,
+  Pencil,
+  Trash2,
+  Eye,
+  ArrowRight,
+  ArrowLeft,
+  Gauge,
+  GraduationCap,
+  CalendarDays,
+  CheckCircle2,
+  Mail,
+  Upload,
+  ShieldCheck,
+  History,
+  X,
+  LayoutDashboard,
+  Flag,
+  Compass,
+  MessageSquare,
+  BriefcaseBusiness,
+  RefreshCw,
+} from "lucide-react";
+import {
+  emptyMentor,
+  initialState,
+  exportCsv,
+  type Mentor,
+  type MentorState,
+} from "./mentor-model";
+import "./mentor-management.css";
+import "./mentor-progress-ui.css";
+import "./placement-dashboard-theme.css";
+import "./mentor-dashboard-theme.css";
+import { collegeApi, collegeError, type Program } from "@/api/collegeApi";
+import { normalizeState } from "./mentor-model";
+const collaborationSections: Record<string,string> = {dashboard:'Mentor Dashboard',mentees:'Mentee Progress',discussions:'Discussions',communications:'Discussions',tasks:'Tasks & Schedule'};
+const workspaceViews: Record<string,string> = {'Mentor Dashboard':'Dashboard','Discussions':'Discussions','Communications':'Discussions','Tasks & Schedule':'Tasks & Schedule'};
+const sections = [
+  "Mentor Master",
+  "Assign Mentee",
+  "Reassignment History",
+  "Mentor Dashboard",
+  "Mentor Reports",
+  "Mentee Progress",
+];
+const descriptions = [
+  "Manage mentors, capacity, and allocation.",
+  "Allocate one or multiple mentees to a mentor.",
+  "Reassign mentees between mentors with complete history.",
+  "Overview of key mentoring metrics and career readiness.",
+  "Analyze mentor performance, mentee progress, and outcomes.",
+  "Track individual mentee career development and milestones.",
+];
+const pct = (n: number | null) => (n === null ? "Not assessed" : `${n}%`);
+export default function MentorManagement() {
+  const [mentorParams,setMentorParams]=useSearchParams();
+  const [state, setState] = useState<MentorState>(initialState),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [saving, setSaving] = useState(false);
+  const mutating = useRef(false),
+    requestId = useRef(0),
+    dirty = useRef(false),
+    mentorRef = useRef("");
+  async function load() {
+    const id = ++requestId.current;
+    try {
+      const raw = await collegeApi.get<MentorState>("mentors/state");
+      if (id !== requestId.current) return;
+      const data = normalizeState(raw);
+      setState(data);
+      dirty.current = false;
+      setError("");
+      const preferredMentor = mentorRef.current || mentorParams.get("mentor") || "";
+      const chosen = data.mentors.some((m) => m.id === preferredMentor)
+        ? preferredMentor
+        : data.access.mentor_id || data.mentors[0]?.id || "";
+      setMentorId(chosen);
+      setStudentId((v) =>
+        v==="all"?"all":data.students.some((s) => s.id === v && s.mentorId === chosen)
+          ? v
+          : data.students.find((s) => s.mentorId === chosen)?.id || "",
+      );
+      if (!data.access.can_manage)
+        setTab((v) =>
+          ["Mentor Dashboard", "Mentee Progress", "Discussions", "Tasks & Schedule"].includes(v)
+            ? v
+            : "Mentor Dashboard",
+        );
+    } catch (e) {
+      if (id === requestId.current) setError(collegeError(e));
+    } finally {
+      if (id === requestId.current) setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void load();
+    const refresh = () => {
+      if (!document.hidden && !mutating.current && !dirty.current) void load();
+    };
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      requestId.current++;
+      window.removeEventListener("focus", refresh);
+      clearInterval(timer);
+    };
+  }, []);
+  const [tab, setTab] = useState(mentorParams.has("candidate")?"Mentee Progress":collaborationSections[mentorParams.get("mentorSection")||""]||"Mentor Master"),
+    [search, setSearch] = useState(""),
+    [dept, setDept] = useState(""),
+    [status, setStatus] = useState(""),
+    [notice, setNotice] = useState(""),
+    [editing, setEditing] = useState<Mentor | null>(null),
+    [formTab, setFormTab] = useState(0),
+    [readOnly, setReadOnly] = useState(false),
+    [mentorId, setMentorId] = useState(state.mentors[0]?.id || ""),
+    [selected, setSelected] = useState<string[]>([]),
+    [step, setStep] = useState(1),
+    [bulkOpen,setBulkOpen] = useState(false),
+    [to, setTo] = useState(""),
+    [reason, setReason] = useState("Change in mentor workload"),
+    [studentId, setStudentId] = useState(state.students[0]?.id || ""),
+    [dashboardScope, setDashboardScope] = useState("all"),
+    [academicYearId,setAcademicYearId]=useState("all"),
+    [studentFilters, setStudentFilters] = useState<MenteeFilters>(emptyMenteeFilters),
+    [studentPage,setStudentPage] = useState(1);
+  const [deleting, setDeleting] = useState<Mentor | null>(null);
+  const [photoDraft,setPhotoDraft]=useState<string|null>(null),[photoReading,setPhotoReading]=useState(false);
+  const [catalog,setCatalog]=useState<Program[]>([]),[catalogError,setCatalogError]=useState(''),[catalogLoading,setCatalogLoading]=useState(false),[catalogVersion,setCatalogVersion]=useState(0);
+  useEffect(()=>{setPhotoDraft(null);setPhotoReading(false)},[editing?.id,editing?.staffId]);
+  const modalOpen=Boolean(editing);
+  useEffect(()=>{
+    if(!modalOpen||readOnly)return;
+    const controller=new AbortController();setCatalogLoading(true);setCatalogError('');
+    collegeApi.get<{programs:Program[]}>('academic-catalog',controller.signal).then(data=>{if(!controller.signal.aborted)setCatalog(data.programs||[])}).catch(error=>{if(!controller.signal.aborted)setCatalogError(collegeError(error))}).finally(()=>{if(!controller.signal.aborted)setCatalogLoading(false)});
+    return()=>controller.abort();
+  },[modalOpen,readOnly,catalogVersion]);
+  const departmentOptions=Array.from(new Map(catalog.flatMap(program=>program.departments||[]).map(department=>[department.code,department])).values()).sort((a,b)=>a.display_name.localeCompare(b.display_name));
+  const selectedDepartment=departmentOptions.find(item=>[item.code,item.display_name].some(value=>value.toLowerCase()===editing?.department.trim().toLowerCase()));
+  mentorRef.current = mentorId;
+  async function removeMentor() {
+    if (!deleting || mutating.current || !state.access.can_manage) return;
+    mutating.current = true;
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await collegeApi.remove(`mentors/profiles/${deleting.id}`);
+      setDeleting(null);
+      setNotice("Mentor deleted.");
+      await load();
+    } catch (error) {
+      setDeleting(null);
+      await load();
+      setError(collegeError(error));
+    } finally {
+      mutating.current = false;
+      setSaving(false);
+    }
+  }
+  const commit = async (next: MentorState, action: string, _detail: string) => {
+    if (mutating.current) return false;
+    mutating.current = true;
+    setSaving(true);
+    setNotice("");
+    setError("");
+    const payload = (m: Mentor) => ({
+      staffId: m.staffId,
+      department: m.department,
+      designation: m.designation,
+      phone: m.phone,
+      capacity: m.capacity,
+      active: m.active,
+      bio: m.bio,
+      expertise: m.expertise,
+      preference: m.preference,
+      version: m.version,
+    });
+    try {
+      let invitations = 0,
+        failures = 0;
+      if (action === "Mentor added") {
+        const m = next.mentors.find(
+          (m) => !state.mentors.some((v) => v.id === m.id),
+        );
+        if (!m) throw new Error("Select faculty first.");
+        const saved = await collegeApi.save<{
+          id: string;
+          email_queued: boolean;
+        }>("mentors", {...payload(m),...(photoDraft?{photo:photoDraft}:{})});
+        invitations = 1;
+        failures = saved.email_queued ? 0 : 1;
+      } else if (action === "Mentors imported") {
+        const added = next.mentors.slice(state.mentors.length);
+        const saved = await collegeApi.save<{
+          items: { id: string; email_queued: boolean }[];
+        }>("mentors/bulk", { mentors: added.map(payload) });
+        invitations = saved.items.length;
+        failures = saved.items.filter((m) => !m.email_queued).length;
+      } else if (action === "Mentor updated") {
+        const m = next.mentors.find(
+          (m) =>
+            JSON.stringify(m) !==
+            JSON.stringify(state.mentors.find((v) => v.id === m.id)) || Boolean(photoDraft && editing?.id===m.id),
+        );
+        if (!m) throw new Error("No mentor changes to save.");
+        await collegeApi.save(`mentors/profiles/${m.id}`, {...payload(m),...(photoDraft?{photo:photoDraft}:{})}, true);
+        if(photoDraft)window.dispatchEvent(new CustomEvent("mentor-photo-updated",{detail:{id:m.staffId,kind:"staff"}}));
+      } else if (
+        action === "Mentees assigned" ||
+        action === "Mentees reassigned"
+      ) {
+        const changed = next.students.filter(
+          (s) =>
+            s.mentorId !== state.students.find((v) => v.id === s.id)?.mentorId,
+        );
+        await collegeApi.save("mentors/assign", {
+          mentor_id: changed[0]?.mentorId,
+          student_ids: changed.map((s) => s.id),
+          from_mentor_id: action === "Mentees reassigned" ? mentorId : null,
+          reason: action === "Mentees reassigned" ? reason : "",
+        });
+      } else if (action === "Coaching record updated") {
+        const student = next.students.find(
+          (s) =>
+            JSON.stringify(s) !==
+            JSON.stringify(state.students.find((v) => v.id === s.id)),
+        );
+        if (!student) throw new Error("No coaching changes to save.");
+        await collegeApi.save(
+          `mentors/students/${student.id}/coaching`,
+          {
+            plan: student.plan,
+            notes: student.notes,
+            milestones: student.milestoneItems,
+            version: student.coachingVersion,
+          },
+          true,
+        );
+      }
+
+      await load();
+      setNotice(
+        `${action} saved.${invitations ? ` ${invitations - failures} invitation emails queued.${failures ? ` ${failures} failed; use Resend Invitation.` : ""}` : ""}`,
+      );
+      return true;
+    } catch (e) {
+      setError(
+        e instanceof Error && !(e as { isAxiosError?: boolean }).isAxiosError
+          ? e.message
+          : collegeError(e),
+      );
+      return false;
+    } finally {
+      mutating.current = false;
+      setSaving(false);
+    }
+  };
+  const resend = async (m: Mentor) => {
+    if (mutating.current) return;
+    mutating.current = true;
+    setSaving(true);
+    try {
+      await collegeApi.save(`mentors/${m.id}/invite`, {});
+      setNotice(`Invitation email queued for ${m.email}.`);
+      await load();
+    } catch (e) {
+      setError(collegeError(e));
+    } finally {
+      mutating.current = false;
+      setSaving(false);
+    }
+  };
+  useEffect(()=>{
+    if(!loading){const section=mentorParams.has("candidate")?"Mentee Progress":collaborationSections[mentorParams.get("mentorSection")||""];if(section)setTab(section);else if(!state.access.can_manage)setTab("Mentor Dashboard");}
+  },[loading,state.access.can_manage,mentorParams]);
+  const go = (name: string) => {
+    if(name==='Mentor Reports'&&!state.access.can_manage)return;
+    setTab(name);
+    setMentorParams(previous=>{const next=new URLSearchParams(previous);next.set("view","mentors");const entry=Object.entries(collaborationSections).find(([,label])=>label===name);if(entry)next.set("mentorSection",entry[0]);else next.delete("mentorSection");if(name!=="Mentee Progress"){next.delete("candidate");next.delete("candidateTab");next.delete("candidateAttempt")}return next});
+    setSearch("");
+    setDept("");
+    setStatus("");
+    setSelected([]);
+    setStep(1);
+    setNotice("");
+    setStudentFilters(emptyMenteeFilters());
+
+    setStudentPage(1);
+  };
+  const mentor = state.mentors.find((m) => m.id === mentorId),
+    assigned = state.students.filter((s) => s.mentorId === mentorId),
+    student = state.students.find((s) => s.id === studentId);
+  const departments = Array.from(
+    new Set([
+      ...state.mentors.map((m) => m.department),
+      ...state.students.map((s) => s.department),
+    ]),
+  );
+  const filtered = state.mentors.filter(
+    (m) =>
+      (!dept || m.department === dept) &&
+      (!status || (status === "Active") === m.active) &&
+      `${m.name} ${m.id} ${m.email}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+  );
+  const students = filterMentees(state.students,studentFilters);
+  const studentPageCount=Math.max(1,Math.ceil(students.length/20));
+  const currentStudentPage=Math.min(studentPage,studentPageCount);
+  const visibleStudents=students.slice((currentStudentPage-1)*20,currentStudentPage*20);
+  const selectablePage=selectableMentees(visibleStudents);
+  const selectedOutsideFilters=selected.filter(id=>!students.some(student=>student.id===id)).length;
+  const resetStudentFilters=()=>{setStudentFilters(emptyMenteeFilters());setStudentPage(1)};
+  const toggle = (id: string) =>
+    setSelected((v) =>
+      v.includes(id) ? v.filter((x) => x !== id) : [...v, id],
+    );
+  const saveMentor = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editing || photoReading) return;
+    if (!editing.staffId)
+      return setNotice("Select an existing faculty member.");
+    if (
+      state.mentors.some(
+        (m) =>
+          m.id !== editing.id &&
+          m.email.toLowerCase() === editing.email.toLowerCase(),
+      )
+    )
+      return setNotice("A mentor with this email already exists.");
+    if (editing.capacity < editing.assignedCount)
+      return setNotice("Capacity cannot be below the current allocation.");
+    if (
+      !editing.name.trim() ||
+      !editing.email.trim() ||
+      !editing.department.trim()
+    )
+      return setNotice("Name, email and department are required.");
+    if(catalogLoading||catalogError||!selectedDepartment)return setNotice("Select a department from the institute academic catalog.");
+    const mentorToSave={...editing,department:selectedDepartment.code};
+    const exists = state.mentors.some((m) => m.id === editing.id);
+    if (
+      await commit(
+        {
+          ...state,
+          mentors: exists
+            ? state.mentors.map((m) => (m.id === editing.id ? mentorToSave : m))
+            : [...state.mentors, mentorToSave],
+        },
+        exists ? "Mentor updated" : "Mentor added",
+        `${editing.name} · Faculty mentor access`,
+      )
+    )
+      setEditing(null);
+  };
+  const allocate = async (transfer = false) => {
+    const target = state.mentors.find(
+      (m) => m.id === (transfer ? to : mentorId),
+    );
+    if (!target?.active || !selected.length)
+      return setNotice("Choose an active mentor and at least one student.");
+    const items = state.students.filter((s) => selected.includes(s.id));
+    if (
+      items.length !== selected.length ||
+      items.some((s) => s.student_status==='inactive' || (transfer ? s.mentorId !== mentorId : !!s.mentorId))
+    )
+      return setNotice("Student allocation changed. Select students again.");
+    if (transfer && (!reason.trim() || to === mentorId))
+      return setNotice("Choose a different mentor and enter a reason.");
+    if (target.assignedCount + items.length > target.capacity)
+      return setNotice(
+        "This allocation exceeds the mentor’s maximum capacity.",
+      );
+    const at = new Date().toISOString();
+    if (
+      await commit(
+        {
+          ...state,
+          students: state.students.map((s) =>
+            selected.includes(s.id) ? { ...s, mentorId: target.id } : s,
+          ),
+          transfers: transfer
+            ? [
+                ...items.map((s) => ({
+                  id: crypto.randomUUID(),
+                  at,
+                  student: s.name,
+                  from: mentor?.name || "",
+                  to: target.name,
+                  reason,
+                })),
+                ...state.transfers,
+              ]
+            : state.transfers,
+        },
+        transfer ? "Mentees reassigned" : "Mentees assigned",
+        `${items.length} students → ${target.name}`,
+      )
+    ) {
+      setSelected([]);
+      setStep(1);
+    }
+  };
+  const mentorItems=state.mentors.filter(m=>state.access.can_manage||m.id===state.access.mentor_id).map(m=>({id:m.id,name:m.name,subtitle:[m.department,`${m.assignedCount} mentees`,m.active?'Active':'Inactive'].filter(Boolean).join(' · '),kind:'staff' as const,photoId:m.staffId}));
+  const mentorSelect=(value:string,onChange:(id:string)=>void)=><MentorSelectionList title="Mentors" value={value} items={mentorItems} onChange={id=>{onChange(id);setSelected([]);setStudentId(state.students.find(s=>s.mentorId===id)?.id||'')}}/>;
+  const clearMenteeDetails=(selectedMentor:string)=>setMentorParams(previous=>{const next=new URLSearchParams(previous);next.set("mentor",selectedMentor);for(const key of ["candidate","candidateTab","candidateAttempt"])next.delete(key);return next});
+  const selectProgressMentor=(id:string)=>{setMentorId(id);setStudentId(state.students.find(row=>row.mentorId===id)?.id||"");clearMenteeDetails(id)};
+  useEffect(()=>{
+    const id=mentorParams.get("candidate"),record=state.students.find(row=>row.id===id);
+    if(record){setMentorId(record.mentorId);setStudentId(record.id)}
+  },[mentorParams,state.students]);
+  const scopeId=state.access.can_manage?dashboardScope:mentorId;
+  const yearStudents=state.students.filter(s=>!state.access.can_manage||academicYearId==='all'||s.academicYearIds?.includes(academicYearId));
+  const dashboardStudents=yearStudents.filter(s=>s.mentorId&&(scopeId==='all'||s.mentorId===scopeId));
+  const dashboardMentors=state.mentors.filter(m=>scopeId==='all'||m.id===scopeId);
+  const scopeName=scopeId==='all'?'All mentors':state.mentors.find(m=>m.id===scopeId)?.name||'Selected mentor';
+  const selectDashboardMentor=(id:string)=>{setDashboardScope(id);if(id!=='all'){setMentorId(id);setStudentId(state.students.find(s=>s.mentorId===id)?.id||'')}};
+  const kpis = (items: [typeof Users, string, string | number, string, string?][]) => (
+    <div className="mm-kpis">
+      {items.map(([Icon, label, value, tone, note]) => (
+        <article className={`mm-card mm-kpi mm-kpi-${tone}`} key={label}>
+          <span className={`mm-icon ${tone}`}>
+            <Icon size={25} />
+          </span>
+          <div>
+            <strong>{value}</strong>
+            <span>{label}</span>
+            {note&&<small className="mm-kpi-note">{note}</small>}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+  const exportMentors = () =>
+    exportCsv("mentor-master.csv", [
+      [
+        "Mentor ID",
+        "Name",
+        "Email",
+        "Department",
+        "Capacity",
+        "Assigned",
+        "Status",
+      ],
+      ...filtered.map((m) => [
+        m.id,
+        m.name,
+        m.email,
+        m.department,
+        m.capacity,
+        m.assignedCount,
+        m.active ? "Active" : "Inactive",
+      ]),
+    ]);
+  if (error && !state.access.can_manage && !state.access.mentor_id)
+    return (
+      <section className="mentor-management placement-scheme">
+        <div role="alert">{error}</div>
+        <button onClick={() => void load()}>Retry</button>
+      </section>
+    );
+  if (loading)
+    return (
+      <section className="mentor-management placement-scheme" role="status">
+        Loading mentor management…
+      </section>
+    );
+  const availableSections = state.access.can_manage
+    ? sections
+    : ["Mentor Dashboard", "Mentee Progress", "Discussions", "Tasks & Schedule"];
+  return (
+    <section
+      className={`mentor-management placement-scheme ${!state.access.can_manage?"mm-native-workspace":""} ${tab === "Mentee Progress" ? "mm-progress-workspace" : ""}`}
+      aria-busy={saving}
+      onChange={() => {
+        dirty.current = true;
+      }}
+    >
+      {state.access.can_manage&&<div className="mm-review">
+        <ShieldCheck size={16} />
+        <span>
+          <b>
+            {state.access.can_manage
+              ? "Institute Mentor Management"
+              : "Faculty · Mentor"}
+          </b>{" "}
+          · Shared institute records. Changes appear for the assigned mentor and
+          student.
+        </span>
+        <button disabled={saving} onClick={() => void load()}>
+          Refresh
+        </button>
+      </div>}
+      {error && (
+        <div className="mm-notice" role="alert">
+          {error}
+          <button onClick={() => void load()}>Retry</button>
+        </div>
+      )}
+      {saving && <p role="status">Saving…</p>}
+      {!['Mentor Dashboard','Mentor Reports','Discussions','Communications','Tasks & Schedule'].includes(tab)&&tab!=='Mentee Progress'&&<header className="mm-header">
+        <div>
+          <p className="mm-eyebrow">PLACEMENT MANAGEMENT / MENTOR MANAGEMENT</p>
+          <h1>{tab}</h1>
+          <p>{descriptions[sections.indexOf(tab)]}</p>
+        </div>
+        <div className="mm-actions">
+          {tab === "Mentor Master" ? (
+            <>
+              <button
+                title="Download an Excel file prefilled with eligible faculty. Fill in their mentor details, then upload it."
+                onClick={async()=>{try{const blob=await collegeApi.file('mentors/template');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mentor-import-template.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){setError(collegeError(e))}}}
+              >
+                <Download size={16} /> Download Excel Template
+              </button>
+              <label className="mm-import-button" title="Choose a completed Excel or CSV file to add multiple mentors.">
+                <Upload size={16} /> Upload Mentors (Excel / CSV)
+                <input
+                  type="file"
+                  accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  aria-label="Upload mentors from an Excel or CSV file"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024)
+                      return setNotice("Import file must be under 2 MB.");
+                    if(mutating.current)return;mutating.current=true;setSaving(true);setError('');
+                    try {
+                      const result=await collegeApi.upload<{items:{id:string;email_queued:boolean}[]}>('mentors/import',file);
+                      await load();const failed=result.items.filter(item=>!item.email_queued).length;
+                      setNotice(`${result.items.length} mentors imported. ${result.items.length-failed} invitation emails queued.${failed?' Some invitations failed; use resend.':''}`);
+                    } catch(error){setError(collegeError(error))} finally{mutating.current=false;setSaving(false)}
+                  }}
+                />
+              </label>
+              <button onClick={exportMentors} title="Download the mentor list currently shown below as a CSV file.">
+                <Download size={16} /> Download Mentor List (CSV)
+              </button>
+              <button
+                disabled={saving}
+                className="mm-primary"
+                onClick={async () => {
+                  await load();
+                  setReadOnly(false);
+                  setEditing(emptyMentor());
+                  setFormTab(0);
+                }}
+              >
+                <UserRoundPlus size={16} /> Add Mentor
+              </button>
+            </>
+          ) : (
+            <span className="mm-year">
+              <CalendarDays size={16} /> Live institute records
+            </span>
+          )}
+        </div>
+      </header>}
+      {state.access.can_manage&&<nav className="mm-tabs" aria-label="Mentor management sections">
+        {availableSections.map((name, i) => (
+          <button
+            key={name}
+            className={tab === name ? "selected" : ""}
+            onClick={() => go(name)}
+          >
+            {name==="Mentee Progress"?"Mentee 360°":name}
+          </button>
+        ))}
+      </nav>}
+      {notice && (
+        <div className="mm-notice" role="status">
+          {notice}
+          <button aria-label="Dismiss message" onClick={() => setNotice("")}>
+            <X size={15} />
+          </button>
+        </div>
+      )}
+      {tab === "Mentor Master" && (
+        <>
+          {kpis([
+            [Users, "Total Mentors", state.mentors.length, "blue"],
+            [
+              Users,
+              "Total Mentees",
+              state.students.filter((s) => s.mentorId).length,
+              "green",
+            ],
+            [
+              GraduationCap,
+              "Active Mentors",
+              state.mentors.filter((m) => m.active).length,
+              "purple",
+            ],
+            [
+              Gauge,
+              "Available mentee slots",
+              state.mentors.filter(m=>m.active).reduce((total,m)=>total+Math.max(0,m.capacity-m.assignedCount),0),
+              "orange",
+              "Across active mentors · individual limits apply",
+            ],
+          ])}
+          <div className="mm-card">
+            <div className="mm-filters">
+              <label className="mm-search">
+                <Search size={17} />
+                <input
+                  aria-label="Search mentors"
+                  placeholder="Search by Mentor Name / ID / Email"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </label>
+              <label>
+                Department
+                <select value={dept} onChange={(e) => setDept(e.target.value)}>
+                  <option value="">All Departments</option>
+                  {departments.map((d) => (
+                    <option key={d}>{d}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Status
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option>Active</option>
+                  <option>Inactive</option>
+                </select>
+              </label>
+            </div>
+            <div className="mm-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    {[
+                      "S.No",
+                      "Mentor ID",
+                      "Mentor Name",
+                      "Department",
+                      "Mentee capacity",
+                      "Assigned",
+                      "Available",
+                      "Status",
+                      "Actions",
+                    ].map((h) => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((m, i) => {
+                    const count = m.assignedCount;
+                    return (
+                      <tr key={m.id}>
+                        <td>{i + 1}</td>
+                        <td>
+                          <b>{m.id.slice(0, 10)}</b>
+                        </td>
+                        <td>
+                          <span className="mm-person">
+                            <MentorProfilePhoto kind="staff" id={m.staffId} name={m.name}/>
+                            <b>{m.name}</b>
+                            <span className="mm-badge green">Mentor</span>
+                          </span>
+                        </td>
+                        <td>{m.department}</td>
+                        <td>{m.capacity}</td>
+                        <td>{count}</td>
+                        <td>{Math.max(0, m.capacity - count)}</td>
+                        <td>
+                          <span
+                            className={`mm-badge ${m.active ? "green" : "gray"}`}
+                          >
+                            {m.active ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="mm-actions">
+                            <button
+                              className="mm-icon-button"
+                              aria-label={`View ${m.name}`}
+                              onClick={() => {
+                                setReadOnly(true);
+                                setEditing({ ...m });
+                                setFormTab(0);
+                              }}
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              className="mm-icon-button"
+                              aria-label={`Edit ${m.name}`}
+                              onClick={() => {
+                                setReadOnly(false);
+                                setEditing({ ...m });
+                                setFormTab(0);
+                              }}
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              className="mm-icon-button"
+                              aria-label={`Delete ${m.name}`}
+                              disabled={saving || count > 0}
+                              title={count > 0 ? "Reassign all mentees before deleting this mentor" : "Delete mentor"}
+                              onClick={() => setDeleting(m)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                            <button
+                              className="mm-icon-button"
+                              aria-label={`Invitation status for ${m.name}`}
+                              disabled={saving || !m.active}
+                              title={`Resend Invitation · ${m.invitation}`}
+                              onClick={() => void resend(m)}
+                            >
+                              <Mail size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {!filtered.length && (
+                <p className="mm-empty">No mentors match your search.</p>
+              )}
+            </div>
+            <footer className="mm-table-footer">
+              Showing {filtered.length} of {state.mentors.length} mentors
+              <span>Capacity is set per mentor and checked before every allocation.</span>
+            </footer>
+          </div>
+        </>
+      )}
+      {tab === "Assign Mentee" && (
+        <>
+          <div className="mm-steps">
+            {["Select Mentor", "Choose Students", "Review & Assign"].map(
+              (s, i) => (
+                <button
+                  className={step >= i + 1 ? "current" : ""}
+                  key={s}
+                  onClick={() => {
+                    if (i === 0 || mentor?.active) setStep(i + 1);
+                  }}
+                >
+                  <span>
+                    {step > i + 1 ? <CheckCircle2 size={19} /> : i + 1}
+                  </span>
+                  {s}
+                </button>
+              ),
+            )}
+          </div>
+          <div className="mm-card">
+            <div className="mm-assignment-mentor-selector mm-dashboard-top-selection">{mentorSelect(mentorId,setMentorId)}</div>
+            {mentor ? <div className="mm-assignment-summary">
+              <div className="mm-selected-mentor"><MentorProfilePhoto kind="staff" id={mentor.staffId} name={mentor.name} large/><div><span className="mm-mentor-code">{mentor.employeeCode||`Mentor ${mentor.id.slice(0,8)}`}</span><h2>{mentor.name}</h2><p>{[mentor.department,mentor.designation].filter(Boolean).join(' · ')||'Faculty mentor'}</p>{mentor.email&&<a href={`mailto:${mentor.email}`}>{mentor.email}</a>}{mentor.phone&&<span className="mm-mentor-contact">{mentor.phone}</span>}{mentor.expertise&&<small>{mentor.expertise}</small>}<span className={`mm-badge ${mentor.active?'green':'gray'}`}>{mentor.active?'Active mentor':'Inactive mentor'}</span></div></div>
+              <div className="mm-assignment-stats">{[[Users,'Assigned',mentor.assignedCount],[GraduationCap,'Maximum',mentor.capacity],[CheckCircle2,'Available',Math.max(0,mentor.capacity-mentor.assignedCount)]].map(([Icon,label,value])=>{const StatIcon=Icon as typeof Users;return <div key={String(label)}><StatIcon size={24} aria-hidden="true"/><div><small>{String(label)}</small><strong>{String(value)}<span> students</span></strong></div></div>})}</div>
+            </div>:<p className="mm-empty">Choose a mentor to view their profile and allocation capacity.</p>}
+            {step === 1 ? (
+              <p className="mm-assignment-hint">Review the mentor’s profile and available capacity, then choose students to assign.</p>
+            ) : step === 2 ? (
+              <>
+                <form className="mm-student-filters" aria-label="Filter mentees" onSubmit={event=>event.preventDefault()}>
+                  <div className="mm-student-filter-fields">
+                    {([['batch','Batch'],['degree','Degree'],['department','Department'],['semester','Semester']] as const).map(([key,label])=><label key={key}>{label}<select aria-label={`Filter students by ${label.toLowerCase()}`} value={studentFilters[key]} onChange={event=>{setStudentFilters(current=>({...current,[key]:event.target.value}));setStudentPage(1)}}><option value="">All {label==='Batch'?'batches':label==='Degree'?'degrees':label==='Department'?'departments':'semesters'}</option>{menteeFilterOptions(state.students,key).map(value=><option value={value} key={value}>{value}</option>)}</select></label>)}
+                  </div>
+                  <div className="mm-student-filter-actions"><label className="mm-search"><Search size={16}/><input aria-label="Search students" placeholder="Name, registration number or email" value={studentFilters.query} onChange={event=>{setStudentFilters(current=>({...current,query:event.target.value}));setStudentPage(1)}}/></label><button type="button" onClick={resetStudentFilters}>Clear filters</button></div>
+                </form>
+                <div className="mm-student-results" aria-live="polite"><span><b>{students.length}</b> matching students · {selectableMentees(students).length} available to assign</span><span>{selected.length} selected{selectedOutsideFilters>0?` · ${selectedOutsideFilters} outside current filters`:''}{selected.length>0&&<button type="button" onClick={()=>setSelected([])}>Clear selection</button>}</span></div>
+                <div className="mm-assignment-workspace"><div className="mm-assignment-roster"><div className="mm-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th><input type="checkbox" aria-label="Select all available students on this page" disabled={!selectablePage.length} checked={selectablePage.length>0&&selectablePage.every(student=>selected.includes(student.id))} ref={element=>{if(element)element.indeterminate=selectablePage.some(student=>selected.includes(student.id))&&!selectablePage.every(student=>selected.includes(student.id))}} onChange={()=>setSelected(current=>toggleMenteePage(current,visibleStudents))}/></th>
+                        <th>S.No</th>
+                        <th>Reg. No</th>
+                        <th>Student Name</th>
+                        <th>Batch</th>
+                        <th>Degree</th>
+                        <th>Dept.</th>
+                        <th>Sem.</th>
+                        <th>Allocation</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleStudents.map((s,index) => (
+                        <tr key={s.id}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${s.name}`}
+                              disabled={!!s.mentorId||s.student_status==='inactive'}
+                              checked={selected.includes(s.id)}
+                              onChange={() => toggle(s.id)}
+                            />
+                          </td>
+                          <td>{(currentStudentPage-1)*20+index+1}</td>
+                          <td>{s.rollNumber || s.id}</td>
+                          <td>
+                            <span className="mm-person"><MentorProfilePhoto kind="students" id={s.id} name={s.name}/><b>{s.name}</b></span>
+                          </td>
+                          <td>{s.batch}</td>
+                          <td>{s.degree}</td>
+                          <td>{s.department}</td>
+                          <td>{s.semester}</td>
+                          <td>
+                            <span
+                              className={`mm-badge ${s.mentorId ? "gray" : "green"}`}
+                            >
+                              {s.mentorId ? 'Assigned' : s.student_status==='inactive'?'Inactive':'Available'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {!students.length&&<tr><td colSpan={9}><div className="mm-empty">No students match these filters. Try another selection or clear the filters.</div></td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mm-student-pagination"><span>{students.length?`${(currentStudentPage-1)*20+1}–${Math.min(currentStudentPage*20,students.length)} of ${students.length}`:'0 students'}</span><div><button type="button" disabled={currentStudentPage===1} onClick={()=>setStudentPage(currentStudentPage-1)}>Previous</button><span>Page {currentStudentPage} of {studentPageCount}</span><button type="button" disabled={currentStudentPage===studentPageCount} onClick={()=>setStudentPage(currentStudentPage+1)}>Next</button></div></div>
+                </div><aside className="mm-allocation-sidebar"><h2>Assignment Summary</h2>{[[CalendarDays,'Scheduled Sessions',null],[History,'Pending Assignments',selected.length],[Users,'Mentoring Attended',null],[GraduationCap,'After Assignment',(mentor?.assignedCount||0)+selected.length],[CheckCircle2,'Availabilities',Math.max(0,(mentor?.capacity||0)-(mentor?.assignedCount||0)-selected.length)]].map(([Icon,label,value])=>{const SummaryIcon=Icon as typeof Users;return <div className="mm-allocation-summary-row" key={String(label)}><SummaryIcon size={16} aria-hidden="true"/><span>{String(label)}</span><b>{value===null?'Not recorded':String(value)}</b></div>})}<p className="mm-muted">Session scheduling and mentoring attendance have no saved records yet.</p>{(mentor?.assignedCount||0)+selected.length>(mentor?.capacity||0)&&<p className="mm-bulk-error" role="alert">Selection exceeds this mentor’s capacity. Remove students before assigning.</p>}</aside></div>
+              </>
+            ) : (
+              <div className="mm-empty">
+                <h2>Review assignment</h2>
+                <p>
+                  {selected.length} students will be assigned to{" "}
+                  <b>{mentor?.name}</b>.
+                </p>
+                {state.students
+                  .filter((s) => selected.includes(s.id))
+                  .map((s) => (
+                    <p key={s.id}>
+                      {s.rollNumber || s.id} · {s.name}
+                    </p>
+                  ))}
+              </div>
+            )}
+            <footer className="mm-form-footer mm-assignment-footer"><div className="mm-assignment-secondary-actions"><button type="button" disabled={!mentor?.active||saving} onClick={()=>setBulkOpen(true)}><Upload size={15}/>Bulk Assignment (Excel)</button><button type="button" disabled={!mentor} onClick={()=>go('Reassignment History')}><History size={15}/>Reassign / Transfer</button></div>
+              <span>{selected.length} students selected</span><button type="button" disabled={saving} onClick={()=>go('Mentor Master')}>Cancel</button>
+              {step > 1 && (
+                <button onClick={() => setStep(step - 1)}>
+                  <ArrowLeft size={15} /> Back
+                </button>
+              )}
+              <button
+                className="mm-primary"
+                disabled={saving||(step > 1 && !selected.length) || !mentor?.active||(step>1&&(mentor.assignedCount+selected.length>mentor.capacity))}
+                onClick={() => (step < 3 ? setStep(step + 1) : allocate())}
+              >
+                {step === 3
+                  ? "Assign Mentees"
+                  : step === 1
+                    ? "Choose Students"
+                    : "Review & Assign"}
+                <ArrowRight size={16} />
+              </button>
+            </footer>
+          </div>
+        </>
+      )}
+      {tab === "Reassignment History" && (
+        <div className="mm-grid">
+          <div className="mm-card">
+            <h2>Reassign Mentee / Transfer</h2>
+            <div className="mm-field-grid">
+              <label>From Mentor{mentorSelect(mentorId, setMentorId)}</label>
+              <label>
+                To Mentor
+                <MentorSelectionList title="Mentors" value={to} items={mentorItems.filter(m=>m.id!==mentorId&&state.mentors.find(original=>original.id===m.id)?.active)} onChange={setTo}/>
+
+              </label>
+            </div>
+            <fieldset>
+              <legend>Select Students *</legend>
+              {assigned.map((s) => (
+                <label className="mm-check" key={s.id}>
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(s.id)}
+                    onChange={() => toggle(s.id)}
+                  />
+                  {s.name} ({s.rollNumber || s.id})
+                </label>
+              ))}
+              {!assigned.length && <p>No students assigned to this mentor.</p>}
+            </fieldset>
+            <label>
+              Reason *
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                required
+              />
+            </label>
+            <footer className="mm-form-footer">
+              <button onClick={() => setSelected([])}>Cancel</button>
+              <button
+                className="mm-primary"
+                disabled={!selected.length || !to}
+                onClick={() => allocate(true)}
+              >
+                Reassign
+              </button>
+            </footer>
+          </div>
+          <div className="mm-card">
+            <h2>
+              <History size={19} /> Transfer History
+            </h2>
+            {!state.transfers.length && (
+              <p className="mm-empty">No reassignments recorded yet.</p>
+            )}
+            {state.transfers.map((t) => (
+              <article className="mm-history" key={t.id}>
+                <b>{t.student}</b>
+                <p>
+                  {t.from} → {t.to}
+                </p>
+                <small>
+                  {t.reason} · {new Date(t.at).toLocaleString()}
+                </small>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+      {tab==='Mentor Reports'&&state.access.can_manage&&<MentorCombinedReports students={state.students.filter(student=>Boolean(student.mentorId))} mentors={state.mentors}/>}
+      {tab==="Mentee Progress"&&<div className="mm-mentee-directory">
+       {state.access.can_manage&&<div className="mm-progress-top-selections mm-mentor-only" aria-label="Mentor selection"><MentorSelectionList title="Mentors" value={mentorId} items={mentorItems} onChange={selectProgressMentor}/><button type="button" className="mm-selector-refresh" onClick={()=>void load()}><RefreshCw size={15}/>Refresh</button></div>}
+       <CandidateDirectory key={mentorId} mentorView={!state.access.can_manage} menteeView studentIds={assigned.map(row=>row.id)}/>
+      </div>}
+      {workspaceViews[tab]&&(            <div className="mm-dashboard-layout">
+             {state.access.can_manage&&<div className="mm-dashboard-top-selection"><MentorSelectionList title="Mentors" value={scopeId} items={mentorItems} allLabel="All mentors" onChange={selectDashboardMentor}/></div>}
+             <MentorCollaboration activeView={workspaceViews[tab]} onViewChange={view=>go(view==='Dashboard'?'Mentor Dashboard':view)} mentorId={scopeId} demo={mentorParams.get('mentoringDemo')==='1'} onMentees={()=>go('Mentee Progress')} onReports={state.access.can_manage?()=>go('Mentor Reports'):undefined}/>
+
+
+            </div>
+      )}
+      {bulkOpen&&<MenteeBulkDialog onClose={()=>setBulkOpen(false)} onPreview={ids=>{setSelected(ids);setStep(3);setBulkOpen(false);setNotice(`${ids.length} students selected from Excel. Review before assigning.`)}}/>}
+      {deleting && (
+        <div className="mm-modal-backdrop">
+          <section className="mm-modal" role="dialog" aria-modal="true" aria-label="Delete mentor">
+            <header className="mm-heading"><h2>Delete mentor?</h2></header>
+            <p>Delete {deleting.name} from Mentor Management? Their faculty account and mentoring history will be preserved. Deletion is allowed only when no mentees are assigned.</p>
+            <footer className="mm-form-footer">
+              <button type="button" autoFocus disabled={saving} onClick={() => setDeleting(null)}>Cancel</button>
+              <button type="button" className="mm-primary" disabled={saving} onClick={() => void removeMentor()}>{saving ? "Deleting…" : "Delete mentor"}</button>
+            </footer>
+          </section>
+        </div>
+      )}
+      {editing && (
+        <div className="mm-modal-backdrop">
+          <section
+            className="mm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={readOnly ? "Mentor details" : "Add / Edit Mentor"}
+          >
+            <header className="mm-heading">
+              <h2>{readOnly ? "Mentor Details" : "Add / Edit Mentor"}</h2>
+              <button
+                aria-label="Close mentor form"
+                onClick={() => setEditing(null)}
+              >
+                <X size={19} />
+              </button>
+            </header>
+            <nav className="mm-subtabs">
+              {[
+                "Mentor Details",
+                "Expertise & Areas",
+                "Allocation & Preference",
+              ].map((t, i) => (
+                <button
+                  type="button"
+                  key={t}
+                  className={formTab === i ? "selected" : ""}
+                  onClick={() => setFormTab(i)}
+                >
+                  {t}
+                </button>
+              ))}
+            </nav>
+            <form onSubmit={saveMentor}>
+              <fieldset disabled={readOnly || saving}>
+                <div className="mm-edit-layout">
+                  <div className="mm-photo">
+                    <MentorPhotoEditor key={editing.staffId} staffId={editing.staffId} name={editing.name} readOnly={readOnly} draft={photoDraft} onChange={setPhotoDraft} onReadingChange={setPhotoReading}/>
+                  </div>
+                  <div className="mm-field-grid">
+                    {formTab === 0 ? (
+                      <>
+                        <label>
+                          Faculty *
+                          <select
+                            required
+                            disabled={!!editing.id}
+                            aria-label="Existing faculty"
+                            value={editing.staffId}
+                            onChange={(e) => {
+                              const f = state.faculty.find(
+                                (f) => f.id === e.target.value,
+                              );
+                              if (f)
+                                setEditing({
+                                  ...editing,
+                                  staffId: f.id,
+                                  name: f.name,
+                                  email: f.email,
+                                });
+                            }}
+                          >
+                            <option value="">Select existing faculty</option>
+                            {state.faculty
+                              .filter(
+                                (f) => !f.mentor_id || f.id === editing.staffId,
+                              )
+                              .map((f) => (
+                                <option key={f.id} value={f.id}>
+                                  {f.name} · {f.employee_code || f.email}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label>
+                          Mentor Name *
+                          <input
+                            disabled
+                            required
+                            value={editing.name}
+                            onChange={(e) =>
+                              setEditing({ ...editing, name: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Department *
+                          {readOnly?<input disabled value={editing.department}/>:<><select required aria-label="Mentor department" disabled={catalogLoading||Boolean(catalogError)} value={selectedDepartment?.code||''} onChange={event=>setEditing({...editing,department:event.target.value})}><option value="">{catalogLoading?'Loading departments…':'Select department'}</option>{departmentOptions.map(item=><option key={item.code} value={item.code}>{item.display_name} · {item.code}</option>)}</select>{catalogError?<span className="mm-field-error" role="alert">{catalogError} <button type="button" onClick={()=>setCatalogVersion(v=>v+1)}>Retry</button></span>:!catalogLoading&&!departmentOptions.length?<small>Add departments in Institution Management first.</small>:editing.department&&!selectedDepartment?<small>Previously saved: {editing.department}. Choose a department from the catalog.</small>:null}</>}
+                        </label>
+                        <label>
+                          Designation *
+                          <input
+                            required
+                            value={editing.designation}
+                            onChange={(e) =>
+                              setEditing({
+                                ...editing,
+                                designation: e.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Email ID *
+                          <input
+                            disabled
+                            required
+                            type="email"
+                            value={editing.email}
+                            onChange={(e) =>
+                              setEditing({ ...editing, email: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Mobile Number
+                          <input
+                            type="tel"
+                            value={editing.phone}
+                            onChange={(e) =>
+                              setEditing({ ...editing, phone: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Maximum Mentee Allocation *
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            max="1000"
+                            value={editing.capacity}
+                            onChange={(e) =>
+                              setEditing({
+                                ...editing,
+                                capacity: Number(e.target.value),
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Mentor Status
+                          <span className="mm-check">
+                            <input
+                              type="checkbox"
+                              checked={editing.active}
+                              onChange={(e) =>
+                                setEditing({
+                                  ...editing,
+                                  active: e.target.checked,
+                                })
+                              }
+                            />
+                            {editing.active ? "Active" : "Inactive"}
+                          </span>
+                        </label>
+                      </>
+                    ) : formTab === 1 ? (
+                      <>
+                        <label className="mm-full">
+                          Expertise & Areas
+                          <input
+                            value={editing.expertise}
+                            onChange={(e) =>
+                              setEditing({
+                                ...editing,
+                                expertise: e.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label className="mm-full">
+                          Mentor Bio / Expertise
+                          <textarea
+                            rows={5}
+                            maxLength={500}
+                            value={editing.bio}
+                            onChange={(e) =>
+                              setEditing({ ...editing, bio: e.target.value })
+                            }
+                          />
+                          <small>{editing.bio.length} / 500</small>
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <label className="mm-full">
+                          Allocation Preferences
+                          <textarea
+                            rows={4}
+                            value={editing.preference}
+                            onChange={(e) =>
+                              setEditing({
+                                ...editing,
+                                preference: e.target.value,
+                              })
+                            }
+                            placeholder="Preferred departments, batches and mentoring areas"
+                          />
+                        </label>
+                        <p className="mm-full mm-invite">
+                          <Mail size={20} />
+                          <span>
+                            An invitation is sent to{" "}
+                            <b>{editing.email || "the mentor’s email"}</b> when
+                            mentor access is assigned. Existing faculty keep
+                            their current login; invited faculty receive a
+                            password setup link.
+                          </span>
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </fieldset>
+              <footer className="mm-form-footer">
+                <button type="button" onClick={() => setEditing(null)}>
+                  {readOnly ? "Close" : "Cancel"}
+                </button>
+                {!readOnly && (
+                  <button
+                    disabled={saving || photoReading || !editing.staffId}
+                    className="mm-primary"
+                  >
+                    Save Mentor
+                  </button>
+                )}
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
+      <footer className="mm-footer">
+        <ShieldCheck size={16} /> {state.access.can_manage?<>{'Create & Manage Mentors'} <span>•</span> Allocate & Assign <span>•</span> Track Progress <span>•</span> Reassign & Review</>:<>Mentee 360° <span>•</span> Career Readiness <span>•</span> Improvement Plans</>}
+      </footer>
+    </section>
+  );
+}
+
+function MentorMilestones({
+  items,
+}: {
+  items: import("./mentor-model").Milestone[];
+}) {
+  const [draft, setDraft] = useState(items);
+  return (
+    <fieldset>
+      <legend>Milestones</legend>
+      <input type="hidden" name="milestones" value={JSON.stringify(draft)} />
+      {draft.map((m, i) => (
+        <div key={m.id} className="mm-milestone-edit">
+          <input
+            type="checkbox"
+            aria-label={`Complete milestone ${i + 1}`}
+            checked={m.done}
+            onChange={(e) =>
+              setDraft((v) =>
+                v.map((x) =>
+                  x.id === m.id ? { ...x, done: e.target.checked } : x,
+                ),
+              )
+            }
+          />
+          <input
+            aria-label={`Milestone ${i + 1}`}
+            required
+            maxLength={200}
+            value={m.title}
+            onChange={(e) =>
+              setDraft((v) =>
+                v.map((x) =>
+                  x.id === m.id ? { ...x, title: e.target.value } : x,
+                ),
+              )
+            }
+          />
+          <input
+            type="date"
+            aria-label={`Milestone ${i + 1} due date`}
+            value={m.due || ""}
+            onChange={(e) =>
+              setDraft((v) =>
+                v.map((x) =>
+                  x.id === m.id ? { ...x, due: e.target.value || null } : x,
+                ),
+              )
+            }
+          />
+          <button
+            type="button"
+            aria-label={`Remove milestone ${i + 1}`}
+            onClick={() => setDraft((v) => v.filter((x) => x.id !== m.id))}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() =>
+          setDraft((v) => [
+            ...v,
+            { id: crypto.randomUUID(), title: "", due: null, done: false },
+          ])
+        }
+      >
+        Add Milestone
+      </button>
+    </fieldset>
+  );
+}

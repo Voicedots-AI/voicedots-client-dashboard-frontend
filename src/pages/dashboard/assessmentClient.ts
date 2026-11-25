@@ -10,7 +10,10 @@ const queue=new AssessmentQueue(6);
 export function assessmentSession(){const token=localStorage.getItem('access_token')||'';assessmentCache.session(token);return token}
 export function cachedAssessmentRequest<T>(path:string):Promise<T>{
  const session=assessmentSession();
- return assessmentCache.get(`student-ats-v1:${path}`,()=>queue.run(async()=>{if((localStorage.getItem('access_token')||'')!==session)throw new Error('The signed-in session changed.');const value=await collegeApi.get<T>(path);if((localStorage.getItem('access_token')||'')!==session)throw new Error('The signed-in session changed.');return value}));
+ return assessmentCache.get(`student-ats-v1:${path}`,()=>queue.run(async()=>{if((localStorage.getItem('access_token')||'')!==session)throw new Error('The signed-in session changed.');const value=await collegeApi.get<T>(path);if((localStorage.getItem('access_token')||'')!==session)throw new Error('The signed-in session changed.');return value}),value=>{
+  const row=value as {ats_status?:string;assessment?:{ats_status?:string};assessments?:Record<string,{ats_status?:string}>};
+  return row?.ats_status==='processing'||row?.assessment?.ats_status==='processing'||Object.values(row?.assessments||{}).some(item=>item.ats_status==='processing')?5000:path.includes('/reports?include_assessments=true')||path.endsWith('/ats-fit')?30000:Infinity;
+ });
 }
 export function peekAssessment<T>(path:string){assessmentSession();return assessmentCache.peek<T>(`student-ats-v1:${path}`)}
 export function clearAssessmentCache(){assessmentSession();assessmentCache.clear()}
@@ -22,6 +25,12 @@ export async function loadStudentAssessment(id:string):Promise<FullBundle>{
  const path=studentAssessmentPath(id);
  const bundle=await cachedAssessmentRequest<FullBundle>(path);
  if(bundle.student?.id!==id||!Array.isArray(bundle.drives)||!Array.isArray(bundle.reports))throw new Error('The student assessment response is incomplete.');
+ for(const [driveId,row] of Object.entries(bundle.assessments||{})){
+  if(row.student_id&&row.student_id!==id||row.drive_id&&row.drive_id!==driveId||bundle.resume_version&&row.resume_version&&bundle.resume_version!==row.resume_version){
+   invalidateStudentAssessment(id);
+   throw new UserFacingError('The ATS response does not match this student, drive, and current resume. Refresh assessments to load the current student-portal result.');
+  }
+ }
  return bundle;
 }
 export async function loadCandidateAssessment(studentId:string,driveId:string):Promise<FullAssessment>{
@@ -34,15 +43,17 @@ export async function loadCandidateAssessment(studentId:string,driveId:string):P
  return {...result.student,...result.assessment,student_id:studentId} as FullAssessment;
 }
 export async function loadAllStudentAssessments(bundle:FullBundle):Promise<Record<string,FullAssessment>>{
- if(bundle.assessment_contract==='student-ats-v1'&&bundle.assessments)return Object.fromEntries(Object.entries(bundle.assessments).map(([id,row])=>[id,mergeResumeEvidence(bundle,row)]));
- // Both batch and single reads use the student assessment contract.
- const results=await Promise.allSettled(driveHistory(bundle).map(async({drive})=>[drive.drive_id,await loadCandidateAssessment(bundle.student.id,drive.drive_id)] as const));
- return Object.fromEntries(results.flatMap(result=>result.status==='fulfilled'?[result.value]:[]));
+ const assessments:Record<string,FullAssessment>=bundle.assessment_contract==='student-ats-v1'?Object.fromEntries(Object.entries(bundle.assessments||{}).map(([id,row])=>[id,mergeResumeEvidence(bundle,row)])):{};
+ // A partial batch must not leave otherwise available drive results blank.
+ const missing=driveHistory(bundle).filter(({drive})=>!assessments[drive.drive_id]);
+ const results=await Promise.allSettled(missing.map(async({drive})=>[drive.drive_id,await loadCandidateAssessment(bundle.student.id,drive.drive_id)] as const));
+ for(const result of results)if(result.status==='fulfilled')assessments[result.value[0]]=result.value[1];
+ return assessments;
 }
 export const endpointMissing=(error:unknown)=>isAxiosError(error)&&error.response?.status===404;
 let viewSession='';let viewState:unknown;
 export function readAssessmentView<T>():T|undefined{const session=assessmentSession();if(viewSession!==session){viewSession=session;viewState=undefined}return viewState as T|undefined}
 export function saveAssessmentView<T>(value:T){viewSession=assessmentSession();viewState=value}
-export function invalidateStudentAssessment(id:string){assessmentCache.invalidate(`student-ats-v1:${studentAssessmentPath(id)}`)}
+export function invalidateStudentAssessment(id:string){assessmentCache.invalidate(`student-ats-v1:${studentAssessmentPath(id)}`);assessmentCache.invalidatePrefix(`student-ats-v1:students/${encodeURIComponent(id)}/drives/`)}
 
 export function invalidateStudentScorecard(studentId:string,sessionId:string){assessmentCache.invalidate(`student-ats-v1:students/${encodeURIComponent(studentId)}/reports/${encodeURIComponent(sessionId)}/scorecard`)}

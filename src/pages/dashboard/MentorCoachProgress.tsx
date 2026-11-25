@@ -1,0 +1,23 @@
+import {CoachScheduleReattemptView} from '@/shared-student-coach/CoachScheduleReattemptView';
+import {useState} from 'react';
+import {PhoneCall,TrendingUp,CalendarDays,BookOpen,CalendarClock,ChartNoAxesCombined,Award,LockKeyhole,Volume2,Send} from 'lucide-react';
+import {StudentCoachScreens,studentTrajectory} from '@/shared-student-coach/StudentCoachScreens';
+import StudentScorecard from './StudentScorecard';
+import type {StudentJourneyResponse} from './studentJourneyContract';
+import './mentor-coach-progress.css';
+const tabs=[{name:'AI Coach',icon:PhoneCall,screen:3},{name:'Daily Progress & Plan',icon:TrendingUp,screen:4},{name:'Learning Schedule',icon:CalendarDays,screen:5},{name:'Resources & Questions',icon:BookOpen,screen:6},{name:'Schedule Re-attempt',icon:CalendarClock,screen:7},{name:'Progress Tracking',icon:ChartNoAxesCombined,screen:8},{name:'Placement Readiness',icon:Award,screen:9}];
+export default function MentorCoachProgress({data,studentName,companyName,roleTitle,degree=''}:{data:StudentJourneyResponse;studentName:string;companyName?:string;roleTitle?:string;degree?:string}){
+ const [tab,setTab]=useState(0),[report,setReport]=useState('');
+ const messages=(data.coaching?.discussions||[]).filter(row=>row.mode==='interview'&&row.source==='portal'&&!row.plan_id&&!row.report_session_id).flatMap(row=>row.messages);
+ const reports=data.reports||[],published=reports.filter(row=>row.status==='released'&&row.session_id).sort((a,b)=>Date.parse(String(b.completed_at||b.created_at||''))-Date.parse(String(a.completed_at||a.created_at||'')));
+ const trajectory=studentTrajectory(reports,data.drive_id,data.journey?.progress_tracking?.trajectory_points);
+ const navigate=(screen:number)=>{if(screen===2){setReport(String(published[0]?.session_id||''));return}const index=tabs.findIndex(tab=>tab.screen===screen);if(index>=0)setTab(index)};
+ return <div className="mc-workspace mc-student-mirror"><nav className="mc-tabs" aria-label="Student AI Coach sections">{tabs.map(({name,icon:Icon},index)=><button type="button" key={name} aria-pressed={tab===index} onClick={()=>setTab(index)}><Icon size={16}/>{name}</button>)}</nav>
+ {report?<section><button className="ai-button" type="button" onClick={()=>setReport('')}>← Back to progress</button><StudentScorecard studentId={data.student_id} sessionId={report} readOnly/></section>:tab===0?<>
+ <div className="mc-context"><div><span className="mc-eyebrow">YOUR CAMPUS PLACEMENT COMPANION</span><h2>Talk to your placement officer</h2><p>{companyName||'Placement drive'} · {roleTitle||'Role not recorded'}</p></div><span className="mc-readonly"><LockKeyhole size={14}/>Read-only view · {studentName}</span></div>
+ <div className="mc-coach-layout"><aside className="mc-persona"><span className="mc-persona-badge">Ready when you are</span><img src="/assets/mentor-coach/domain-neutral.png" alt="Dr. Rajesh, the student portal’s AI placement coach"/><div><h3>Dr. Rajesh</h3><p>Head of Campus Placements · AI Persona</p><div className="mc-call-controls"><button type="button" disabled title="The student starts calls in their own portal"><PhoneCall size={16}/>Start call</button><button type="button" disabled aria-label="Coach voice playback"><Volume2 size={16}/></button></div></div></aside>
+ <section className="mc-discussion-panel"><header><h3>Live conversation</h3><span>Saved for this opportunity</span></header><p className="mc-intro">Discuss your interview assessment and prepare for your next attempt with evidence-based guidance.</p><div className="mc-messages">{messages.map((message,index)=><article key={index} className={message.speaker==='student'?'is-student':'is-coach'}><header><b>{message.speaker==='student'?studentName:'Placement officer'}</b></header><p>{message.text}</p></article>)}</div><div className="mc-passive-input"><input disabled placeholder="Read-only conversation" aria-label="Saved coach discussion"/><button disabled aria-label="Send message"><Send size={18}/></button></div></section></div>
+ <footer className="mc-coach-links"><button type="button" className="ai-button" onClick={()=>setTab(1)}>Open learning plan</button><button type="button" className="ai-button" onClick={()=>setTab(4)}>Schedule re-attempt</button><span>Confirm availability and bookings in the student portal.</span></footer>
+ </>:<StudentCoachScreens screen={tabs[tab].screen} journey={data.journey} studentName={studentName} degree={degree} readOnly onNavigate={navigate} trajectory={trajectory} onReport={published.length?()=>navigate(2):undefined} reattemptContent={<CoachScheduleReattemptView student={{id:data.student_id,full_name:studentName,program:degree}} driveId={data.drive_id} initialPlan={data.reattempt} readOnly/>}/>}
+ </div>;
+}

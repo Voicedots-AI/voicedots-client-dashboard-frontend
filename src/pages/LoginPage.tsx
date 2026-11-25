@@ -1,3 +1,4 @@
+import PasswordRecovery from './PasswordRecovery';
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
@@ -11,6 +12,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [searchParams] = useSearchParams();
+  const recoveryToken = searchParams.get("recovery_token");
+  const [recovering,setRecovering] = useState(false);
   const setupToken = searchParams.get("setup_token");
   const clientSetupToken = searchParams.get("client_setup_token");
   const invitationToken = clientSetupToken || setupToken;
@@ -82,6 +85,8 @@ const LoginPage = () => {
     finally { setLoading(false); }
   };
 
+
+  if(recovering||recoveryToken)return <PasswordRecovery initialEmail={email} token={recoveryToken} onBack={()=>{setRecovering(false);navigate("/login",{replace:true})}}/>;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center px-4">
@@ -193,12 +198,7 @@ const LoginPage = () => {
                 Trust this device
               </label>
 
-              <a
-                href="#"
-                className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
-              >
-                Forgot password?
-              </a>
+              <button type="button" onClick={()=>setRecovering(true)} className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">Forgot password?</button>
             </div>
 
             {/* Submit */}

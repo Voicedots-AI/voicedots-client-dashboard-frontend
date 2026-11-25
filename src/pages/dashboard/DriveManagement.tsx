@@ -1,4 +1,8 @@
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import DriveName from "../../drive-description/DriveName";
+import {atsIndicator} from '@/shared-assessment/atsCutoff';
 import {RosterExpandControl} from '@/shared-assessment/RosterExpandControl';
+import { UserFacingError } from '@/lib/userFacingError';
 import {loadCandidateAssessment,peekAssessment,studentAssessmentPath,mergeResumeEvidence,invalidateStudentAssessment,type FullBundle} from './assessmentClient';
 import { createPortal } from 'react-dom';
 import EvidenceText from './EvidenceText';
@@ -14,9 +18,9 @@ import {
   type RoundConfiguration,
 } from "@/api/collegeApi";
 import {
-  btn,
-  field,
-  panel,
+  btn as sharedButton,
+  field as sharedField,
+  panel as sharedPanel,
   roleLabels,
   selectionName,
   type AgentLibrary,
@@ -29,6 +33,13 @@ import DriveQuestionBank from "./DriveQuestionBank";
 import CreateDriveWizard from "./CreateDriveWizard";
 import ATSFitAssessment from "./ATSFitAssessment";
 import "./interviewResults.css";
+
+import './placement-dashboard-theme.css';
+import './placement-drives-theme.css';
+
+const btn = `${sharedButton} pd-button`;
+const field = `${sharedField} pd-field`;
+const panel = `${sharedPanel} pd-panel`;
 
 type Data = Record<string, unknown>;
 type Candidate = Data & {
@@ -87,7 +98,7 @@ type Candidate = Data & {
 
 function shortEvidence(value:string) { const text=value.replace(/\s+/g,' ').trim(); const sentence=text.match(/^.{1,180}?[.!?](?:\s|$)/)?.[0]; return sentence?.trim() || (text.length>180 ? text.slice(0,177).trimEnd()+'…' : text); }
 
-function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: string; candidate: Candidate; onOpenReport: () => void }) {
+export function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: string; candidate: Candidate; onOpenReport: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -121,20 +132,20 @@ function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: s
     return [row.title, row.label, row.focus, row.strength, row.text, row.why, row.evidence, row.summary, row.description, row.problem, row.rationale]
       .find(value => typeof value === "string" && value.trim()) as string || "";
   };
-  return <span className="relative inline-flex">
-    <button type="button" className="text-sm font-semibold text-indigo-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600" aria-haspopup="dialog" aria-expanded={open} onClick={() => open ? setOpen(false) : void load()}>
+  return <Popover open={open} onOpenChange={nextOpen => { if (nextOpen) void load(); else setOpen(false); }}>
+    <PopoverTrigger asChild><button type="button" className="text-sm font-semibold text-indigo-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
       View strengths &amp; gaps <span aria-hidden="true">›</span>
-    </button>
-    {open && <span role="dialog" aria-label={`Interview strengths and gaps for ${candidate.full_name}`} className="absolute left-0 top-full z-40 mt-2 block w-[min(30rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 text-left shadow-xl sm:p-5">
+    </button></PopoverTrigger>
+    <PopoverContent align="start" collisionPadding={16} showArrow={false} aria-label={`Interview strengths and gaps for ${candidate.full_name}`} className="w-[min(30rem,calc(100vw-2rem))] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain break-words p-4 text-left sm:p-5">
       <span className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3"><span><strong className="text-sm text-slate-900">{candidate.full_name}</strong><span className="mt-0.5 block text-xs text-slate-500">Interview evidence · {candidate.recommendation || "AI recommendation unavailable"}</span></span><button type="button" aria-label="Close strengths and gaps" className="rounded-md px-2 text-lg leading-6 text-slate-500 hover:bg-slate-100" onClick={() => setOpen(false)}>×</button></span>
       {loading ? <span role="status" className="mt-4 block text-sm text-slate-500">Loading interview evidence…</span> : error ? <span role="alert" className="mt-4 block text-sm text-rose-700">{error}<button className="ml-2 font-semibold underline" onClick={() => { setLoaded(false); void load(); }}>Retry</button></span> : <span className="mt-4 grid gap-4 sm:grid-cols-2">
         <span><strong className="text-xs font-bold uppercase tracking-wide text-emerald-700">Strengths</strong>{strengthItems.length ? <span className="mt-2 block space-y-2">{strengthItems.slice(0,3).map((item,index)=><span key={`strength-${index}`} className="block text-sm leading-5 text-slate-700">{shortEvidence(textOf(item)) || "No text supplied for this report item."}</span>)}</span> : <span className="mt-2 block text-sm text-slate-500">No strengths were included in the available report.</span>}</span>
         <span><strong className="text-xs font-bold uppercase tracking-wide text-amber-700">Growth areas</strong>{gapItems.length ? <span className="mt-2 block space-y-2">{gapItems.slice(0,3).map((item,index)=><span key={`gap-${index}`} className="block text-sm leading-5 text-slate-700">{shortEvidence(textOf(item)) || "No text supplied for this report item."}</span>)}</span> : <span className="mt-2 block text-sm text-slate-500">No growth areas were included in the available report.</span>}</span>
       </span>}
       {loaded && rounds.length > 0 && <span className="mt-4 block border-t border-slate-100 pt-3"><strong className="text-xs font-bold uppercase tracking-wide text-slate-600">Interview rounds</strong><span className="mt-2 flex flex-wrap gap-2">{rounds.slice(0,4).map((item,index)=>{const row=(item||{}) as Data;return <span key={`round-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700">{String(row.agent_type || row.track || `Round ${index+1}`)}{row.score != null ? ` · ${String(row.score)}/100` : ""}</span>})}</span></span>}
-      <button type="button" onClick={onOpenReport} className="mt-4 inline-flex text-sm font-semibold text-indigo-700 hover:underline">Open full interview report <span aria-hidden="true" className="ml-1">↗</span></button>
-    </span>}
-  </span>;
+      <button type="button" onClick={() => { setOpen(false); onOpenReport(); }} className="mt-4 inline-flex text-sm font-semibold text-indigo-700 hover:underline">Open full interview report <span aria-hidden="true" className="ml-1">↗</span></button>
+    </PopoverContent>
+  </Popover>;
 }
 
 function CandidateOfficerActions({ driveId, candidate, onSaved }: { driveId: string; candidate: Candidate; onSaved: () => void }) {
@@ -229,7 +240,7 @@ function Metric({
   note?: string;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <article className="pd-panel pd-kpi rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </p>
@@ -276,7 +287,7 @@ function candidateInterviewStatus(candidate: Candidate): string {
 }
 
 function InterviewProgressChart({assigned, progress}:{assigned:number;progress:Data}) {
-  const rows = [ ['not_started','Not started','#cbd5e1'],['in_progress','In progress','#8b5cf6'],['completed','Completed','#10b981'],['needs_review','Needs review','#f59e0b'],['failed','Failed','#f43f5e'],['expired','Ended / expired','#f97316'] ];
+  const rows = [ ['not_started','Not started','#cbd5e1'],['in_progress','In progress','#8b5cf6'],['completed','Completed','#10b981'],['needs_review','Needs review','#f59e0b'],['failed','Failed','#f43f5e'],['expired','Ended / expired','#f97316'], ...(Number(progress.other || 0) > 0 ? [['other','Other status','#64748b']] : []) ];
   let cursor=0;
   const slices=rows.map(([key,,color]) => {const start=cursor;cursor += assigned ? Number(progress[key] || 0)/assigned*100 : 0;return `${color} ${start}% ${cursor}%`;});
   const background=assigned ? `conic-gradient(${slices.join(',')}, #f1f5f9 ${cursor}% 100%)` : '#f1f5f9';
@@ -326,7 +337,7 @@ function ResumeMatchSummary({ driveId, candidate, onOpen }: { driveId: string; c
   const gaps=rows.filter(row=>["NO_EVIDENCE","WEAK_OR_INFERRED"].includes(String(row.match_status))).slice(0,4);
   return <span className="resume-evidence-trigger relative inline-flex" onMouseEnter={()=>{if(closeTimer.current)clearTimeout(closeTimer.current);if(window.matchMedia?.("(hover: hover)").matches){if(!Array.isArray(candidate.skills))void loadResumeMatch(driveId,candidate.student_id).catch(()=>{});timer.current=setTimeout(show,180)}}} onMouseLeave={event=>{if(!document.getElementById(`resume-match-${candidate.student_id}`)?.contains(event.relatedTarget as Node|null))close()}} onKeyDown={event=>{if(event.key==="Escape"&&open){event.stopPropagation();setOpen(false);skipFocus.current=document.activeElement!==button.current;button.current?.focus()}}}>
     <button ref={button} type="button" className="resume-evidence-label rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-600" aria-haspopup="dialog" aria-expanded={open} aria-controls={`resume-match-${candidate.student_id}`} onFocus={()=>{if(skipFocus.current)skipFocus.current=false;else show()}} onBlur={event=>{if(!event.currentTarget.parentElement?.contains(event.relatedTarget as Node|null)&&!document.getElementById(`resume-match-${candidate.student_id}`)?.contains(event.relatedTarget as Node|null))close()}} onClick={()=>{if(!open)show()}}>ATS Fit & Resume Evidence</button>
-    {open&&createPortal(<span id={`resume-match-${candidate.student_id}`} role="dialog" aria-label={`Resume match for ${candidate.full_name}`} style={position} className={`fixed z-50 block max-h-[min(32rem,calc(100dvh-2rem))] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-4 text-left shadow-xl dark:border-slate-700 dark:bg-slate-900`} onMouseEnter={()=>{if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current)}} onMouseLeave={event=>{if(!button.current?.parentElement?.contains(event.relatedTarget as Node|null))close()}}>
+    {open&&createPortal(<span id={`resume-match-${candidate.student_id}`} role="dialog" aria-label={`Resume match for ${candidate.full_name}`} style={position} className={`placement-drives-scheme placement-scheme pd-portal fixed z-50 block max-h-[min(32rem,calc(100dvh-2rem))] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-4 text-left shadow-xl dark:border-slate-700 dark:bg-slate-900`} onMouseEnter={()=>{if(timer.current)clearTimeout(timer.current);if(closeTimer.current)clearTimeout(closeTimer.current)}} onMouseLeave={event=>{if(!button.current?.parentElement?.contains(event.relatedTarget as Node|null))close()}}>
       <span className="flex items-start justify-between gap-3"><span className="min-w-0"><strong className="block truncate text-sm text-slate-900 dark:text-white">{candidate.full_name}</strong><span className="text-xs text-slate-500">Resume · role evidence</span></span><button type="button" aria-label="Close resume match" className="rounded-md px-2 text-slate-500 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-600" onClick={()=>setOpen(false)}>×</button></span>
       {loading?<span role="status" className="mt-3 block text-sm text-slate-500">Checking resume evidence…</span>:error?<span role="alert" className="mt-3 block text-sm text-rose-700">{error}<button type="button" className="ml-2 font-semibold underline" onClick={()=>void load()}>Retry</button></span>:!summary||summary.ats_fit_score==null||rows.length===0?<span role="status" className="mt-3 block text-sm text-slate-500">{atsStatusLabel(String(summary?.ats_status||candidate.ats_status||''))}</span>:<>
         <span className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800"><span className="text-xs font-medium text-slate-600 dark:text-slate-300">AI resume match</span><strong className="text-sm text-slate-900 dark:text-white">{summary.ats_fit_score==null?"Not assessed":`${summary.ats_fit_score}/100`}</strong></span>
@@ -340,7 +351,7 @@ function ResumeMatchSummary({ driveId, candidate, onOpen }: { driveId: string; c
   </span>;
 }
 
-export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequirements,initialAssessment,onOpenCoach}:{driveId:string;candidate:Candidate;drive:Drive|null;onClose:()=>void;onReviewRequirements:()=>void;initialAssessment?:Data;onOpenCoach?:()=>void}) {
+export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequirements,initialAssessment,cutoff,onOpenCoach}:{driveId:string;candidate:Candidate;drive:Drive|null;onClose:()=>void;onReviewRequirements?:()=>void;initialAssessment?:Data;cutoff?:number|null;onOpenCoach?:()=>void}) {
   const dialogRef=useRef<HTMLElement>(null);
   const closeRef=useRef(onClose);
   useEffect(()=>{closeRef.current=onClose},[onClose]);
@@ -367,8 +378,8 @@ export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequireme
     return()=>{document.removeEventListener('keydown',key);if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true})};
   },[]);
   const merged={...candidate,...result} as Candidate;
-  const assessmentData={...result,job_description:result?.job_description||null,current_drive_job_description:drive?.id===driveId?drive.jd_raw_text:null};
-  return createPortal(<div style={{margin:0}} className="ats-assessment-page" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="ats-assessment-dialog"><header className="ats-assessment-dialog-header"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
+  const assessmentData={...result,criteria_ats_fit:result?.criteria_ats_fit??cutoff??(drive?.id===driveId?drive.criteria_ats_fit:undefined),job_description:result?.job_description||null,current_drive_job_description:drive?.id===driveId?drive.jd_raw_text:null};
+  return createPortal(<div style={{margin:0}} className="ats-assessment-page placement-drives-scheme placement-scheme pd-portal" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="ats-assessment-dialog"><header className="ats-assessment-dialog-header"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
 }
 
 export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezone,checked,onSelect,onReport,onATS,onSaved,busy,expandAll}:{candidate:Candidate;drive:Drive|null;driveId:string;collegeTimezone:string;checked:boolean;onSelect:(selected:boolean)=>void;onReport:()=>void;onATS:()=>void;onSaved:()=>void;busy:boolean;expandAll?:boolean}){
@@ -381,11 +392,11 @@ export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezo
     <div className="placement-result-summary">
       <div className="placement-result-person"><input type="checkbox" aria-label={`Select ${candidate.full_name}`} checked={checked} onChange={event=>onSelect(event.target.checked)}/><StudentAvatar student={candidate} size="h-11 w-11"/><div><h4>{candidate.full_name}</h4><p>{candidate.email||candidate.roll_number||'Email unavailable'}</p>{candidate.rank!=null&&<span className="placement-result-rank">#{candidate.rank} in this drive</span>}</div></div>
       <dl className="placement-result-academics">{[['Degree',candidate.program],['Branch',candidate.department_code],['Year',candidate.graduation_year],['CGPA',candidate.cgpa]].map(([label,value])=><div key={String(label)}><dt>{label}</dt><dd>{value==null||value===''?'—':String(value)}</dd></div>)}</dl>
-      <div className="placement-result-ats"><span>ATS Fit</span><ATSMatchInfo driveId={driveId} candidate={candidate} compact onOpen={onATS}/></div>
+      <div className="placement-result-ats"><span>ATS Fit</span><ATSMatchInfo driveId={driveId} candidate={candidate} cutoff={drive?.criteria_ats_fit} compact onOpen={onATS}/></div>
       <div className="placement-result-assessment"><div><span>Overall assessment</span><strong>{score==null?'Not assessed':`${score}%`}</strong></div><progress max={100} value={score??0} aria-label={score==null?'Interview not assessed':`Overall interview assessment ${score}%`}/><p>{candidate.readiness||candidate.recommendation||'Complete the interview to view assessment feedback.'}</p><div className="placement-result-primary-actions"><button type="button" className="placement-result-report-link" disabled={busy||!candidate.report_ready} onClick={onReport}>View full assessment <ExternalLink size={12}/></button></div></div>
     </div>
 
-    <div className="placement-result-timeline"><table><thead><tr><th>Drive / company</th><th>Interview window</th><th>Scorecard</th><th>Interview status</th><th>Attempt</th><th>Review</th></tr></thead><tbody><tr><th scope="row">{drive?.company_name||'Placement drive'}<small>{drive?.role_title||'Role not supplied'}</small></th><td>{drive?.window_start_at?formatPlacementDateTime(drive.window_start_at,collegeTimezone):'Not scheduled'}{drive?.window_end_at&&<> – {formatPlacementDateTime(drive.window_end_at,collegeTimezone)}</>}</td><td><button className="placement-result-score" disabled={busy||!candidate.report_ready} onClick={onReport}>{score==null?'Not assessed':`${score}/100`}</button></td><td><InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></td><td><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/></td><td><button type="button" className="placement-result-expand" aria-expanded={expanded} aria-controls={detailId} onClick={()=>setExpanded(value=>!value)}>{expanded?'Collapse':'Review details'}<ChevronDown size={14} className={expanded?'is-open':''}/></button></td></tr></tbody></table></div>
+    <div className="placement-result-timeline"><table><thead><tr><th>Drive / company</th><th>Interview window</th><th>Scorecard</th><th>Interview status</th><th>Attempt</th><th>Review</th></tr></thead><tbody><tr><th scope="row"><DriveName id={driveId} studentId={candidate.student_id} company={drive?.company_name} role={drive?.role_title}>{drive?.company_name||'Placement drive'}<small>{drive?.role_title||'Role not supplied'}</small></DriveName></th><td>{drive?.window_start_at?formatPlacementDateTime(drive.window_start_at,collegeTimezone):'Not scheduled'}{drive?.window_end_at&&<> – {formatPlacementDateTime(drive.window_end_at,collegeTimezone)}</>}</td><td><button className="placement-result-score" disabled={busy||!candidate.report_ready} onClick={onReport}>{score==null?'Not assessed':`${score}/100`}</button></td><td><InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></td><td><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/></td><td><button type="button" className="placement-result-expand" aria-expanded={expanded} aria-controls={detailId} onClick={()=>setExpanded(value=>!value)}>{expanded?'Collapse':'Review details'}<ChevronDown size={14} className={expanded?'is-open':''}/></button></td></tr></tbody></table></div>
     {expanded&&<section className="placement-result-review" id={detailId} aria-label={`Review details for ${candidate.full_name}`}>
       <div className="placement-result-review-metrics"><div><h5>Interview assessment</h5><div className="placement-result-score-chips">{[['Interview',candidate.overall_score],['Readiness / PRI',candidate.ranking_score],['Job fit',candidate.job_fit_score]].map(([label,value])=><span key={String(label)} className={`result-score-chip ${typeof value!=='number'?'score-unavailable':value>=75?'score-strong':value>=50?'score-developing':'score-review'}`}><span>{label}</span><strong>{typeof value==='number'?`${value}/100`:'Not assessed'}</strong></span>)}</div></div><div><h5>Interview rounds</h5><div className="placement-result-score-chips">{candidate.agent_summary?.length?candidate.agent_summary.map((round,index)=><span className="result-round-chip" key={index}><span>{String(round.label||displayName(String(round.agent_type||`Round ${index+1}`)))}</span><strong>{round.score==null?'Not assessed':`${round.score}/100`}</strong></span>):<p>Round scores not available.</p>}</div></div></div>
       <div className="placement-result-review-line"><b>AI recommendation</b><StatusBadge value={candidate.recommendation||'Not assessed'}/>{candidate.report_ready&&<CandidateStrengthGap driveId={driveId} candidate={candidate} onOpenReport={onReport}/>}<button className="placement-result-outline" onClick={onATS}>ATS Fit &amp; resume evidence</button></div>
@@ -676,7 +687,7 @@ function atsStatusLabel(status:string) {
   return ({evaluated:'Evaluated',processing:'Processing',resume_not_available:'Resume Not Available',evaluation_failed:'Evaluation Failed',needs_reevaluation:'Needs Re-evaluation'} as Record<string,string>)[status] || 'Needs Re-evaluation';
 }
 
-function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;candidate:Candidate;compact?:boolean;onOpen:()=>void}) {
+function ATSMatchInfo({driveId,candidate,cutoff,compact=false,onOpen}:{driveId:string;candidate:Candidate;cutoff?:number|null;compact?:boolean;onOpen:()=>void}) {
   const scope = `${driveId}:${candidate.student_id}`;
   const [assessment, setAssessment] = useState<{scope:string; row:Candidate|null; failed:boolean}>();
   const [retry, setRetry] = useState(0);
@@ -701,8 +712,7 @@ function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;c
   const current = assessment?.scope === scope ? assessment : undefined;
   const row = current?.row;
   const score = row?.ats_status === "evaluated" && typeof row.ats_fit_score === "number" && Number.isFinite(row.ats_fit_score) && row.ats_fit_score >= 0 && row.ats_fit_score <= 100 ? row.ats_fit_score : null;
-  // Presentation only: 50 is the requested tint threshold, never an eligibility rule.
-  const tone = score === null ? "neutral" : score >= 50 ? "green" : "red";
+  const tone = atsIndicator(score,row?.criteria_ats_fit??cutoff);
   const rows=row?.skills||[];
   const matched=rows.filter(row=>['FULL_MATCH','RELATED_EVIDENCE'].includes(String(row.match_status)));
   const missing=rows.filter(row=>row.priority==='mandatory'&&['NO_EVIDENCE','WEAK_OR_INFERRED'].includes(String(row.match_status)));
@@ -713,7 +723,7 @@ function ATSMatchInfo({driveId,candidate,compact=false,onOpen}:{driveId:string;c
   </div>;
 }
 
-export function ATSResumeFile({ driveId, studentId }: { driveId: string; studentId: string }) {
+export function ATSResumeFile({ driveId, studentId, filePath }: { driveId?: string; studentId: string; filePath?:string }) {
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [url, setUrl] = useState("");
   const [mime, setMime] = useState("");
@@ -721,7 +731,7 @@ export function ATSResumeFile({ driveId, studentId }: { driveId: string; student
     let active = true;
     let objectUrl = "";
     setState("loading");
-    collegeApi.file(`drives/${driveId}/candidates/${studentId}/resume-file`).then(file => {
+    collegeApi.file(filePath||`drives/${driveId}/candidates/${studentId}/resume-file`).then(file => {
       if (!active) return;
       if (!file.size) { setState("missing"); return; }
       objectUrl = URL.createObjectURL(file);
@@ -733,7 +743,7 @@ export function ATSResumeFile({ driveId, studentId }: { driveId: string; student
       setState((error as { response?: { status?: number } })?.response?.status === 404 ? "missing" : "error");
     });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [driveId, studentId]);
+  }, [driveId, studentId, filePath]);
   return <section className="rounded-xl border p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-semibold">Original resume</h4><p className="text-xs text-slate-500">Source document used for resume-to-JD ATS Fit.</p></div>{state === "ready" && <a className={btn} href={url} download>Download resume</a>}</div>{state === "loading" && <p className="mt-3 text-sm text-slate-500">Loading the candidate’s resume…</p>}{state === "missing" && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">No resume document is available for this candidate.</p>}{state === "error" && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">The resume document could not be loaded. Try opening the candidate details again.</p>}{state === "ready" && mime === "application/pdf" && <iframe title="Candidate resume PDF preview" src={`${url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`} className="mt-3 h-[82vh] min-h-[680px] max-h-[1100px] w-full rounded-lg border" />}{state === "ready" && mime !== "application/pdf" && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">Preview is unavailable for this document format. Use Download resume to review the original file.</p>}</section>;
 }
 function Bar({
@@ -1859,7 +1869,7 @@ export default function DriveManagement({
       count("result_view=all"), collegeApi.get<Data>(`drives/${driveId}/dashboard/overview?limit=1&offset=0&q=`, controller.signal), count("result_view=incomplete"), count("result_view=decision_pending"), count("decision=shortlist"), count("publication_state=released"),
     ]).then(([candidates, overview, incomplete, decisionPending, shortlisted, released]) => {
       if (controller.signal.aborted) return;
-      setResultKpis({ candidates: Number(candidates), interviewed: Number(((overview as Data).interview_progress as Data)?.completed || 0), incomplete: Number(incomplete), decisionPending: Number(decisionPending), shortlisted: Number(shortlisted), released: Number(released) });
+      setResultKpis({ candidates: Number(candidates), interviewed: Number((((overview as Data).metrics || overview) as Data).interview_completed || 0), incomplete: Number(incomplete), decisionPending: Number(decisionPending), shortlisted: Number(shortlisted), released: Number(released) });
       setResultKpisState("ready");
     }).catch(() => { if (!controller.signal.aborted) setResultKpisState("error"); });
     return () => controller.abort();
@@ -2130,7 +2140,7 @@ export default function DriveManagement({
       />
     );
   return (
-    <section className={`space-y-5 drive-tab-${tab}${tab === "results" ? " result-reference-page" : ""}`}>
+    <section className={`placement-drives-scheme placement-scheme pd-drive-detail space-y-5 drive-tab-${tab}${tab === "results" ? " result-reference-page" : ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <button className={btn} onClick={back}>← Placement drives</button>
         <div className="flex flex-wrap items-center gap-2">
@@ -2238,9 +2248,10 @@ export default function DriveManagement({
                 <article className={panel}>
                   <h3 className="font-bold">Interview Progress</h3>
                   <p className="mb-5 text-sm text-slate-500">
-                    Operational state of assigned candidates.
+                    Each candidate is counted once. Any completed attempt counts as completed, including candidates taking a retry.
                   </p>
                   <InterviewProgressChart assigned={assigned} progress={progress}/>
+                  {Number(metrics.completed_awaiting_review || 0)>0&&<p className="mt-3 text-xs text-slate-500">Includes {Number(metrics.completed_awaiting_review)} completed {Number(metrics.completed_awaiting_review)===1?'interview':'interviews'} awaiting evaluation review.</p>}
                 </article>
                 <article className={panel}>
                   <h3 className="font-bold">Readiness Distribution</h3>
@@ -2577,7 +2588,7 @@ export default function DriveManagement({
                       {tab === "results" ? (
                         <>
                           <td className="p-3"><InterviewStatusBadge value={candidateInterviewStatus(c)}/><p className="mt-2 text-xs text-slate-500">{[c.program,c.department_code].filter(Boolean).join(" · ") || "Academic details unavailable"} · Attempt {c.attempt_number || 1}</p></td>
-                          <td className="p-3"><ATSMatchInfo driveId={driveId} candidate={c} compact onOpen={()=>setAtsCandidate(c)}/></td>
+                          <td className="p-3"><ATSMatchInfo driveId={driveId} candidate={c} cutoff={drive?.criteria_ats_fit} compact onOpen={()=>setAtsCandidate(c)}/></td>
                           <td className="p-3"><span className="text-base font-medium">{c.overall_score==null?'—':`${c.overall_score}/100`}</span><p className="mt-1 text-xs text-slate-500">PRI {c.ranking_score==null?'—':`${c.ranking_score}/100`}</p></td>
                           <td className="p-3"><p>{c.job_fit_score==null?'—':`${c.job_fit_score}/100`}</p><p className="mt-1 text-xs text-slate-500">{c.readiness || 'Not assessed'}</p></td>
                           <td className="p-3"><p>{c.proctoring_score==null?'—':`${c.proctoring_score}/100`}</p><div className="mt-1"><StatusBadge value={c.integrity_review_label || c.integrity_review_status || 'not assessed'}/></div></td>
@@ -2694,11 +2705,17 @@ export default function DriveManagement({
             setError("");
             try {
               const result = await collegeApi.save<{warnings?: string[]}>(`drives/${driveId}`, body, true);
+              if ('criteria_interview_score' in body) {
+                const saved = await collegeApi.get<Drive>(`drives/${driveId}`);
+                if ((saved.criteria_interview_score ?? null) !== body.criteria_interview_score) {
+                  throw new UserFacingError('The drive was saved, but its interview score requirement could not be confirmed. Reopen Eligibility and check the saved value.');
+                }
+              }
               const eligibilityChanged = ["min_cgpa", "eligible_departments", "eligible_programs", "eligible_graduation_years"].some(key => key in body);
               setNotice(result?.warnings?.length
                 ? `Drive section saved. ${result.warnings.join(" ")}`
                 : eligibilityChanged
-                  ? "Eligibility criteria saved and candidate assignments refreshed."
+                  ? `Eligibility criteria saved and candidate assignments refreshed.${body.criteria_interview_score != null ? ` Minimum interview score saved: ${body.criteria_interview_score}%.` : ''}`
                   : "Drive section saved.");
               setVersion((v) => v + 1);
             } catch (e) {

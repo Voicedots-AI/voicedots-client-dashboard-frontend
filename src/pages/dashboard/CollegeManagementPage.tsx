@@ -1,7 +1,18 @@
+import SentimentAnalysis from "./SentimentAnalysis";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   ArrowUpRight,
+  ArrowRight,
+  CalendarDays,
+  CircleDollarSign,
+  Clock3,
+  LockKeyhole,
+  MapPin,
+  Pencil,
+  Trash2,
+  UnlockKeyhole,
+  UserCheck,
   BriefcaseBusiness,
   CalendarClock,
   LayoutGrid,
@@ -23,6 +34,7 @@ import {
 import { useCollegeAccess } from "@/hooks/useCollegeAccess";
 import PlacementDashboard from "./PlacementDashboard";
 import AssessmentIntelligence from "./AssessmentIntelligence";
+import MentorManagement from "./MentorManagement";
 import CandidateDirectory from "./CandidateDirectory";
 import FeedbackDashboard from "./FeedbackDashboard";
 import CreateDriveWizard from "./CreateDriveWizard";
@@ -33,13 +45,16 @@ import PlacementAnalytics, { type Analytics } from "./PlacementAnalytics";
 import StaffImport from "./StaffImport";
 import { displayName, formatDateOnly, formatPlacementDateTime, PLACEMENT_TIME_ZONE } from "./placementDisplay";
 
+import './placement-dashboard-theme.css';
+import './placement-drives-theme.css';
+
 const card =
-  "rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900";
+  "pd-panel rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900";
 const input =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-indigo-500 dark:border-slate-700 dark:bg-slate-900";
+  "pd-field w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-indigo-500 dark:border-slate-700 dark:bg-slate-900";
 const button =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold disabled:opacity-50 dark:border-slate-700";
-const primary = `${button} border-indigo-600 bg-indigo-600 text-white`;
+  "pd-button inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold disabled:opacity-50 dark:border-slate-700";
+const primary = `${button} pd-primary border-indigo-600 bg-indigo-600 text-white`;
 const date = (value?: string) =>
   value && /^\d{4}-\d{2}-\d{2}$/.test(value)
     ? formatDateOnly(value)
@@ -147,9 +162,11 @@ export default function CollegeManagementPage() {
   } = useCollegeAccess();
   const [params, setParams] = useSearchParams();
   const requestedTab = (params.get("view") || "placements") as
+      | "mentors"
       | "assessment-intelligence"
       | "dashboard"
       | "feedback"
+      | "sentiment"
       | "placements"
       | "analytics"
       | "agents"
@@ -175,7 +192,7 @@ export default function CollegeManagementPage() {
     [type, setType] = useState(""),
     [sort, setSort] = useState("recent");
   useEffect(() => {
-    if (!access?.enabled) return;
+    if (!access?.enabled || (access.is_mentor && access.erp_role !== 'college_admin')) return;
     const c = new AbortController();
     setLoading(true);
     setError("");
@@ -223,9 +240,9 @@ export default function CollegeManagementPage() {
       });
     void requests;
     return () => c.abort();
-  }, [access?.enabled, version, driveId]);
+  }, [access?.enabled, access?.is_mentor, access?.erp_role, version, driveId]);
   useEffect(() => {
-    if (!access?.enabled || driveId || creating || tab !== "placements") return;
+    if (!access?.enabled || (access.is_mentor && access.erp_role !== "college_admin") || driveId || creating || tab !== "placements") return;
     const controller = new AbortController();
     let pending = false;
     const refreshOverview = async () => {
@@ -240,7 +257,7 @@ export default function CollegeManagementPage() {
     const timer = window.setInterval(() => void refreshOverview(), 15000);
     document.addEventListener("visibilitychange", refreshOverview);
     return () => { controller.abort(); window.clearInterval(timer); document.removeEventListener("visibilitychange", refreshOverview); };
-  }, [access?.enabled, driveId, creating, tab]);
+  }, [access?.enabled, access?.is_mentor, access?.erp_role, driveId, creating, tab]);
   const filtered = useMemo(
     () =>
       drives
@@ -313,6 +330,7 @@ export default function CollegeManagementPage() {
         </button>
       </section>
     );
+  if (access.is_mentor && access.erp_role !== "college_admin" && (!["mentors","candidates"].includes(tab) || !!driveId || creating || !!draftId)) return <Navigate to="/dashboard/placement-management?view=mentors" replace/>;
   const navigate = (view: string) =>
     setParams((p) => {
       p.set("view", view);
@@ -320,14 +338,23 @@ export default function CollegeManagementPage() {
       p.delete("create");
       p.delete("draft");
       p.delete("section");
+      p.delete("candidate");p.delete("candidateTab");p.delete("candidateAttempt");
       return p;
     });
+  if(tab==="candidates"&&access.is_mentor&&access.erp_role!=="college_admin"){
+    const next=new URLSearchParams(params);next.set("view","mentors");next.set("mentorSection","mentees");
+    return <Navigate to={`/dashboard/placement-management?${next}`} replace/>;
+  }
+  if (tab === "mentors") return <MentorManagement/>;
+  if (tab === "candidates") return <CandidateDirectory mentorView={!!access.is_mentor && access.erp_role !== "college_admin"}/>;
   if (tab === "assessment-intelligence") return <AssessmentIntelligence/>;
   if (tab === "dashboard") return <PlacementDashboard />;
+  if (tab === "sentiment") return <SentimentAnalysis/>;
   if (tab === "feedback") return <FeedbackDashboard/>;
   if (creating)
     return (
       <CreateDriveWizard
+        key={draftId||'new'}
         programs={programs}
         collegeTimezone={PLACEMENT_TIME_ZONE}
         draftId={draftId}
@@ -365,7 +392,7 @@ export default function CollegeManagementPage() {
       />
     );
   return (
-    <div className="space-y-6 text-slate-900 dark:text-white">
+    <div className="placement-drives-scheme placement-scheme pd-landing space-y-6 text-slate-900 dark:text-white">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-indigo-600">
@@ -417,9 +444,7 @@ export default function CollegeManagementPage() {
           {notice}
         </p>
       )}
-      {tab === "candidates" ? (
-        <CandidateDirectory />
-      ) : tab === "staff" && !placementStaff ? (
+      {tab === "staff" && !placementStaff ? (
         <Navigate to="/dashboard/attendance" replace />
       ) : tab === "analytics" ? (
         <PlacementAnalytics data={analytics} />
@@ -456,10 +481,11 @@ export default function CollegeManagementPage() {
           create={() =>
             setParams((p) => {
               p.set("create", "1");
+              p.delete("draft");
               return p;
             })
           }
-          resumeDraft={(id) => setParams((p) => { p.set("create", "1"); if(id==="local-device")p.delete("draft");else p.set("draft", id); return p; })}
+          resumeDraft={(id) => setParams((p) => { p.set("create", "1"); p.set("draft", id); return p; })}
           deleteDraft={deleteSavedDraft}
           manage={(id) =>
             setParams((p) => {
@@ -486,7 +512,7 @@ type PlacementStaffScopeGroup = { program?: string | null; department_code?: str
 type StaffScopeSelection = { programs: string[]; department_codes: string[]; batch_labels: string[]; graduation_years: number[] };
 type StudentCohort = { program: string; department_code: string; batch_label: string | null; graduation_year: number | null; student_count: number };
 type PlacementStaffOptions = { programs: Program[]; graduation_years: number[]; batches: string[]; student_groups?: StudentCohort[] };
-type PlacementStaffMember = { user_id: string; name: string; email: string; status: "invited" | "active" | "disabled"; created_at?: string | null; scope_groups: PlacementStaffScopeGroup[] };
+type PlacementStaffMember = { is_mentor?:boolean;mentor_active?:boolean; user_id: string; name: string; email: string; status: "invited" | "active" | "disabled"; created_at?: string | null; scope_groups: PlacementStaffScopeGroup[] };
 const emptyScopeGroup = (): StaffScopeSelection => ({ programs: [], department_codes: [], batch_labels: [], graduation_years: [] });
 const selectionFromScopeGroup = (group: PlacementStaffScopeGroup): StaffScopeSelection => ({
   programs: group.program ? [group.program] : [],
@@ -576,7 +602,7 @@ export function PlacementStaffManagement({ mode = "all" }: { mode?: "all" | "ros
     {!accessMode && <><StaffImport onComplete={() => void load(true)} /><form onSubmit={invite} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Full name<input required maxLength={150} value={name} onChange={e => setName(e.target.value)} className={input} placeholder="Placement coordinator" /></label><label className="text-sm font-medium">Work email<input required type="email" value={email} onChange={e => setEmail(e.target.value)} className={input} placeholder="name@institution.edu" /></label></div>{mode === "all" && <StaffScopeEditor groups={scopeGroups} setGroups={setScopeGroups} options={options} />}<div className="flex justify-end"><button className={primary} disabled={busy}>{busy ? "Working…" : "Invite staff"}</button></div></form></>}
     {accessMode && staff.length > 0 && <label className="block max-w-xl text-sm font-medium">Placement staff member<select aria-label="Placement staff member" className={input} value={editing || ""} onChange={event => { const id = event.target.value; setEditing(id || null); const person = staff.find(item => item.user_id === id); setEditGroups(person?.scope_groups?.length ? person.scope_groups.map(selectionFromScopeGroup) : [emptyScopeGroup()]); }}><option value="">Select staff member</option>{staff.map(person => <option key={person.user_id} value={person.user_id}>{person.name} · {person.email}</option>)}</select></label>}
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center justify-between border-b p-5 dark:border-slate-800"><div><h3 className="font-semibold">{accessMode ? "Select staff member" : "Placement staff"}</h3><p className="mt-1 text-sm text-slate-500">{staff.length} active or invited</p></div><button type="button" aria-label="Refresh staff roster" className={button} disabled={busy || refreshing} onClick={() => void load(true)}><RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />{refreshing ? "Refreshing…" : "Refresh"}</button></div>
-      {staff.length ? <ul className="divide-y dark:divide-slate-800">{staff.map(person => <li key={person.user_id} className="space-y-3 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{person.name}</p><p className="text-sm text-slate-500">{person.email}</p>{accessMode && (() => { const count = currentStudentsInScope(person.scope_groups, options.student_groups); return <p className="mt-2 text-xs text-slate-500">{person.scope_groups?.length ? `${person.scope_groups.length} access rule${person.scope_groups.length === 1 ? "" : "s"}` : "No student access assigned"}{count !== null ? ` · ${count} matching students` : ""}</p>; })()}</div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${person.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{person.status === "active" ? "Active" : "Invitation pending"}</span>{accessMode && <button className={button} disabled={busy} onClick={() => { setEditing(editing === person.user_id ? null : person.user_id); setEditGroups(person.scope_groups?.length ? person.scope_groups.map(selectionFromScopeGroup) : [emptyScopeGroup()]); }}>{editing === person.user_id ? "Close" : "Manage access"}</button>}{mode !== "access" && <button className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50" disabled={busy} onClick={() => void revoke(person)}>Remove staff</button>}</div></div>{accessMode && editing === person.user_id && <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4"><StaffScopeEditor groups={editGroups} setGroups={setEditGroups} options={options}/>{hasCompleteScopeGroups(editGroups) && !hasSupportedScopeGroupCount(editGroups, options.programs) && <p role="alert" className="mt-3 text-sm text-rose-700">Reduce the selections; this staff member can have at most 100 access rules.</p>}<div className="mt-3 flex justify-end"><button type="button" className={primary} disabled={busy || !hasCompleteScopeGroups(editGroups) || !hasSupportedScopeGroupCount(editGroups, options.programs)} onClick={() => void saveScope(person)}>{busy ? "Saving…" : "Save Access"}</button></div></div>}</li>)}</ul> : <p className="p-8 text-center text-sm text-slate-500">No placement staff have been invited yet.</p>}</div>
+      {staff.length ? <ul className="divide-y dark:divide-slate-800">{staff.map(person => <li key={person.user_id} className="space-y-3 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{person.name} {person.is_mentor&&<span className="ml-2 rounded-full bg-violet-100 px-2 py-1 text-xs text-violet-700">{person.mentor_active?"Mentor":"Mentor · inactive"}</span>}</p><p className="text-sm text-slate-500">{person.email}</p>{accessMode && (() => { const count = currentStudentsInScope(person.scope_groups, options.student_groups); return <p className="mt-2 text-xs text-slate-500">{person.scope_groups?.length ? `${person.scope_groups.length} access rule${person.scope_groups.length === 1 ? "" : "s"}` : "No student access assigned"}{count !== null ? ` · ${count} matching students` : ""}</p>; })()}</div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${person.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{person.status === "active" ? "Active" : "Invitation pending"}</span>{accessMode && <button className={button} disabled={busy} onClick={() => { setEditing(editing === person.user_id ? null : person.user_id); setEditGroups(person.scope_groups?.length ? person.scope_groups.map(selectionFromScopeGroup) : [emptyScopeGroup()]); }}>{editing === person.user_id ? "Close" : "Manage access"}</button>}{mode !== "access" && <button className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50" disabled={busy} onClick={() => void revoke(person)}>Remove staff</button>}</div></div>{accessMode && editing === person.user_id && <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4"><StaffScopeEditor groups={editGroups} setGroups={setEditGroups} options={options}/>{hasCompleteScopeGroups(editGroups) && !hasSupportedScopeGroupCount(editGroups, options.programs) && <p role="alert" className="mt-3 text-sm text-rose-700">Reduce the selections; this staff member can have at most 100 access rules.</p>}<div className="mt-3 flex justify-end"><button type="button" className={primary} disabled={busy || !hasCompleteScopeGroups(editGroups) || !hasSupportedScopeGroupCount(editGroups, options.programs)} onClick={() => void saveScope(person)}>{busy ? "Saving…" : "Save Access"}</button></div></div>}</li>)}</ul> : <p className="p-8 text-center text-sm text-slate-500">No placement staff have been invited yet.</p>}</div>
   </section>;
 }
 
@@ -804,7 +830,7 @@ function PlacementLanding({
           </table>
         </div>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="pd-drive-card-grid grid gap-4 xl:grid-cols-2">
           {drives.map((d) => (
             <DriveCard
               key={d.id}
@@ -834,8 +860,8 @@ function Kpi({
   note: string;
 }) {
   return (
-    <article className={card}>
-      <div className="flex items-center gap-2 text-slate-500">
+    <article className={`${card} pd-kpi`}>
+      <div className="pd-kpi-label flex items-center gap-2 text-slate-500">
         {icon}
         <span className="text-xs font-semibold uppercase tracking-wide">
           {label}
@@ -866,38 +892,30 @@ function DriveCard({
   const currentStatus = effectiveStatus(drive);
   const statusTone = currentStatus === "active" ? "bg-emerald-50 text-emerald-700" : currentStatus === "scheduled" ? "bg-blue-50 text-blue-700" : currentStatus === "closed" ? "bg-slate-100 text-slate-700" : "bg-amber-50 text-amber-800";
   return (
-    <article className={`${card} transition-shadow hover:shadow-md`}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">
-            {readable(drive.drive_type || "official_placement")} · {drive.created_by_source === "placement_staff" ? "Staff-created" : "Client/admin official"}
-          </p>
-          <h3 className="mt-2 break-words text-xl font-bold">{drive.company_name}</h3>
-          <p className="mt-1 text-sm text-slate-600">{drive.role_title}</p>
-          {drive.created_by_full_name && <p className="mt-1 text-xs text-slate-500">Created by {drive.created_by_full_name}</p>}
-        </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-2">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone}`}>{readable(currentStatus)}</span>
-          {drive.is_locked && <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">Locked</span>}
-        </div>
-      </div>
-      <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-        <div><dt className="text-xs text-slate-500">Job type</dt><dd className="mt-1 font-medium">{readable(drive.job_type || "full_time")}</dd></div>
-        <div><dt className="text-xs text-slate-500">Location</dt><dd className="mt-1 font-medium">{drive.location || "Not supplied"}</dd></div>
-        <div><dt className="text-xs text-slate-500">Starts · IST</dt><dd className="mt-1 font-medium">{date(drive.window_start_at)}</dd></div>
-        <div><dt className="text-xs text-slate-500">Ends · IST</dt><dd className="mt-1 font-medium">{date(drive.window_end_at)}</dd></div>
-        <div><dt className="text-xs text-slate-500">Salary details</dt><dd className="mt-1 font-medium">{drive.salary_min_amount == null ? "Not specified" : `${drive.salary_currency || "INR"} ${Number(drive.salary_min_amount).toLocaleString()}${drive.salary_type === "range" && drive.salary_max_amount != null ? ` – ${Number(drive.salary_max_amount).toLocaleString()}` : ""} per ${drive.salary_period === "monthly" ? "month" : "year"}`}</dd></div>
-        <div><dt className="text-xs text-slate-500">Application deadline</dt><dd className="mt-1 font-medium">{date(drive.application_deadline)}</dd></div>
-        <div><dt className="text-xs text-slate-500">Met drive criteria at last evaluation</dt><dd className="mt-1 font-medium">{drive.latest_snapshot_eligible_count == null ? "Not available" : `${drive.latest_snapshot_eligible_count} students`}</dd></div>
+    <article className={`${card} pd-drive-card`}>
+      <header className="pd-company-header">
+        <span className="pd-company-monogram" aria-hidden="true">{drive.company_name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join('').toUpperCase()}</span>
+        <div className="pd-company-identity"><h3>{drive.company_name}</h3><p>{drive.role_title}</p>{drive.created_by_full_name&&<small>Created by {drive.created_by_full_name}</small>}</div>
+        <div className="pd-drive-statuses"><span className={`pd-drive-status rounded-full px-3 py-1 text-xs font-semibold ${statusTone}`}><span aria-hidden="true">●</span> {readable(currentStatus)}</span>{drive.is_locked&&<span className="pd-drive-locked"><LockKeyhole size={12}/> Locked</span>}</div>
+      </header>
+      <div className="pd-drive-tags"><span>{readable(drive.drive_type||"official_placement")}</span><span>{drive.created_by_source==="placement_staff"?"Staff-created":"Client/admin official"}</span></div>
+      <dl className="pd-drive-facts">
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><BriefcaseBusiness size={16} aria-hidden="true"/></span>Job type</dt><dd>{readable(drive.job_type||"full_time")}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><MapPin size={16} aria-hidden="true"/></span>Location</dt><dd>{drive.location||"Not supplied"}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><CircleDollarSign size={16} aria-hidden="true"/></span>Salary details</dt><dd>{drive.salary_min_amount==null?"Not specified":`${drive.salary_currency||"INR"} ${Number(drive.salary_min_amount).toLocaleString()}${drive.salary_type==="range"&&drive.salary_max_amount!=null?` – ${Number(drive.salary_max_amount).toLocaleString()}`:""} per ${drive.salary_period==="monthly"?"month":"year"}`}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><CalendarDays size={16} aria-hidden="true"/></span>Starts · IST</dt><dd>{date(drive.window_start_at)}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><Clock3 size={16} aria-hidden="true"/></span>Ends · IST</dt><dd>{date(drive.window_end_at)}</dd></div>
+        <div className="pd-fact"><dt><span className="pd-fact-icon"><CalendarClock size={16} aria-hidden="true"/></span>Application deadline</dt><dd>{date(drive.application_deadline)}</dd></div>
+        <div className="pd-fact pd-fact-eligibility"><dt><span className="pd-fact-icon"><UserCheck size={17} aria-hidden="true"/></span>Met drive criteria at last evaluation</dt><dd>{drive.latest_snapshot_eligible_count==null?"Not available":`${drive.latest_snapshot_eligible_count} students`}</dd></div>
       </dl>
-      <div className="mt-5 border-t border-slate-100 pt-4">
-        {assigned ? <><div className="flex items-center justify-between text-xs"><span>{completed} of {assigned} assigned interviews completed</span><strong>{progress}%</strong></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} /></div></> : <p className="text-sm text-slate-500">No students assigned yet.</p>}
+      <div className="pd-drive-progress">
+        {assigned?<><div className="pd-progress-caption"><span><CheckCircle2 size={15} aria-hidden="true"/>{completed} of {assigned} assigned interviews completed</span><strong>{progress}%</strong></div><div className="pd-progress-track" role="progressbar" aria-label="Assigned interviews completed" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><div style={{width:`${progress}%`}}/></div></>:<p>No students assigned yet.</p>}
       </div>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <button className={primary} onClick={manage}>Manage drive</button>
-        <button className={button} onClick={edit}>Edit drive</button>
-        <button className={`${button} ${drive.is_locked ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" : "border-amber-200 text-amber-700 hover:bg-amber-50"}`} onClick={toggleLock}>{drive.is_locked ? "Unlock drive" : "Lock drive"}</button>
-        <button className={`${button} border-rose-200 text-rose-700 hover:bg-rose-50`} onClick={deleteDrive}>Delete drive</button>
+      <div className="pd-drive-actions">
+        <button className={primary} onClick={manage}>Manage drive <ArrowRight size={15}/></button>
+        <button className={button} onClick={edit}><Pencil size={14}/> Edit drive</button>
+        <button className={`${button} ${drive.is_locked?"border-emerald-200 text-emerald-700 hover:bg-emerald-50":"border-amber-200 text-amber-700 hover:bg-amber-50"}`} onClick={toggleLock}>{drive.is_locked?<UnlockKeyhole size={14}/>:<LockKeyhole size={14}/>} {drive.is_locked?"Unlock drive":"Lock drive"}</button>
+        <button className={`${button} border-rose-200 text-rose-700 hover:bg-rose-50`} onClick={deleteDrive}><Trash2 size={14}/> Delete drive</button>
       </div>
     </article>
   );

@@ -125,7 +125,7 @@ export default function Single({
             }
           />
         )}
-        <label className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
+        <label className="flex items-start gap-2 text-xs text-[#6B7A99] dark:text-slate-300">
           <input
             type="checkbox"
             className="mt-0.5"
@@ -140,7 +140,7 @@ export default function Single({
           Send message
         </button>
         {blockers.length > 0 && (
-          <ul className="space-y-1 text-xs text-slate-500">
+          <ul className="space-y-1 text-xs text-[#6B7A99]">
             {blockers.map((reason) => (
               <li key={reason}>· {reason}</li>
             ))}
@@ -163,7 +163,7 @@ export default function Single({
             templateId={template.id}
           />
         ) : (
-          <p className="p-6 text-center text-sm text-slate-500">
+          <p className="p-6 text-center text-sm text-[#6B7A99]">
             Select an approved template to preview the exact message.
           </p>
         )}

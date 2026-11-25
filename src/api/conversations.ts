@@ -5,6 +5,7 @@ import type {
   GetConversationDetailsResult,
   GetConversationDetailsResponse,
 } from "@/types/conversation.types";
+import type { DrilldownFilters } from "@/lib/conversationFilters";
 
 
 const getApiVersion = (agentId?: string | null): string => {
@@ -27,17 +28,31 @@ const conversationsApi = {
     endDate?: string,
     source?: string,
     search?: string,
-    category?: string
+    category?: string,
+    includeContact?: boolean,
+    direction?: "inbound" | "outbound",
+    /** Home dashboard drill-down (v3 only): exactly the conversations a figure counted. */
+    drilldown?: DrilldownFilters,
+    /** Also count conversations per AI team member (v3 only). */
+    includeTeam?: boolean
   ): Promise<GetConversationsListResult> => {
     const version = getApiVersion(agentId);
-    
-    const params: Record<string, string | number | undefined> = {};
+
+    const params: Record<string, string | number | boolean | undefined> = {};
+    if (includeContact && version === "v3") params.include_contact = true;
     if (agentId) params.agent_id = agentId;
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     if (source && source !== "all") params.source = source;
     if (search?.trim()) params.search = search.trim();
     if (category) params.category = category;
+    if (direction && version === "v3") params.direction = direction;
+    if (includeTeam && version === "v3") params.include_team = true;
+    if (drilldown && version === "v3") {
+      for (const [key, value] of Object.entries(drilldown)) {
+        if (value !== undefined && value !== null && value !== "") params[key] = value;
+      }
+    }
     
     if (version === "v3") {
       params.page = page;
@@ -55,6 +70,7 @@ const conversationsApi = {
 
     return {
       conversations: response.data.data,
+      team: (response.data as { team?: GetConversationsListResult["team"] }).team ?? [],
       nextPage: response.data.next_page || (pag?.next_page ? String(pag.next_page) : null),
       pagination: {
         total: pag?.total_count ?? pag?.total ?? 0,

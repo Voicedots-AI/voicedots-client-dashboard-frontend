@@ -66,22 +66,22 @@ export function OutboundCallTracker({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-violet-200 bg-white p-5 shadow-sm dark:border-violet-900/60 dark:bg-slate-900">
+    <div className="relative overflow-hidden rounded-2xl border border-sky-200 bg-white p-5 shadow-sm dark:border-violet-900/60 dark:bg-slate-900">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E6EDF8] pb-4 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3FF] text-[#137EFD] dark:bg-violet-950 dark:text-[#5AB8FF]">
             {isConnected ? (
               <PhoneCall className="animate-pulse" size={20} />
             ) : isFailed ? (
               <AlertCircle size={20} className="text-rose-600" />
             ) : (
-              <Sparkles className="animate-spin text-violet-600" size={20} />
+              <Sparkles className="animate-spin text-[#137EFD]" size={20} />
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base font-bold text-[#0B1B3F] dark:text-white">
                 {isConnected
                   ? 'Call Connected & In Progress'
                   : isFailed
@@ -94,14 +94,14 @@ export function OutboundCallTracker({
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                     : isFailed
                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
-                    : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'
+                    : 'bg-[#EAF3FF] text-[#137EFD] dark:bg-violet-950 dark:text-[#5AB8FF]'
                 }`}
               >
                 {!isFailed && <Loader2 size={11} className={isConnected ? '' : 'animate-spin'} />}
                 {call.status.toUpperCase()}
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-[#6B7A99]">
               {contactName || call.contact_name || 'Contact'}
               {destination ? ` · ${destination}` : ''} · Call ID: {call.id.slice(0, 8)}
             </p>
@@ -109,14 +109,14 @@ export function OutboundCallTracker({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-mono font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-            <Clock size={13} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 rounded-lg bg-[#EEF3FB] px-3 py-1.5 text-xs font-mono font-medium text-[#33415F] dark:bg-slate-800 dark:text-slate-200">
+            <Clock size={13} className="text-[#9AA8C2]" />
             <span>{formatSeconds(elapsed)}</span>
           </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+              className="rounded-lg p-1 text-[#9AA8C2] hover:bg-[#EEF3FB] hover:text-[#6B7A99] dark:hover:bg-slate-800"
               title="Dismiss tracker"
             >
               <X size={16} />
@@ -133,12 +133,12 @@ export function OutboundCallTracker({
             currentPhase > 1
               ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/10'
               : currentPhase === 1
-              ? 'border-violet-300 bg-violet-50/80 shadow-sm dark:border-violet-800 dark:bg-violet-950/20'
-              : 'border-slate-200 bg-slate-50/50 opacity-60 dark:border-slate-800 dark:bg-slate-900'
+              ? 'border-sky-200 bg-[#EAF3FF] shadow-sm dark:border-violet-800 dark:bg-violet-950/20'
+              : 'border-sky-100 bg-[#F4F9FF] opacity-60 dark:border-slate-800 dark:bg-slate-900'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#6B7A99]">
               Phase 1
             </span>
             {currentPhase > 1 ? (
@@ -146,18 +146,18 @@ export function OutboundCallTracker({
                 <Check size={12} strokeWidth={3} />
               </span>
             ) : currentPhase === 1 && !isFailed ? (
-              <Loader2 size={16} className="animate-spin text-violet-600" />
+              <Loader2 size={16} className="animate-spin text-[#137EFD]" />
             ) : isFailed && currentPhase === 1 ? (
               <AlertCircle size={16} className="text-rose-600" />
             ) : (
-              <div className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-700" />
+              <div className="h-4 w-4 rounded-full border border-sky-100 dark:border-slate-700" />
             )}
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <Bot size={16} className={currentPhase >= 1 ? 'text-violet-600' : 'text-slate-400'} />
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">AI Collecting Data</h4>
+            <Bot size={16} className={currentPhase >= 1 ? 'text-[#137EFD]' : 'text-[#9AA8C2]'} />
+            <h4 className="text-sm font-bold text-[#0B1B3F] dark:text-white">AI Collecting Data</h4>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-[#6B7A99]">
             {currentPhase > 1
               ? 'AI voice agent & greeting synthesized'
               : currentPhase === 1 && !isFailed
@@ -172,12 +172,12 @@ export function OutboundCallTracker({
             currentPhase > 2
               ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/10'
               : currentPhase === 2
-              ? 'border-violet-300 bg-violet-50/80 shadow-sm dark:border-violet-800 dark:bg-violet-950/20'
-              : 'border-slate-200 bg-slate-50/50 opacity-60 dark:border-slate-800 dark:bg-slate-900'
+              ? 'border-sky-200 bg-[#EAF3FF] shadow-sm dark:border-violet-800 dark:bg-violet-950/20'
+              : 'border-sky-100 bg-[#F4F9FF] opacity-60 dark:border-slate-800 dark:bg-slate-900'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#6B7A99]">
               Phase 2
             </span>
             {currentPhase > 2 ? (
@@ -185,21 +185,21 @@ export function OutboundCallTracker({
                 <Check size={12} strokeWidth={3} />
               </span>
             ) : currentPhase === 2 && !isFailed ? (
-              <Loader2 size={16} className="animate-spin text-violet-600" />
+              <Loader2 size={16} className="animate-spin text-[#137EFD]" />
             ) : isFailed && currentPhase === 2 ? (
               <AlertCircle size={16} className="text-rose-600" />
             ) : (
-              <div className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-700" />
+              <div className="h-4 w-4 rounded-full border border-sky-100 dark:border-slate-700" />
             )}
           </div>
           <div className="mt-2 flex items-center gap-2">
             <PhoneForwarded
               size={16}
-              className={currentPhase >= 2 ? 'text-violet-600' : 'text-slate-400'}
+              className={currentPhase >= 2 ? 'text-[#137EFD]' : 'text-[#9AA8C2]'}
             />
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Send Call to User</h4>
+            <h4 className="text-sm font-bold text-[#0B1B3F] dark:text-white">Send Call to User</h4>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-[#6B7A99]">
             {currentPhase > 2
               ? 'Handset answered by callee'
               : currentPhase === 2 && !isFailed
@@ -213,11 +213,11 @@ export function OutboundCallTracker({
           className={`relative rounded-xl border p-3.5 transition-all ${
             isConnected
               ? 'border-emerald-300 bg-emerald-50/80 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20'
-              : 'border-slate-200 bg-slate-50/50 opacity-60 dark:border-slate-800 dark:bg-slate-900'
+              : 'border-sky-100 bg-[#F4F9FF] opacity-60 dark:border-slate-800 dark:bg-slate-900'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#6B7A99]">
               Phase 3
             </span>
             {isConnected ? (
@@ -225,16 +225,16 @@ export function OutboundCallTracker({
                 <Check size={12} strokeWidth={3} />
               </span>
             ) : (
-              <div className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-700" />
+              <div className="h-4 w-4 rounded-full border border-sky-100 dark:border-slate-700" />
             )}
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <Phone size={16} className={isConnected ? 'text-emerald-600' : 'text-slate-400'} />
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+            <Phone size={16} className={isConnected ? 'text-emerald-600' : 'text-[#9AA8C2]'} />
+            <h4 className="text-sm font-bold text-[#0B1B3F] dark:text-white">
               Connected & Speaking
             </h4>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-[#6B7A99]">
             {isConnected
               ? 'Live conversation streaming in real-time'
               : 'Multi-turn conversation & recording'}
@@ -243,9 +243,9 @@ export function OutboundCallTracker({
       </div>
 
       {/* Live Status Message & Guidance */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
-        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-          <span className="font-semibold text-slate-900 dark:text-white">Current status:</span>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F4F9FF] p-3 text-xs dark:bg-slate-800/60">
+        <div className="flex items-center gap-2 text-[#33415F] dark:text-slate-300">
+          <span className="font-semibold text-[#0B1B3F] dark:text-white">Current status:</span>
           <span>
             {call.user_message ||
               (currentPhase === 1
@@ -259,7 +259,7 @@ export function OutboundCallTracker({
         </div>
 
         {currentPhase === 1 && (
-          <span className="text-violet-600 dark:text-violet-400">
+          <span className="text-[#137EFD] dark:text-[#5AB8FF]">
             * Note: VoiceDots pre-generates opening greeting so user hears AI immediately upon answering.
           </span>
         )}

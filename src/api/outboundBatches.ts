@@ -30,6 +30,17 @@ export type BatchContact = {
   duration_seconds?: number;
 };
 
+export type BatchStartResult = {
+  id: string;
+  status: string;
+  queued_now: number;
+  pending?: number;
+  in_progress?: number;
+  daily_limit?: number;
+  used_today?: number;
+  held_reason?: string | null;
+};
+
 export type BatchDetails = {
   id: string;
   status: string;
@@ -108,7 +119,7 @@ export const outboundBatchesApi = {
     })).data;
   },
   async start(id: string) {
-    return (await apiClient.post(`/v3/outbound-batches/${id}/start`)).data;
+    return (await apiClient.post<BatchStartResult>(`/v3/outbound-batches/${id}/start`)).data;
   },
   async cancel(id: string) {
     return (await apiClient.post(`/v3/outbound-batches/${id}/cancel`)).data;

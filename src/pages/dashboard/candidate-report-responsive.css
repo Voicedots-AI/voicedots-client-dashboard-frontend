@@ -1,0 +1,18 @@
+/* The report must shrink as a flex/grid child of the dashboard on phones. */
+.assessment-intelligence:has(.candidate-review){min-width:0;width:100%;max-width:100%}
+.candidate-review{width:100%;min-width:0;max-width:1440px;box-sizing:border-box}
+.candidate-review>.candidate-pager,.candidate-review>.vd-reference-scorecard,.candidate-review>.grid,.candidate-review .candidate-report-content{min-width:0;max-width:100%}
+.candidate-review>.grid>*,.candidate-review>.candidate-pager>div{min-width:0}
+@media(max-width:700px){
+ .assessment-intelligence:has(.candidate-review){padding:0}
+ .assessment-intelligence:has(.candidate-review)>.ai-button{max-width:100%;white-space:normal;text-align:left;justify-content:flex-start;height:auto;min-height:36px}
+ .candidate-review .candidate-pager{padding:10px 12px;gap:10px}
+ .candidate-review .candidate-pager>div:first-child{flex-wrap:wrap;overflow-wrap:anywhere}
+ .candidate-review .candidate-pager>div:last-child{width:100%;justify-content:flex-start;flex-wrap:wrap}
+ .candidate-review .candidate-pager button{max-width:100%;white-space:normal}
+ .candidate-review .candidate-pager span{min-width:0;overflow-wrap:anywhere}
+ .candidate-review #recording,.candidate-review #deep-dive{min-width:0;max-width:100%}
+ .candidate-review video,.candidate-review audio{max-width:100%}
+ .candidate-review .report-nav{max-width:100%;overflow-x:auto}
+ .candidate-review .candidate-report-content>section{min-width:0;max-width:100%}
+}

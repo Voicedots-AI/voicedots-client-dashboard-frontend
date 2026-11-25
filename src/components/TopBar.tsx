@@ -1,3 +1,5 @@
+import {useCollegeAccess} from '@/hooks/useCollegeAccess';
+import {collegeApi} from '@/api/collegeApi';
 import {displayName} from '@/pages/dashboard/placementDisplay';
 import { useEffect, useRef, useState } from "react";
 import { Bell, Menu, ChevronDown, PanelLeft, Sun, Moon } from "lucide-react";
@@ -20,6 +22,18 @@ export function TopBar({
   const navigate = useNavigate();
 
   const { user, logout } = useAuth();
+  const {access:collegeAccess}=useCollegeAccess();
+  const [mentorPhoto,setMentorPhoto]=useState<{user:string;photo:string}|null>(null);
+  useEffect(()=>{
+    let active=true;
+    const userKey=user?.email||'';
+    setMentorPhoto(null);
+    if(!collegeAccess?.is_mentor)return;
+    const load=()=>{void collegeApi.get<{photo:string|null}>('mentors/photos/staff/me').then(value=>{if(active)setMentorPhoto({user:userKey,photo:value.photo||''})}).catch(()=>{});};
+    load();window.addEventListener('mentor-photo-updated',load);
+    return()=>{active=false;window.removeEventListener('mentor-photo-updated',load)};
+  },[user?.email,collegeAccess?.is_mentor]);
+  const profilePhoto=collegeAccess?.is_mentor?(mentorPhoto&&mentorPhoto.user===user?.email?mentorPhoto.photo:''):user?.profile_picture;
   const { theme, toggleTheme } = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -55,17 +69,22 @@ export function TopBar({
         {/* LEFT */}
         <div className="flex items-center gap-2">
           <button
+            type="button"
+            aria-label="Open navigation menu"
             onClick={onMenuClick}
             className="md:hidden p-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:text-gray-400"
           >
-            <Menu size={20} />
+            <Menu size={20} aria-hidden="true" focusable="false" />
           </button>
 
           <button
+            type="button"
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!isSidebarCollapsed}
             onClick={onToggleSidebar}
             className="hidden md:flex p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-400 dark:hover:bg-slate-800"
           >
-            <PanelLeft size={20} />
+            <PanelLeft size={20} aria-hidden="true" focusable="false" />
           </button>
         </div>
 
@@ -87,13 +106,16 @@ export function TopBar({
           {/* 🔔 Notifications */}
           <div className="relative" ref={notifRef}>
             <button
+              type="button"
+              aria-label={notifOpen ? "Close notifications" : "Open notifications"}
+              aria-expanded={notifOpen}
               onClick={() => {
                 setNotifOpen(!notifOpen);
                 setProfileOpen(false);
               }}
               className="relative h-9 w-9 rounded-full border border-gray-200 flex items-center justify-center bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:text-gray-400"
             >
-              <Bell size={18} />
+              <Bell size={18} aria-hidden="true" focusable="false" />
             </button>
 
             {notifOpen && (
@@ -141,8 +163,8 @@ export function TopBar({
               className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 sm:px-3 py-1.5 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800"
             >
               <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs overflow-hidden">
-                {user?.profile_picture ? (
-                  <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                {profilePhoto ? (
+                  <img src={profilePhoto} onError={()=>setMentorPhoto(null)} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   initials
                 )}

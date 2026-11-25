@@ -1,3 +1,6 @@
+import "./candidate-report-responsive.css";
+import InterviewAgentScores from './InterviewAgentScores';
+import {interviewAgentScores} from './interviewAgentScores';
 import {ReferenceScorecard} from '@/shared-assessment/ReferenceScorecard';
 import {invalidateStudentScorecard} from "./assessmentClient";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +18,9 @@ import { collegeApi, collegeError, type Drive } from "@/api/collegeApi";
 import { btn } from "./interviewAgentTypes";
 import { displayName } from "./placementDisplay";
 import { roleLabels } from "./interviewAgentTypes";
+
+import './placement-dashboard-theme.css';
+import './placement-intelligence-extension.css';
 
 type Data = Record<string, unknown>;
 type Report = Data & {
@@ -631,7 +637,7 @@ export default function CandidateReport({
   const answerState = (review: Data) => String(review.answer_state || review.evidence_status || review.status || "not_assessed").toLowerCase();
   const answerLabel = (review: Data) => { const state = answerState(review); return state === "answered" ? "Answered" : ["explicit_dont_know", "no_response", "capture_unavailable", "system_interrupted", "irrelevant_answer"].includes(state) ? "Needs review" : state === "not_assessed" ? "Not assessed" : "Limited evidence"; };
   const answerIsMissing = (review: Data) => ["explicit_dont_know", "no_response", "capture_unavailable", "system_interrupted", "irrelevant_answer"].includes(answerState(review));
-  const roundEntries = rounds.map((round, index) => ({
+  const roundEntries = interviewAgentScores(rounds,drive?.agent_selection).map(({round}, index) => ({
     round,
     index,
     label: roundRole(round.agent_type || round.track, round.interviewer_role),
@@ -656,7 +662,6 @@ export default function CandidateReport({
   const growthBriefs = growthAreas.map(item => typeof item === "string" ? item : show((item as Data).label || (item as Data).focus || (item as Data).summary || (item as Data).evidence || (item as Data).text));
   const followUpBriefs = nextRoundQuestions.map(item => typeof item === "string" ? item : show((item as Data).question || (item as Data).text || (item as Data).prompt));
   const candidateProfile = (bundle?.candidate_info || {}) as Data;
-  const readinessScore = comparable ? Number(pri.score) : null;
   const readinessLabel = report.readiness ? displayName(String(report.readiness)) : "—";
   const competencyRows = dimensions.map(item => ({
     label: show(item.label || (item.dimension ? displayName(String(item.dimension)) : null), "—"),
@@ -681,7 +686,7 @@ export default function CandidateReport({
 
 
   return (
-    <section className="candidate-review mx-auto max-w-[1440px] space-y-5 pb-12 text-slate-900">
+    <section className="candidate-review placement-scheme mx-auto max-w-[1440px] space-y-5 pb-12 text-slate-900">
       <ReportKeyboardShortcuts videoRef={videoRef} onNextFlag={() => jumpToAdjacentFlag(1)} />
       <style>{`
         @media (min-width: 1280px) {
@@ -729,7 +734,9 @@ export default function CandidateReport({
       {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}<button className={`${btn} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap`} onClick={() => void load()}>Retry report</button></div>}
       {notice && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
 
-      <ReferenceScorecard student={student} studentId={studentId} candidatePhoto={candidatePhoto} candidateProfile={candidateProfile} role={drive?.role_title} report={report} recordingDuration={recordingDuration} questionCount={reviews.length} executiveSummary={executiveSummary} readinessScore={readinessScore} readinessLabel={readinessLabel} competencyRows={competencyRows} strengthBriefs={strengthBriefs} growthBriefs={growthBriefs} followUpBriefs={followUpBriefs} evidenceHighlights={evidenceHighlights} onSeek={videoReady?seekToOffset:undefined} infoMessage={driveError?<>Drive details: {driveError} <button className="underline" onClick={()=>void load()}>Retry</button></>:undefined}/>
+      <ReferenceScorecard overallScoreDetails={<InterviewAgentScores compact breakdown={rounds} selection={drive?.agent_selection}/>} student={student} studentId={studentId} candidatePhoto={candidatePhoto} candidateProfile={candidateProfile} role={drive?.role_title} report={report} recordingDuration={recordingDuration} questionCount={reviews.length} executiveSummary={executiveSummary} readinessLabel={readinessLabel} competencyRows={competencyRows} strengthBriefs={strengthBriefs} growthBriefs={growthBriefs} followUpBriefs={followUpBriefs} evidenceHighlights={evidenceHighlights} onSeek={videoReady?seekToOffset:undefined} infoMessage={driveError?<>Drive details: {driveError} <button className="underline" onClick={()=>void load()}>Retry</button></>:undefined}/>
+
+      <InterviewAgentScores breakdown={rounds} selection={drive?.agent_selection}/>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <main className="candidate-report-content min-w-0 space-y-5">

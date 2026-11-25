@@ -126,7 +126,7 @@ export default function TemplateBuilder({
         <h2 className="text-lg font-bold">
           {editing ? `Edit draft · ${editing.name}` : "Build a template"}
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[#6B7A99]">
           Every template is reviewed before it can be sent. The preview shows
           exactly what a recipient sees.
         </p>
@@ -160,7 +160,7 @@ export default function TemplateBuilder({
             </Field>
           </div>
 
-          <fieldset className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+          <fieldset className="rounded-2xl border border-sky-100 p-4 dark:border-slate-800">
             <legend className="px-2 text-sm font-semibold">Header</legend>
             <div className="flex flex-wrap gap-2">
               {(
@@ -171,7 +171,7 @@ export default function TemplateBuilder({
                   type="button"
                   aria-pressed={draft.header.format === format}
                   onClick={() => patch({ header: { ...draft.header, format } })}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize ${draft.header.format === format ? "bg-indigo-700 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"}`}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize ${draft.header.format === format ? "bg-[#137EFD] text-white" : "bg-[#EEF3FB] text-[#6B7A99] hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"}`}
                 >
                   {format.toLowerCase()}
                 </button>
@@ -264,7 +264,7 @@ export default function TemplateBuilder({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#6B7A99]">
                   This file is used as the example for review. Each send
                   attaches its own file to the header.
                 </p>
@@ -287,16 +287,16 @@ export default function TemplateBuilder({
             </Field>
             <div className="flex items-start justify-between gap-3">
               <Problem message={show("body")} />
-              <p className="ml-auto shrink-0 text-xs text-slate-500">
+              <p className="ml-auto shrink-0 text-xs text-[#6B7A99]">
                 {draft.body.length.toLocaleString()}/{BODY_MAX.toLocaleString()}
               </p>
             </div>
           </div>
 
           {keys.length > 0 && (
-            <div className="rounded-2xl bg-violet-50/70 p-4 dark:bg-slate-950">
+            <div className="rounded-2xl bg-[#EAF3FF] p-4 dark:bg-slate-950">
               <h3 className="text-sm font-semibold">Variable examples</h3>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-[#6B7A99]">
                 These values are used for review and in the preview.
               </p>
               <div className="mt-3 space-y-3">
@@ -334,7 +334,7 @@ export default function TemplateBuilder({
             <Problem message={show("footer")} />
           </div>
 
-          <fieldset className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+          <fieldset className="rounded-2xl border border-sky-100 p-4 dark:border-slate-800">
             <legend className="px-2 text-sm font-semibold">
               Buttons (optional)
             </legend>
@@ -342,16 +342,16 @@ export default function TemplateBuilder({
               {draft.buttons.map((b, i) => (
                 <div
                   key={i}
-                  className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950"
+                  className="rounded-xl bg-[#F4F9FF] p-3 dark:bg-slate-950"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                    <span className="text-xs font-semibold text-[#137EFD] dark:text-[#5AB8FF]">
                       {BUTTON_LABEL[b.type]}
                     </span>
                     <button
                       type="button"
                       aria-label={`Remove button ${i + 1}`}
-                      className="rounded p-1 text-slate-400 hover:text-rose-600"
+                      className="rounded p-1 text-[#9AA8C2] hover:text-rose-600"
                       onClick={() =>
                         patch({
                           buttons: draft.buttons.filter((_, j) => j !== i),
@@ -431,7 +431,7 @@ export default function TemplateBuilder({
                 );
               })}
             </div>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-[#6B7A99]">
               WhatsApp allows up to {BUTTONS_MAX} buttons:{" "}
               {BUTTON_LIMITS.QUICK_REPLY} quick replies, {BUTTON_LIMITS.URL}{" "}
               links and {BUTTON_LIMITS.PHONE_NUMBER} phone number.

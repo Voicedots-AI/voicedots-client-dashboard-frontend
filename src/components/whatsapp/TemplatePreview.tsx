@@ -68,7 +68,7 @@ function MediaBlock({
       </video>
     );
   return (
-    <div className="mb-2 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-6 text-slate-400 dark:bg-slate-700/60">
+    <div className="mb-2 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#EEF3FB] py-6 text-[#9AA8C2] dark:bg-slate-700/60">
       <Icon size={22} />
       <span className="text-[11px] font-medium">{label}</span>
     </div>
@@ -102,11 +102,11 @@ export default function TemplatePreview({
   });
   return (
     <div className="rounded-2xl bg-[#f6f4ff] p-3 dark:bg-slate-950/60">
-      <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-wider text-slate-400">
+      <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-wider text-[#9AA8C2]">
         Preview
       </p>
       <div className="mx-auto max-w-[340px]">
-        <div className="overflow-hidden rounded-2xl rounded-tl-sm bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100">
+        <div className="overflow-hidden rounded-2xl rounded-tl-sm bg-white text-[#0B1B3F] shadow-sm dark:bg-slate-800 dark:text-slate-100">
           <div className="p-3">
             {header.format !== "NONE" && header.format !== "TEXT" && (
               <MediaBlock
@@ -122,29 +122,29 @@ export default function TemplatePreview({
             )}
             <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
               {fill(body, examples) || (
-                <span className="text-slate-400">
+                <span className="text-[#9AA8C2]">
                   Your message will appear here as you type.
                 </span>
               )}
             </p>
             {footer && (
-              <p className="mt-2 break-words text-[11px] leading-snug text-slate-400">
+              <p className="mt-2 break-words text-[11px] leading-snug text-[#9AA8C2]">
                 {footer}
               </p>
             )}
-            <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+            <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] text-[#9AA8C2]">
               <time>{time}</time>
               <CheckCheck size={13} className="text-sky-500" />
             </div>
           </div>
           {buttons.length > 0 && (
-            <div className="border-t border-slate-100 dark:border-slate-700">
+            <div className="border-t border-[#E6EDF8] dark:border-slate-700">
               {buttons.map((b, i) => {
                 const Icon = BUTTON_ICON[b.type];
                 return (
                   <div
                     key={`${b.type}-${i}`}
-                    className="flex items-center justify-center gap-2 border-b border-slate-100 py-2.5 text-sm font-medium text-sky-600 last:border-b-0 dark:border-slate-700 dark:text-sky-400"
+                    className="flex items-center justify-center gap-2 border-b border-[#E6EDF8] py-2.5 text-sm font-medium text-sky-600 last:border-b-0 dark:border-slate-700 dark:text-sky-400"
                   >
                     <Icon size={14} />
                     <span className="truncate">{b.text || "Button"}</span>

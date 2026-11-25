@@ -1,34 +1,49 @@
-import { Mail } from "lucide-react";
+import { FileText, Inbox, Mail, Megaphone, PenSquare, Settings } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
+import { ChannelHero, CommsItem, CommsShell } from "@/components/comms/CommsKit";
 
 const tabs = [
-  ["Inbox", "/dashboard/communications/gmail/inbox"],
-  ["Compose", "/dashboard/communications/gmail/single"],
-  ["Templates", "/dashboard/communications/gmail/templates"],
-  ["Campaigns", "/dashboard/communications/gmail/campaigns"],
-  ["Settings", "/dashboard/communications/gmail/settings"],
-];
+  ["Inbox", "/dashboard/communications/gmail/inbox", Inbox],
+  ["Compose", "/dashboard/communications/gmail/single", PenSquare],
+  ["Templates", "/dashboard/communications/gmail/templates", FileText],
+  ["Campaigns", "/dashboard/communications/gmail/campaigns", Megaphone],
+  ["Settings", "/dashboard/communications/gmail/settings", Settings],
+] as const;
 
 export default function EmailPage() {
   return (
-    <div className="min-h-[calc(100dvh-140px)] space-y-5 rounded-2xl bg-[#f9f8ff] p-4 text-slate-900 dark:bg-slate-950/30 dark:text-slate-100 sm:p-6">
-      <header className="rounded-2xl border border-violet-100 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-indigo-600 p-3 text-white"><Mail size={22} /></span>
-          <div>
-            <h1 className="text-2xl font-bold">Gmail</h1>
-            <p className="text-sm text-slate-500">Manage the connected Gmail mailbox, conversations and outgoing messages.</p>
-          </div>
-        </div>
-        <nav className="mt-6 flex gap-2 overflow-x-auto">
-          {tabs.map(([label, path]) => (
-            <NavLink key={path} to={path} className={({ isActive }) =>
-              `whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold ${isActive ? "bg-indigo-600 text-white" : "bg-violet-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`
-            }>{label}</NavLink>
+    <CommsShell>
+      <CommsItem>
+        <ChannelHero
+          tone="mail"
+          icon={Mail}
+          title="Gmail"
+          description="Read and reply to your connected mailbox, send one-off emails, and run template campaigns to leads and students."
+        />
+      </CommsItem>
+      <CommsItem>
+        <nav aria-label="Gmail sections" className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 shadow-sm ring-1 ring-sky-100 dark:bg-[#0F1A33] dark:ring-white/[0.07]">
+          {tabs.map(([label, path, Icon]) => (
+            <NavLink
+              key={path}
+              to={path}
+              className={({ isActive }) =>
+                `inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#137EFD] ${
+                  isActive
+                    ? "bg-[#137EFD] text-white shadow-sm"
+                    : "text-[#6B7A99] hover:bg-[#F4F9FF] hover:text-[#0B1B3F] dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+                }`
+              }
+            >
+              <Icon size={15} />
+              {label}
+            </NavLink>
           ))}
         </nav>
-      </header>
-      <Outlet />
-    </div>
+      </CommsItem>
+      <CommsItem>
+        <Outlet />
+      </CommsItem>
+    </CommsShell>
   );
 }

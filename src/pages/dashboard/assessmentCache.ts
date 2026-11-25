@@ -1,21 +1,22 @@
 /** In-memory, session-scoped cache. Nothing is persisted across sign-outs. */
 export class AssessmentCache {
  private scope='';
- private values=new Map<string,{value:unknown;time:number}>();
+ private values=new Map<string,{value:unknown;time:number;ttl:number}>();
  private inflight=new Map<string,Promise<unknown>>();
  private now:()=>number;
  private ttl:number;
  constructor(now:()=>number=Date.now,ttl=Infinity){this.now=now;this.ttl=ttl}
  session(scope:string){if(scope!==this.scope){this.scope=scope;this.values.clear();this.inflight.clear()}}
- peek<T>(key:string):T|undefined{const entry=this.values.get(key);return entry&&this.now()-entry.time<this.ttl?entry.value as T:undefined}
- seed<T>(key:string,value:T){this.values.set(key,{value,time:this.now()})}
- invalidate(key:string){this.values.delete(key)}
+ peek<T>(key:string):T|undefined{const entry=this.values.get(key);return entry&&this.now()-entry.time<entry.ttl?entry.value as T:undefined}
+ seed<T>(key:string,value:T,ttl=this.ttl){this.values.set(key,{value,time:this.now(),ttl})}
+ invalidate(key:string){this.values.delete(key);this.inflight.delete(key)}
+ invalidatePrefix(prefix:string){for(const key of new Set([...this.values.keys(),...this.inflight.keys()]))if(key.startsWith(prefix))this.invalidate(key)}
  clear(){this.values.clear();this.inflight.clear()}
- async get<T>(key:string,loader:()=>Promise<T>):Promise<T>{
+ async get<T>(key:string,loader:()=>Promise<T>,ttl?:(value:T)=>number):Promise<T>{
   const saved=this.peek<T>(key);if(saved!==undefined)return saved;
   const pending=this.inflight.get(key);if(pending)return pending as Promise<T>;
   const scope=this.scope;
-  const request=loader().then(value=>{if(scope===this.scope&&this.inflight.get(key)===request)this.seed(key,value);return value}).finally(()=>{if(this.inflight.get(key)===request)this.inflight.delete(key)});
+  const request=loader().then(value=>{if(scope===this.scope&&this.inflight.get(key)===request)this.seed(key,value,ttl?.(value));return value}).finally(()=>{if(this.inflight.get(key)===request)this.inflight.delete(key)});
   this.inflight.set(key,request);return request;
  }
 }

@@ -16,7 +16,7 @@ const emailApi = {
   threads: async () => (await apiClient.get<{ threads: EmailThread[] }>("/v3/email/threads")).data,
   thread: async (id: string) => (await apiClient.get<EmailThreadDetail>(`/v3/email/threads/${id}`)).data,
   reply: async (id: string, payload: Record<string, unknown>) => (await apiClient.post(`/v3/email/threads/${id}/reply`, payload)).data,
-  uploadAttachment: async (file: File) => { const body = new FormData(); body.append("file", file); return (await apiClient.post<{ id: string }>("/v3/email/attachments", body)).data; },
+  uploadAttachment: async (file: File) => { const body = new FormData(); body.append("file", file); return (await apiClient.post<{ id: string; storage_key: string }>("/v3/email/attachments", body, { headers: { "Content-Type": "multipart/form-data" } })).data; },
   templates: async () => (await apiClient.get<{ templates: EmailTemplate[] }>("/v3/email/templates")).data.templates,
   template: async (id: string) => (await apiClient.get<EmailTemplate>(`/v3/email/templates/${id}`)).data,
   createTemplate: async (payload: Record<string, unknown>) => (await apiClient.post<EmailTemplate>("/v3/email/templates", payload)).data,

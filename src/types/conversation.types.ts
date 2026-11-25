@@ -12,7 +12,20 @@ export interface ConversationsListSummary {
   end_time: number;
   time_format: string
   source?: string | null;
+  /** v3 only: outbound when we placed the call. */
+  direction?: "inbound" | "outbound";
+  caller_phone?: string | null;
   category?: "Follow Up" | "Interested" | "General Inquiry" | "Not Interested" | "Callback Required" | "Not Assessable";
+  /** null when the person said too little to judge, or the conversation is not analysed yet. */
+  sentiment?: "positive" | "neutral" | "negative" | null;
+  emotion?: "happy" | "calm" | "confused" | "frustrated" | "angry" | "sad" | null;
+  topic?: string | null;
+  urgent?: boolean;
+  /** AI team members who replied to the caller, in order. */
+  team?: TeamMember[];
+  analysed?: boolean;
+  /** Only present when the list is requested with include_contact. */
+  contact_name?: string | null;
 }
 
 export interface GetConversationsResponse {
@@ -28,9 +41,17 @@ export interface GetConversationsResponse {
   };
 }
 
+/** One member of a multi-agent "AI team" (e.g. About Us, Courses, Admissions, Placements). */
+export interface TeamMember {
+  key: string;
+  label: string;
+}
+
 export interface GetConversationsListResult {
   conversations: ConversationsListSummary[];
   nextPage: string | null;
+  /** How many matching conversations each AI team member answered; empty for a single bot. */
+  team?: (TeamMember & { count: number })[];
   pagination?: {
     total: number;
     page: number;
@@ -90,6 +111,11 @@ export interface SentimentAnalysis {
   summary?: string;
   key_data?: string[];
   recommended_action?: string;
+  // Version 5 fixed-vocabulary signals (the same values the dashboard counts).
+  sentiment?: "positive" | "neutral" | "negative" | null;
+  emotion?: "happy" | "calm" | "confused" | "frustrated" | "angry" | "sad" | null;
+  topic?: string | null;
+  urgency?: "high" | "normal" | null;
 }
 
 export interface GetConversationDetailsResult {

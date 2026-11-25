@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import axios from 'axios';
+import { UserFacingError } from '@/lib/userFacingError';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, CircleAlert, Plus, Save, Trash2, X } from 'lucide-react';
 import { collegeApi, collegeError, collegeFieldErrors, type Drive, type Program, type RoundConfiguration } from '@/api/collegeApi';
 import type { AgentLibrary, Selection } from './interviewAgentTypes';
 import { defaultSelection, roleLabels } from './interviewAgentTypes';
 import { displayName, formatDateOnly, formatWallTime, wallTimeFromInstant, wallTimeToInstant } from './placementDisplay';
 
-const input = 'mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-violet-950';
-const button = 'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold transition hover:border-violet-300 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700';
-const primary = `${button} border-violet-600 bg-violet-600 text-white hover:bg-violet-700`;
-const panel = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7';
+import './placement-dashboard-theme.css';
+import './placement-drives-theme.css';
+
+const input = 'pd-field mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-violet-950';
+const button = 'pd-button inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold transition hover:border-violet-300 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700';
+const primary = `${button} pd-primary border-violet-600 bg-violet-600 text-white hover:bg-violet-700`;
+const panel = 'pd-panel rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7';
 const creationSteps = ['Drive & company', 'Interview setup', 'Interview roles', 'Questions', 'Eligibility', 'Review & create'];
 const DRAFT_KEY = 'voicedots:placement-drive-draft:v2';
 const CURRENCIES = [['INR','INR · ₹'],['USD','USD · $'],['EUR','EUR · €'],['GBP','GBP · £'],['AUD','AUD · A$'],['CAD','CAD · C$'],['CHF','CHF · Fr'],['CNY','CNY · ¥'],['JPY','JPY · ¥'],['NZD','NZD · NZ$'],['SGD','SGD · S$'],['AED','AED · د.إ'],['SAR','SAR · ر.س'],['ZAR','ZAR · R']] as const;
@@ -72,7 +76,7 @@ export default function CreateDriveWizard({programs,drive,draftId,initialStep=0,
   const [creationKey,setCreationKey]=useState<string>(()=>crypto.randomUUID());
   const [advancing,setAdvancing]=useState(false);
   const advancingRef=useRef(false),submittingRef=useRef(false),submittedRef=useRef(false);
-  const draftIdRef=useRef<string|null>(draftId||null),draftSavingRef=useRef(false),draftResaveRef=useRef(false),draftSaveWaitersRef=useRef<Array<()=>void>>([]),companyPickerRef=useRef<HTMLDivElement|null>(null);
+  const draftIdRef=useRef<string|null>(draftId&&draftId!=='local-device'?draftId:null),draftSavingRef=useRef(false),draftResaveRef=useRef(false),draftSaveWaitersRef=useRef<Array<()=>void>>([]),companyPickerRef=useRef<HTMLDivElement|null>(null);
 
   const availableDepartments=useMemo(()=>programs.filter(program=>programIds.includes(program.code)).flatMap(program=>program.departments),[programs,programIds]);
   const availableDepartmentCodes=useMemo(()=>availableDepartments.map(department=>department.code).join(','),[availableDepartments]);
@@ -118,18 +122,21 @@ export default function CreateDriveWizard({programs,drive,draftId,initialStep=0,
       setForm({...empty,company_profile_id:drive.company_profile_id||'',drive_type:drive.drive_type||'official_placement',company_name:drive.company_name||'',company_description:drive.company_description||'',company_website:drive.company_website||'',company_linkedin:drive.company_linkedin||'',role_title:drive.role_title||'',job_type:drive.job_type||'full_time',location:drive.location||'',salary_type:drive.salary_type||(drive.package_min_lpa!=null&&drive.package_max_lpa==null?'fixed':'range'),salary_min_amount:String(drive.salary_min_amount??(drive.package_min_lpa==null?'':drive.package_min_lpa*100000)),salary_max_amount:String(drive.salary_max_amount??(drive.package_max_lpa==null?'':drive.package_max_lpa*100000)),salary_currency:drive.salary_currency||drive.package_currency||'INR',salary_period:drive.salary_period||'annual',jd_text:drive.jd_raw_text||'',window_start:wallTimeFromInstant(drive.window_start_at,collegeTimezone),window_end:wallTimeFromInstant(drive.window_end_at,collegeTimezone),drive_date:dateFromApi(drive.drive_date),application_deadline:deadline.date||legacyDeadline,application_deadline_time:drive.application_deadline_at?deadline.time:'23:59',duration:String(drive.interview_duration_minutes||30),max_attempts:String(drive.max_attempts||1),score_attempt_rules:drive.score_attempt_rules||[],difficulty_tier:drive.difficulty_tier||'intermediate',min_cgpa:String(drive.criteria_min_cgpa??0),criteria_ats_fit:drive.criteria_ats_fit==null?'':String(drive.criteria_ats_fit),criteria_interview_score:drive.criteria_interview_score==null?'':String(drive.criteria_interview_score)});
       setSelection(drive.agent_selection?.length?drive.agent_selection:defaultSelection);setRounds(drive.round_configuration||[]);setProgramIds(drive.criteria_programs||[]);setDepartments(drive.criteria_department_codes||[]);setYears((drive.criteria_graduation_years||[]).map(String));setDraftLoaded(true);return;
     }
+    // A new creation never resumes implicitly; saved drafts have their own entry point.
+    if(!draftId){setDraftLoaded(true);return;}
+    const localDraftRequested=draftId==='local-device';
     const controller=new AbortController();
     void (async()=>{
       let saved:{id?:string|null;payload?:DraftPayload;saved_at?:string}|null=null;
       try{saved=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');}catch{localStorage.removeItem(DRAFT_KEY);}
       const savedKey=typeof saved?.payload?.creationKey==='string'?saved.payload.creationKey:crypto.randomUUID();
       let rows:DriveDraft[]=[];
-      if(draftId||saved?.id){
+      if(!localDraftRequested||saved?.id){
         try{rows=await collegeApi.get<DriveDraft[]>('drive-drafts',controller.signal);}catch(error){
           if(controller.signal.aborted)return;
-          if(saved?.payload&&(!draftId||saved.id===draftId)){
+          if(saved?.payload&&(localDraftRequested||saved.id===draftId)){
             hydrate(saved.payload,saved.payload.step??0);setCreationKey(savedKey);draftIdRef.current=null;
-            setNotice('Could not sync the saved draft. Recovered the local copy.');
+            setNotice('Could not sync the saved draft. Recovered the local copy.');setDraftLoaded(true);return;
           }else{
             setFormError(axios.isAxiosError(error)&&error.response?.status===404
               ?'Drive not found. This saved draft may have been deleted.'
@@ -139,14 +146,14 @@ export default function CreateDriveWizard({programs,drive,draftId,initialStep=0,
         }
       }
       if(controller.signal.aborted)return;
-      const row=rows.find(item=>draftId
-        ? item.id===draftId||(item.client_draft_key&&item.client_draft_key===savedKey)
-        : item.id===saved?.id||(item.client_draft_key&&item.client_draft_key===savedKey));
+      const row=rows.find(item=>localDraftRequested
+        ? item.id===saved?.id||(item.client_draft_key&&item.client_draft_key===savedKey)
+        : item.id===draftId);
       if(row){
-        const localIsNewer=Boolean(saved?.payload&&Date.parse(saved.saved_at||'')>Date.parse(row.updated_at||''));
+        const localIsNewer=Boolean(saved?.payload&&(saved.id===row.id||saved.payload.creationKey===row.client_draft_key)&&Date.parse(saved.saved_at||'')>Date.parse(row.updated_at||''));
         hydrate(localIsNewer?saved!.payload!:row.payload,localIsNewer?(saved!.payload!.step??0):row.step);
         setCreationKey(row.client_draft_key||savedKey);draftIdRef.current=row.id;
-      }else if(saved?.payload&&(!draftId||saved.id===draftId)){
+      }else if(saved?.payload&&(localDraftRequested||saved.id===draftId)){
         hydrate(saved.payload,saved.payload.step??0);setCreationKey(savedKey);draftIdRef.current=null;
         if(saved.id)setNotice('Recovered your saved draft. Syncing it to your account now.');
       }else if(draftId)setFormError('Drive not found. This saved draft may have been deleted.');
@@ -328,10 +335,15 @@ export default function CreateDriveWizard({programs,drive,draftId,initialStep=0,
     submittingRef.current=true;setBusy(true);setFormError('');setFieldErrors({});
     try{
       while(draftSavingRef.current)await new Promise<void>(resolve=>draftSaveWaitersRef.current.push(resolve));
-      const result=await collegeApi.save<{status?:string;warnings?:string[]}>(drive?`drives/${drive.id}`:'drives',apiPayload(),!!drive);
+      const payload=apiPayload();
+      const result=await collegeApi.save<{drive_id:string;status?:string;warnings?:string[]}>(drive?`drives/${drive.id}`:'drives',payload,!!drive);
+      const saved=await collegeApi.get<Drive>(`drives/${drive?.id||result.drive_id}`);
+      if((saved.criteria_interview_score??null)!==payload.criteria_interview_score){
+        throw new UserFacingError('The drive was saved, but its interview score requirement could not be confirmed. Reopen the drive and check Eligibility before continuing.');
+      }
       submittedRef.current=true;draftResaveRef.current=false;
       localStorage.removeItem(DRAFT_KEY);draftIdRef.current=null;
-      onSaved([drive?'Drive changes saved.':`Drive created (${displayName(result.status||'draft')}).`,...(result.warnings||[])].join(' '));
+      onSaved([drive?'Drive changes saved.':`Drive created (${displayName(result.status||'draft')}).`,saved.criteria_interview_score!=null?`Minimum interview score saved: ${saved.criteria_interview_score}%.`:'No minimum interview score set.',...(result.warnings||[])].join(' '));
     }catch(error){applyBackendErrors(error);}finally{submittingRef.current=false;setBusy(false);}
   }
 
@@ -350,7 +362,7 @@ export default function CreateDriveWizard({programs,drive,draftId,initialStep=0,
   const chosenProfile=companyProfiles.find(profile=>profile.id===form.company_profile_id);
   const salaryCurrency=CURRENCIES.find(([code])=>code===form.salary_currency)?.[1]||form.salary_currency;
 
-  return <section className="drive-wizard space-y-6 text-slate-900 dark:text-white">
+  return <section className="drive-wizard placement-drives-scheme placement-scheme space-y-6 text-slate-900 dark:text-white">
     <div className="flex flex-wrap items-center justify-between gap-3"><button className={button} onClick={onCancel}><ArrowLeft size={16}/>Back to placement drives</button>{!drive&&<div className="flex items-center gap-2 text-xs text-slate-500" role="status">{draftStatus==='saving'?<><span className="rs-save-dot saving"/>Saving draft…</>:draftStatus==='saved'?<><span className="rs-save-dot"/>Draft saved</>:draftStatus==='error'?<><span className="rs-save-dot error"/>Offline draft saved on this device</>:<><span className="rs-save-dot"/>Draft auto-save ready</>}</div>}</div>
     <header className="dw-heading"><div><p className="text-sm font-semibold uppercase tracking-[.16em] text-violet-600">Placement management</p><h1 className="mt-2 text-3xl font-bold tracking-tight">{drive?'Modify placement drive':'Create placement drive'}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{drive?'Modify the saved configuration for this drive. All sections are available; changes apply when you save.':'Set up a clear hiring workflow. Your draft saves as you work; publish after reviewing all details.'}</p></div>{!drive&&<button className={button} disabled={draftStatus==='saving'||advancing||busy} onClick={()=>void saveDraft(true)}><Save size={16}/>Save draft</button>}</header>
     <nav className="dw-stepper" aria-label="Drive creation steps">{steps.map((name,index)=>{

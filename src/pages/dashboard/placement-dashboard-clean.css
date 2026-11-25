@@ -1,0 +1,457 @@
+/* Command center only. Keep sibling pages and the application shell untouched. */
+.placement-intelligence.placement-dashboard-clean {
+  --pc-bg:#f6f8fb;--pc-card:#ffffff;--pc-border:#e2e8f0;
+  --pc-heading:#102b48;--pc-body:#334155;--pc-muted:#64748b;
+  --pc-primary:#0b4b87;--pc-hover:#073765;
+  --pc-shadow:0 1px 2px rgba(0,0,0,.04);
+  --dashboard-chart-border:#e2e8f0;--dashboard-chart-surface:#ffffff;--dashboard-chart-text:#334155;
+  --pi-section-gap:20px;
+  background:var(--pc-bg);color:var(--pc-body);font-family:Arial,"Helvetica Neue",sans-serif;font-size:13px;
+}
+.placement-dashboard-clean *, .placement-dashboard-clean *::before,.placement-dashboard-clean *::after {box-sizing:border-box;}
+.placement-intelligence.placement-dashboard-clean .pi-hero {background:var(--pc-card);color:var(--pc-heading);border:1px solid var(--pc-border);border-radius:10px;box-shadow:var(--pc-shadow);padding:20px 24px;gap:16px;}
+.placement-intelligence.placement-dashboard-clean .pi-clean-hero-icon {display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#e7eff8;color:#0b4b87;flex-shrink:0;}
+.placement-intelligence.placement-dashboard-clean .pi-hero>div:first-of-type {flex:1;min-width:0;}
+.placement-intelligence.placement-dashboard-clean .pi-hero p {color:var(--pc-muted);font-size:10px;letter-spacing:1px;margin-bottom:7px;}
+.placement-intelligence.placement-dashboard-clean .pi-hero p svg {display:none;}
+.placement-intelligence.placement-dashboard-clean .pi-hero h1 {color:var(--pc-heading);font-size:28px;font-weight:750;letter-spacing:-.7px;margin-bottom:5px;}
+.placement-intelligence.placement-dashboard-clean .pi-hero>div>span {color:var(--pc-muted);font-size:14px;}
+.placement-intelligence.placement-dashboard-clean .pi-hero-tag {display:flex;background:#f8fafc;color:var(--pc-body);border:1px solid var(--pc-border);box-shadow:none;border-radius:10px;max-width:35%;padding:12px 14px;font-size:12px;}
+.placement-intelligence.placement-dashboard-clean .pi-hero-tag svg {color:#0b4b87;flex-shrink:0;}
+.placement-intelligence.placement-dashboard-clean .pi-hero-tag small {color:var(--pc-muted);font-size:11px;}
+.placement-intelligence.placement-dashboard-clean button {background:#fff;color:var(--pc-body);border:1px solid var(--pc-border);border-radius:8px;box-shadow:none;font-size:12px;font-weight:600;cursor:pointer;padding:9px 12px;}
+.placement-intelligence.placement-dashboard-clean .pi-tabs {background:transparent;gap:8px;margin:20px 0;padding:0;border-radius:0;width:100%;}
+.placement-intelligence.placement-dashboard-clean .pi-tabs button {background:#fff;border:1px solid var(--pc-border);color:var(--pc-body);padding:10px 16px;border-radius:9px;box-shadow:var(--pc-shadow);}
+.placement-intelligence.placement-dashboard-clean .pi-tabs button[aria-pressed=true] {background:var(--pc-primary);border-color:var(--pc-primary);color:#fff;}
+.placement-intelligence.placement-dashboard-clean .pi-filter-panel {display:grid;grid-template-columns:minmax(240px,1.8fr) repeat(5,minmax(80px,1fr)) repeat(2,minmax(115px,1fr)) auto;gap:12px;background:var(--pc-card);border:1px solid var(--pc-border);border-radius:10px;box-shadow:var(--pc-shadow);padding:20px;margin:0 0 20px;align-items:end;}
+.placement-intelligence.placement-dashboard-clean .pi-filter-panel>label:first-child {grid-column:auto;}
+.placement-intelligence.placement-dashboard-clean .pi-filter-panel label {min-width:0;font-size:12px;font-weight:500;color:var(--pc-muted);gap:7px;}
+.placement-intelligence.placement-dashboard-clean :is(select,input) {height:40px;background:#fff;border:1px solid var(--pc-border);border-radius:8px;color:var(--pc-body);font-size:12px;padding:8px;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean select:disabled {background:#f8fafc;color:#64748b;opacity:1;}
+.placement-intelligence.placement-dashboard-clean .pi-filter-actions {gap:6px;}
+.placement-intelligence.placement-dashboard-clean .pi-filter-actions button {height:40px;padding:8px;}
+.placement-intelligence.placement-dashboard-clean .pi-filter-actions button:last-child {flex:0;}
+.placement-intelligence.placement-dashboard-clean .pi-kpis {grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-bottom:20px;}
+.placement-intelligence.placement-dashboard-clean .pi-card {background:var(--pc-card);border:1px solid var(--pc-border);border-radius:10px;box-shadow:var(--pc-shadow);padding:20px 24px;min-width:0;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi:is(.blue,.green,.purple,.gold) {background:#fff;display:flex;gap:12px;min-height:140px;padding:20px;align-items:flex-start;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi p {color:var(--pc-body);font-size:13px;font-weight:600;min-height:0;line-height:1.5;margin:0 0 10px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi strong {color:var(--pc-heading);font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-.8px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi small {font-size:12px;color:var(--pc-muted);margin-top:8px;}
+.placement-intelligence.placement-dashboard-clean .pi-icon {width:40px;height:40px;border-radius:50%;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pi-icon svg {width:21px;height:21px;filter:none;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.blue .pi-icon {background:#dbeafe;color:#2563eb;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.green .pi-icon {background:#dcfce7;color:#16a34a;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.purple .pi-icon {background:#ede9fe;color:#7c3aed;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.gold .pi-icon {background:#fef3c7;color:#d97706;}
+.placement-intelligence.placement-dashboard-clean .pi-card h2 {color:var(--pc-heading);font-size:16px;font-weight:650;letter-spacing:-.25px;line-height:1.5;margin:0 0 14px;}
+.placement-intelligence.placement-dashboard-clean .pi-card h3 {color:var(--pc-body);font-size:13px;font-weight:600;line-height:1.5;}
+.placement-intelligence.placement-dashboard-clean .pi-card p {font-size:13px;color:var(--pc-muted);line-height:1.7;}
+.placement-intelligence.placement-dashboard-clean .pi-card small {font-size:12px;color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean .pdo-overview {display:grid;gap:20px;}
+.placement-intelligence.placement-dashboard-clean .pdo-grid {display:grid;gap:20px;align-items:start;}
+.placement-intelligence.placement-dashboard-clean :is(.pdo-main-grid,.pdo-review-grid) {grid-template-columns:repeat(2,minmax(0,1fr));}
+.placement-intelligence.placement-dashboard-clean .pdo-second-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+.placement-intelligence.placement-dashboard-clean .pdo-grid>.pi-card {display:flex;flex-direction:column;container-type:normal;}
+.placement-intelligence.placement-dashboard-clean .pdo-grid>article:last-child {grid-column:auto;}
+.placement-intelligence.placement-dashboard-clean .pdo-card-heading {min-block-size:0;align-items:center;gap:12px;margin-bottom:14px;}
+.placement-intelligence.placement-dashboard-clean .pdo-card-heading h2 {margin:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-card-heading button {font-size:12px;padding:8px 10px;}
+.placement-intelligence.placement-dashboard-clean .pi-link {color:#0b4b87;font-size:12px;font-weight:600;}
+.placement-intelligence.placement-dashboard-clean .pdo-chart {height:260px;min-height:260px;max-height:none;flex:none;background:transparent;border-radius:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-dense-chart {height:auto!important;max-height:none;overflow:visible;border-radius:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-metric-row {grid-template-columns:minmax(0,1.2fr) minmax(50px,1fr) 48px;gap:12px;padding:12px 0;border-bottom-color:#f1f5f9;color:var(--pc-body);font-size:13px;}
+.placement-intelligence.placement-dashboard-clean .pdo-metric-row strong {font-size:12px;color:var(--pc-body);}
+.placement-intelligence.placement-dashboard-clean .pdo-metric-track {height:7px;background:#f1f5f9;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-metric-track i {background:#2563eb;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-note {color:var(--pc-muted)!important;font-size:12px!important;line-height:1.6;margin:14px 0 0!important;padding-top:0!important;}
+.placement-intelligence.placement-dashboard-clean .pdo-donut-layout {min-height:260px;gap:20px;flex:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring {max-width:190px;background:transparent;filter:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring-center strong {color:var(--pc-heading);font-size:28px;font-weight:750;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring-center span {font-size:11px;color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean .pdo-legend li {font-size:12px;border:0;padding:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-legend span {color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean .pdo-legend b {color:var(--pc-body);}
+.placement-intelligence.placement-dashboard-clean .pdo-response-count {font-size:11px!important;color:var(--pc-muted)!important;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>a,.placement-intelligence.placement-dashboard-clean .pdo-quick-row>button {display:flex;align-items:center;gap:12px;min-height:116px;padding:20px!important;border:1px solid var(--pc-border);border-radius:10px;background:#f5f3ff;color:var(--pc-heading);box-shadow:var(--pc-shadow);font-size:15px;font-weight:600;text-align:left;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>a:nth-child(2) {background:#eff6ff;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>a:nth-child(3) {background:#f1f5fa;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>button {background:#fffbeb;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>*>svg:first-child {box-sizing:content-box;width:20px;height:20px;padding:10px;border-radius:50%;background:#ede9fe;color:#7c3aed;flex-shrink:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>a:nth-child(2)>svg:first-child {background:#dbeafe;color:#2563eb;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>a:nth-child(3)>svg:first-child {background:#e7eff8;color:#0b4b87;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>button>svg:first-child {background:#fef3c7;color:#d97706;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row>*>span {flex:1;min-width:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-quick-row small {font-size:12px!important;font-weight:400;color:var(--pc-muted);margin-top:6px;}
+.placement-intelligence.placement-dashboard-clean .pdo-action-arrow {box-sizing:content-box;width:15px;height:15px;padding:7px;border-radius:50%;background:#fff;color:var(--pc-body);flex-shrink:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-recent {display:block;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview {padding:12px 0;border-bottom:1px solid #f1f5f9;background:#fff;gap:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview:last-child {border-bottom:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview strong {font-size:14px;font-weight:600;color:var(--pc-heading);}
+.placement-intelligence.placement-dashboard-clean .pdo-interview small,.placement-intelligence.placement-dashboard-clean .pdo-interview time {font-size:12px;color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean .pi-avatar {width:36px;height:36px;border-radius:50%;background:#dbeafe;color:#2563eb;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-score {font-size:12px;background:#dcfce7;color:#166534;border-radius:999px;padding:6px 12px;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-score.developing {background:#fef3c7;color:#92400e;}
+.placement-intelligence.placement-dashboard-clean .pdo-score.not-assessed {background:#f1f5f9;color:#64748b;}
+.placement-intelligence.placement-dashboard-clean .pdo-score::before {content:'•';margin-right:5px;}
+.placement-intelligence.placement-dashboard-clean .pdo-insights {display:grid;grid-template-columns:minmax(0,1fr);gap:16px;}
+.placement-intelligence.placement-dashboard-clean .pdo-insights section {background:#f8fafc!important;border:1px solid var(--pc-border);border-radius:10px;padding:14px;max-height:none;overflow:visible;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-insights h3 {font-size:13px!important;}
+.placement-intelligence.placement-dashboard-clean .pdo-evidence {border-bottom:1px solid #e2e8f0;padding:12px 0;}
+.placement-intelligence.placement-dashboard-clean .pdo-evidence>p {font-size:13px!important;line-height:1.7!important;color:var(--pc-body);margin:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-evidence small {font-size:11px!important;margin-top:5px;}
+.placement-intelligence.placement-dashboard-clean .pdo-show-all summary {cursor:pointer;font-size:12px;font-weight:600;color:#0b4b87;padding-top:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-empty {font-size:13px;color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean .pdo-trends-chart .recharts-line-curve {filter:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-trend-key span {background:#f8fafc;border:1px solid #e2e8f0;color:var(--pc-body);font-size:11px;}
+.placement-intelligence.placement-dashboard-clean .pdo-trend-key span:last-child i {background:#779fc6!important;height:2px;border-radius:0;border-right:5px solid #f8fafc;border-left:5px solid #779fc6;}
+.placement-intelligence.placement-dashboard-clean .pi-alert {background:#fffbeb;border:1px solid #fde68a;box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pi-alert strong {color:var(--pc-body);font-size:13px;}
+.placement-intelligence.placement-dashboard-clean .pi-alert p {font-size:12px;color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean .pi-table-wrap {overflow:visible;max-width:100%;}
+.placement-intelligence.placement-dashboard-clean table {width:100%;table-layout:fixed;font-size:12px;}
+.placement-intelligence.placement-dashboard-clean thead {background:#f8fafc;color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean th,.placement-intelligence.placement-dashboard-clean td {padding:12px;overflow-wrap:anywhere;white-space:normal;border-bottom:1px solid #f1f5f9;}
+.placement-intelligence.placement-dashboard-clean th {font-weight:500;}
+.placement-intelligence.placement-dashboard-clean .pdo-development {background:#fff!important;border:1px solid var(--pc-border);gap:16px;flex-wrap:wrap;}
+.placement-intelligence.placement-dashboard-clean .pdo-development>svg {box-sizing:content-box;padding:12px;background:#e7eff8;color:#0b4b87;border-radius:50%;}
+.placement-intelligence.placement-dashboard-clean .pdo-development h2 {margin-bottom:6px!important;}
+.placement-intelligence.placement-dashboard-clean .pdo-development p {color:var(--pc-muted);font-size:13px;}
+.placement-intelligence.placement-dashboard-clean .pi-clean-primary {background:var(--pc-primary);color:#fff;border:1px solid var(--pc-primary);border-radius:8px;padding:10px 13px;}
+.placement-intelligence.placement-dashboard-clean .pi-deliverables {margin:0;gap:20px;}
+.placement-intelligence.placement-dashboard-clean .pi-deliverables article {background:#fff;border:1px solid var(--pc-border);border-radius:12px;padding:20px;box-shadow:var(--pc-shadow);}
+.placement-intelligence.placement-dashboard-clean .pi-deliverables svg {color:#0b4b87;}
+.placement-intelligence.placement-dashboard-clean .pi-deliverables h3 {color:var(--pc-body);font-size:12px;}
+.placement-intelligence.placement-dashboard-clean .pi-deliverables p {font-size:12px;color:var(--pc-muted);}
+.placement-intelligence.placement-dashboard-clean .pi-scope {font-size:11px;color:var(--pc-muted);margin:20px 0 0;padding:0;}
+.placement-intelligence.placement-dashboard-clean :is(a,button,input,select,summary):focus-visible {outline:3px solid #93b8df;outline-offset:3px;}
+@media(hover:hover) {
+ .placement-intelligence.placement-dashboard-clean button:hover {background:#f8fafc;border-color:#cbd5e1;}
+ .placement-intelligence.placement-dashboard-clean .pi-tabs button[aria-pressed=true]:hover,.placement-intelligence.placement-dashboard-clean .pi-clean-primary:hover {background:#0b4b87;color:#fff;}
+ .placement-intelligence.placement-dashboard-clean .pdo-quick-row>a:hover,.placement-intelligence.placement-dashboard-clean .pdo-quick-row>button:hover {transform:translateY(-2px);border-color:#cbd5e1;}
+}
+@media(prefers-reduced-motion:no-preference) {.placement-intelligence.placement-dashboard-clean .pdo-quick-row>* {transition:transform .18s ease,border-color .18s ease;}}
+@media(max-width:1450px) {
+ .placement-intelligence.placement-dashboard-clean .pi-filter-panel {grid-template-columns:repeat(6,minmax(0,1fr));}
+ .placement-intelligence.placement-dashboard-clean .pi-filter-panel>label:first-child {grid-column:span 2;}
+ .placement-intelligence.placement-dashboard-clean .pi-filter-actions {grid-column:span 3;justify-content:flex-end;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpi:is(.blue,.green,.purple,.gold) {flex-direction:column;}
+ .placement-intelligence.placement-dashboard-clean .pdo-quick-row>a,.placement-intelligence.placement-dashboard-clean .pdo-quick-row>button {gap:10px;padding:16px!important;font-size:14px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-quick-row>*>svg:first-child {padding:8px;width:18px;height:18px;}
+}
+@media(max-width:1100px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid>.pi-card:last-child {grid-column:1/-1;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpis,.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .placement-intelligence.placement-dashboard-clean .pdo-action-arrow {padding:6px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-donut-layout {grid-template-columns:minmax(0,1fr);min-height:0;gap:16px;padding:10px 0;}
+ .placement-intelligence.placement-dashboard-clean .pdo-legend {gap:10px;}
+}
+@media(max-width:700px) {
+ .placement-intelligence.placement-dashboard-clean .pi-hero {padding:20px;flex-wrap:wrap;}
+ .placement-intelligence.placement-dashboard-clean .pi-hero h1 {font-size:26px;}
+ .placement-intelligence.placement-dashboard-clean .pi-hero-tag {max-width:100%;width:100%;}
+ .placement-intelligence.placement-dashboard-clean .pi-tabs button {flex:auto;padding:10px;font-size:11px;}
+ .placement-intelligence.placement-dashboard-clean .pi-filter-panel {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .placement-intelligence.placement-dashboard-clean .pi-filter-panel>label:first-child {grid-column:1/-1;}
+ .placement-intelligence.placement-dashboard-clean .pi-filter-actions {grid-column:1/-1;}
+ .placement-intelligence.placement-dashboard-clean :is(.pdo-main-grid,.pdo-second-grid,.pdo-review-grid) {grid-template-columns:minmax(0,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid>.pi-card:last-child {grid-column:auto;}
+ .placement-intelligence.placement-dashboard-clean .pi-card {padding:20px;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpi {flex-direction:column;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-size:28px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-donut-layout {grid-template-columns:minmax(100px,1fr) minmax(100px,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-development>a,.placement-intelligence.placement-dashboard-clean .pdo-development>button {width:100%;justify-content:center;}
+ .placement-intelligence.placement-dashboard-clean .pi-deliverables {grid-template-columns:minmax(0,1fr);}
+}
+@media(max-width:420px) {
+ .placement-intelligence.placement-dashboard-clean .pi-kpis {grid-template-columns:minmax(0,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row,.placement-intelligence.placement-dashboard-clean .pi-filter-panel {grid-template-columns:minmax(0,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-metric-row {grid-template-columns:minmax(0,1fr) minmax(30px,.8fr) 42px;font-size:12px;gap:8px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-donut-layout {grid-template-columns:minmax(0,1fr);}
+}
+
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid>article.pdo-recent:last-child {grid-column:1/-1;}
+.placement-intelligence.placement-dashboard-clean .pdo-experience-chart .recharts-pie-sector:hover {filter:none;}
+
+
+/* A single explicit grid replaces the earlier independent-column experiments. */
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid {
+ grid-template-columns:minmax(0,1.15fr) repeat(2,minmax(0,1fr));
+ grid-template-areas:"performance feedback mix" "performance categories categories";
+ align-items:stretch;gap:20px;
+}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid>.pi-card {padding:20px;align-self:stretch;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid>.pdo-layout-0 {grid-area:performance;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid>.pdo-layout-1 {grid-area:feedback;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid>.pdo-layout-2 {grid-area:mix;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid>.pdo-layout-3 {grid-area:categories;}
+.placement-intelligence.placement-dashboard-clean .pdo-card-heading {min-height:0;margin-bottom:14px;}
+.placement-intelligence.placement-dashboard-clean .pdo-card-heading h2 {font-size:15px;}
+.placement-intelligence.placement-dashboard-clean .pdo-card-heading button {font-size:11px;padding:7px 9px;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid .pdo-dense-chart {flex:1;display:flex;flex-direction:column;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid .pdo-metric-row {flex:1;padding:10px 0;font-size:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-metric-track i {background:#0b4b87;}
+.placement-intelligence.placement-dashboard-clean .pdo-donut-layout,
+.placement-intelligence.placement-dashboard-clean .pdo-grid .pdo-donut-layout {min-height:0;flex:none;grid-template-columns:132px minmax(0,1fr);gap:16px;align-content:center;padding:2px 0;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring {width:132px;max-width:100%;justify-self:start;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring-center strong {font-size:26px;}
+.placement-intelligence.placement-dashboard-clean .pdo-legend {max-width:220px;gap:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-legend li {grid-template-columns:8px minmax(0,1fr) 36px;gap:7px;}
+.placement-intelligence.placement-dashboard-clean .pdo-legend b {text-align:right;}
+.placement-intelligence.placement-dashboard-clean .pdo-layout-1>.pi-link {margin-top:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid .pdo-category-chart {min-height:0;max-height:none;flex:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid .pdo-layout-3>h2 {margin-bottom:4px;}
+.placement-intelligence.placement-dashboard-clean .pdo-second-grid {grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;}
+.placement-intelligence.placement-dashboard-clean .pdo-second-grid>.pi-card:last-child {grid-column:auto;}
+.placement-intelligence.placement-dashboard-clean .pdo-insights {gap:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-insights section {padding:12px;background:#f8fafc!important;}
+.placement-intelligence.placement-dashboard-clean .pdo-insights h3 {margin:0 0 6px;}
+.placement-intelligence.placement-dashboard-clean .pdo-evidence {padding:8px 0;border-color:#e5eaf1;}
+.placement-intelligence.placement-dashboard-clean .pdo-evidence-excerpt {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px!important;line-height:1.6!important;}
+.placement-intelligence.placement-dashboard-clean .pdo-evidence-open {display:inline-flex;gap:6px;font-size:11px;border:0;background:transparent;color:#0b4b87;padding:8px 0 0;box-shadow:none;}
+/* Native modal keeps full evidence accessible without changing dashboard row heights. */
+.placement-intelligence.placement-dashboard-clean .pdo-evidence-dialog {width:min(640px,calc(100vw - 32px));max-height:80vh;margin:auto;padding:0;border:1px solid #dfe5ed;border-radius:12px;background:#fff;color:#334155;overflow-y:auto;box-shadow:0 1px 2px #0000000a;}
+.pdo-evidence-dialog::backdrop {background:rgba(15,23,42,.45);}
+.placement-intelligence.placement-dashboard-clean .pdo-dialog-surface {padding:24px;}
+.placement-intelligence.placement-dashboard-clean .pdo-dialog-surface>header {display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #e2e8f0;padding-bottom:16px;}
+.placement-intelligence.placement-dashboard-clean .pdo-dialog-surface>header small {font-size:11px;color:#64748b;}
+.placement-intelligence.placement-dashboard-clean .pdo-dialog-surface h2 {font-size:18px;margin:4px 0 0;}
+.placement-intelligence.placement-dashboard-clean .pdo-dialog-evidence section {display:flex;gap:12px;padding:16px 0;background:#fff!important;border:0;border-bottom:1px solid #e2e8f0;border-radius:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-dialog-evidence section:last-child {border-bottom:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-dialog-evidence p {margin:0 0 6px;color:#334155;font-size:13px;line-height:1.8;}
+.placement-intelligence.placement-dashboard-clean .pdo-evidence-number {display:grid;place-items:center;flex:0 0 26px;height:26px;border-radius:7px;background:#eaf0f8;color:#0b4b87;font-size:12px;font-weight:600;}
+/* One continuous roster with consistent columns, never two competing lists. */
+.placement-intelligence.placement-dashboard-clean .pdo-recent {display:block;}
+.placement-intelligence.placement-dashboard-clean .pdo-recent>.pdo-card-heading {margin-bottom:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-labels,
+.placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-interview {display:grid;grid-template-columns:minmax(160px,1fr) minmax(180px,1.25fr) 120px 80px;gap:20px;align-items:center;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-labels {padding:9px 12px;background:#eef2f8;color:#64748b;font-size:11px;font-weight:600;border-radius:6px;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-labels>span:last-child {text-align:right;}
+.placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-interview {padding:10px 12px;border-bottom:1px solid #edf1f6;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-person {display:flex;align-items:center;gap:10px;min-width:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-person strong {font-size:13px;line-height:1.5;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-context {min-width:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-context small {display:block;font-size:12px;line-height:1.5;margin:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-recent time {font-size:12px;margin:0;color:#64748b;}
+.placement-intelligence.placement-dashboard-clean .pdo-recent .pi-avatar {width:32px;height:32px;}
+.placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-score {justify-self:end;font-size:12px;min-width:50px;margin:0;}
+@media(max-width:1450px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-main-grid {grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"performance feedback" "performance mix" "categories categories";}
+ .placement-intelligence.placement-dashboard-clean .pdo-main-grid .pdo-layout-0 {justify-content:flex-start;}
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid {grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid>.pi-card:last-child {grid-column:1/-1;}
+}
+@media(max-width:900px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-interview-labels,.placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-interview {grid-template-columns:minmax(120px,1fr) minmax(120px,1fr) 70px 56px;gap:12px;}
+}
+@media(max-width:700px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-main-grid {grid-template-columns:minmax(0,1fr);grid-template-areas:"performance" "feedback" "mix" "categories";}
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid {grid-template-columns:minmax(0,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid>.pi-card:last-child {grid-column:auto;}
+ .placement-intelligence.placement-dashboard-clean .pdo-interview-labels {display:none;}
+ .placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-interview {grid-template-columns:minmax(0,1fr) 64px;gap:5px 10px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-interview-person {grid-column:1;grid-row:1;}
+ .placement-intelligence.placement-dashboard-clean .pdo-interview-context {grid-column:1;grid-row:2;margin-left:42px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-recent time {grid-column:1;grid-row:3;margin-left:42px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-score {grid-column:2;grid-row:1 / span 3;}
+}
+@media(max-width:420px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-donut-layout,.placement-intelligence.placement-dashboard-clean .pdo-grid .pdo-donut-layout {grid-template-columns:110px minmax(0,1fr);gap:12px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-ring {width:110px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-ring-center strong {font-size:23px;}
+}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) {background:#f3f6fb;color:#173c64;border-color:#e0e7f0;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>svg:first-child {background:#e3ecf8;color:#0b4b87;border-radius:9px;}
+
+/* Explicit placement must outrank the legacy article:last-child grid rule. */
+.placement-intelligence.placement-dashboard-clean .pdo-main-grid>article.pdo-layout-3:last-child {grid-area:categories;grid-column:2 / 4;}
+.placement-intelligence.placement-dashboard-clean .pdo-roster-grid {grid-template-columns:minmax(0,1.8fr) minmax(290px,1fr);align-items:stretch;}
+.placement-intelligence.placement-dashboard-clean .pdo-roster-grid>article:last-child {grid-column:auto;}
+.placement-intelligence.placement-dashboard-clean .pdo-roster-grid .pdo-recent {display:block;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-labels,
+.placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-interview {grid-template-columns:minmax(130px,1fr) minmax(140px,1.15fr) 66px 64px;gap:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-roster-grid .pdo-donut-layout {flex:1;align-content:center;}
+.placement-intelligence.placement-dashboard-clean .pdo-second-grid {grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;}
+.placement-intelligence.placement-dashboard-clean .pdo-second-grid>article:last-child {grid-column:auto;}
+.placement-intelligence.placement-dashboard-clean .pdo-insights {grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;}
+.placement-intelligence.placement-dashboard-clean .pdo-second-grid .pdo-chart {height:180px;min-height:180px;}
+.placement-intelligence.placement-dashboard-clean .pdo-review-grid {grid-template-columns:minmax(0,1fr);gap:20px;}
+.placement-intelligence.placement-dashboard-clean .pdo-review-grid>article {display:block;}
+.placement-intelligence.placement-dashboard-clean .pdo-review-grid>article:last-child {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.placement-intelligence.placement-dashboard-clean .pdo-review-grid>article:last-child>.pdo-card-heading {grid-column:1/-1;margin-bottom:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-review-grid .pi-alert {margin:0;}
+@media(max-width:1450px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-main-grid>article.pdo-layout-3:last-child {grid-area:categories;grid-column:1/-1;}
+ .placement-intelligence.placement-dashboard-clean .pdo-roster-grid {grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-interview-labels,
+ .placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-interview {grid-template-columns:minmax(110px,1fr) minmax(110px,1fr) 58px 52px;gap:8px;padding-left:0;padding-right:0;}
+ .placement-intelligence.placement-dashboard-clean .pdo-interview-person {gap:7px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-insights {grid-template-columns:minmax(0,1fr);}
+}
+@media(max-width:1100px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-roster-grid {grid-template-columns:minmax(0,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-roster-grid .pdo-donut-layout {flex:none;}
+}
+@media(max-width:700px) {
+ .placement-intelligence.placement-dashboard-clean .pdo-main-grid>article.pdo-layout-3:last-child {grid-area:categories;grid-column:1;}
+ .placement-intelligence.placement-dashboard-clean .pdo-second-grid,
+ .placement-intelligence.placement-dashboard-clean .pdo-review-grid>article:last-child {grid-template-columns:minmax(0,1fr);}
+ .placement-intelligence.placement-dashboard-clean .pdo-recent .pdo-interview {grid-template-columns:minmax(0,1fr) 64px;gap:5px 10px;}
+}
+
+/* Reference KPI and action tiles; presentation only, existing content and links. */
+.placement-intelligence.placement-dashboard-clean .pi-kpis {gap:16px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi:is(.blue,.green,.purple,.gold) {flex-direction:row;align-items:flex-start;gap:16px;padding:22px 20px;min-height:144px;border:1px solid #fff;border-radius:13px;box-shadow:inset 0 0 0 2px #ffffffa6,0 1px 2px #0000000a;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.blue {background:#f3f8ff;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.green {background:#f2fbf6;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.purple {background:#f8f5ff;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.gold {background:#fffbf3;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi .pi-icon {width:58px;height:58px;border-radius:50%;box-shadow:none;flex-shrink:0;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi .pi-icon svg {width:29px;height:29px;stroke-width:2.1;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.blue .pi-icon {background:#e0efff;color:#167ce8;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.green .pi-icon {background:#dcf9e9;color:#08b778;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.purple .pi-icon {background:#ede3ff;color:#752be6;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.gold .pi-icon {background:#fff0d1;color:#efa312;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi p {color:#21183f;font-size:13px;font-weight:700;line-height:1.45;margin:0 0 8px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi strong {color:#170f3c;font-size:30px;line-height:1.15;font-weight:750;letter-spacing:-.6px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi small {font-size:12px;line-height:1.5;color:#77738c;margin-top:10px;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row {gap:16px;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) {position:relative;display:grid;grid-template-columns:minmax(0,1fr) 36px;grid-template-rows:48px auto;align-content:start;align-items:center;gap:12px 14px;min-height:174px;padding:20px!important;border:1px solid #fff;border-radius:13px;background:#f2ebfc;color:#21163f;box-shadow:inset 0 0 0 3px #ffffffb3,0 1px 2px #0000000a;text-align:left;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2) {background:#edf6ff;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3) {background:#eafaf2;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4) {background:#fff7e9;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>svg:first-child {grid-column:1;grid-row:1;box-sizing:border-box;width:48px;height:48px;padding:10px;border-radius:50%;background:#e9ddfc;color:#752be6;stroke-width:2.2;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>svg:first-child {background:#ddecfc;color:#1681e9;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>svg:first-child {background:#d3f6e5;color:#0cba80;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>svg:first-child {background:#ffedca;color:#efa312;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>span {grid-column:1;grid-row:2;color:#21163f;font-size:15px;font-weight:700;line-height:1.4;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) small {font-size:13px!important;font-weight:400;color:#716b89;margin-top:6px;line-height:1.5;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>.pdo-action-arrow {grid-column:2;grid-row:1 / span 2;align-self:center;box-sizing:border-box;width:36px;height:36px;padding:9px;border-radius:50%;background:#fff;color:#752be6;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>.pdo-action-arrow {color:#1681e9;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>.pdo-action-arrow {color:#0cba80;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>.pdo-action-arrow {color:#bc8e35;}
+@media(max-width:1450px) {
+ .placement-intelligence.placement-dashboard-clean .pi-kpi:is(.blue,.green,.purple,.gold) {gap:12px;padding:20px 16px;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpi .pi-icon {width:44px;height:44px;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpi .pi-icon svg {width:24px;height:24px;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-size:27px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) {padding:18px!important;min-height:180px;}
+}
+@media(max-width:700px) {
+ .placement-intelligence.placement-dashboard-clean .pi-kpi:is(.blue,.green,.purple,.gold) {flex-direction:column;}
+ .placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) {min-height:174px;}
+}
+@media(hover:hover) {
+ .placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n):hover {border-color:#d0c2e5;transform:translateY(-2px);}
+}
+
+/* One vivid blue chart family, with category swatches matching the plotted data. */
+.placement-intelligence.placement-dashboard-clean .pdo-metric-track {background:#e7efff;}
+.placement-intelligence.placement-dashboard-clean .pdo-metric-track i {background:#2563eb;}
+.placement-intelligence.placement-dashboard-clean .pdo-legend i {box-shadow:none;}
+.placement-intelligence.placement-dashboard-clean .pdo-trend-key span:first-child i {background:#2563eb!important;}
+.placement-intelligence.placement-dashboard-clean .pdo-trend-key span:last-child i {background:#06b6d4!important;border-left-color:#06b6d4;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.blue .pi-icon {color:#2563eb;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.green .pi-icon {color:#10b981;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.purple .pi-icon {color:#7c3aed;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.gold .pi-icon {color:#f59e0b;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1)>svg:first-child {color:#7c3aed;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>svg:first-child {color:#2563eb;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>svg:first-child {color:#10b981;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>svg:first-child {color:#f59e0b;}
+.placement-intelligence.placement-dashboard-clean .pi-clean-hero-icon {background:#dbeafe;color:#2563eb;}
+.placement-intelligence.placement-dashboard-clean .pi-hero-tag>svg,
+.placement-intelligence.placement-dashboard-clean .pi-card h2>svg,
+.placement-intelligence.placement-dashboard-clean .pi-deliverables svg {color:#2563eb;}
+
+/* Reference typography: bold titles and values, quieter supporting copy. */
+.placement-intelligence.placement-dashboard-clean {font-family:"Manrope",Arial,sans-serif;}
+.placement-intelligence.placement-dashboard-clean .pi-hero h1 {font-size:28px;font-weight:700;color:#151039;letter-spacing:-.7px;}
+.placement-intelligence.placement-dashboard-clean .pi-hero>div>span {font-weight:400;color:#6f6a87;}
+.placement-intelligence.placement-dashboard-clean .pi-card h2,
+.placement-intelligence.placement-dashboard-clean .pdo-card-heading h2 {font-size:16px;font-weight:700;line-height:1.4;color:#19123e;letter-spacing:-.35px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi p {font-size:13px;font-weight:700;color:#21183f;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-size:30px;font-weight:700;color:#17103c;letter-spacing:-.8px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi small {font-weight:400;color:#77718d;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>span {font-size:15px;font-weight:700;color:#20143e;letter-spacing:-.3px;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) small {font-size:13px!important;font-weight:400;letter-spacing:0;line-height:1.5;color:#736b8a;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>.pdo-action-arrow {width:36px;height:36px;padding:9px;stroke-width:2.2;}
+.placement-intelligence.placement-dashboard-clean .pi-link {font-weight:600;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-person strong {font-weight:600;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-context small,
+.placement-intelligence.placement-dashboard-clean .pdo-recent time {font-weight:400;}
+.placement-intelligence.placement-dashboard-clean .pdo-interview-labels {font-weight:500;}
+@media(max-width:1450px) {.placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-size:27px;}}
+@media(max-width:700px) {.placement-intelligence.placement-dashboard-clean .pi-hero h1 {font-size:26px;}}
+
+/* Inscribe the label box inside the 68% inner circle, rather than the whole SVG.
+   A 48% square fits inside the 68% diameter opening, including its corners. */
+.placement-intelligence.placement-dashboard-clean .pdo-ring {container-type:inline-size;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring-center {inset:26%;gap:2px;min-width:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring-center strong {display:block;max-width:100%;font-size:clamp(16px,18cqi,24px);line-height:1.1;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring-center span {display:block;width:100%;max-width:100%;font-size:clamp(8px,8cqi,10px);line-height:1.25;white-space:normal;overflow-wrap:anywhere;text-wrap:balance;}
+.placement-intelligence.placement-dashboard-clean .pdo-ring-center .pdo-ring-value-text {font-size:clamp(9px,9cqi,12px);line-height:1.2;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;}
+
+/* Reference emphasis: saturated icon strokes and readable, substantial tile copy. */
+.placement-intelligence.placement-dashboard-clean .pi-kpi p {font-size:14px;font-weight:700;color:#17103b;line-height:1.4;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-size:32px;font-weight:700;letter-spacing:-.7px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi small {font-size:12px;color:#66617d;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi .pi-icon svg {stroke-width:2.5;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.blue .pi-icon {background:#dceeff;color:#087bf1;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.green .pi-icon {background:#d7f9e7;color:#00b96b;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.purple .pi-icon {background:#e9dcff;color:#7223ed;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.gold .pi-icon {background:#ffedc8;color:#f4a000;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>span {font-size:17px;font-weight:700;line-height:1.35;letter-spacing:-.45px;color:#181039;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) small {font-size:14px!important;line-height:1.5;font-weight:500;color:#625a7b;margin-top:7px;letter-spacing:-.1px;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>svg:first-child {width:52px;height:52px;padding:11px;stroke-width:2.6;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1)>svg:first-child {background:#e6d5ff;color:#7020ec;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>svg:first-child {background:#d9ecff;color:#087bf1;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>svg:first-child {background:#cef6e2;color:#00b578;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>svg:first-child {background:#ffebc3;color:#f1a000;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>.pdo-action-arrow {stroke-width:2.5;}
+@media(max-width:1450px) {
+ .placement-intelligence.placement-dashboard-clean .pi-kpi p {font-size:13px;}
+ .placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-size:28px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>span {font-size:16px;}
+ .placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) small {font-size:13px!important;}
+}
+
+/* Latest reference: distinct, brighter pastel fills and saturated matching icons. */
+.placement-intelligence.placement-dashboard-clean .pi-kpi.blue {background:#eafcf0;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.green {background:#eaf4ff;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.purple {background:#f2eafd;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.gold {background:#fff8e5;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.blue .pi-icon {background:#d4f9df;color:#0ac53e;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.green .pi-icon {background:#d6eaff;color:#087cf1;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.purple .pi-icon {background:#e6d6fc;color:#7e17ed;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi.gold .pi-icon {background:#ffedbd;color:#f3a000;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi p {color:#171037;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi strong {color:#100b35;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi small {color:#615d78;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1) {background:#eee2fc;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2) {background:#e1f0ff;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3) {background:#e0fce8;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4) {background:#fff5da;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1)>svg:first-child {background:#dfcbf8;color:#7c13ef;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>svg:first-child {background:#cfe6ff;color:#087cf1;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>svg:first-child {background:#cbf8d9;color:#00be47;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>svg:first-child {background:#ffe9b2;color:#f29a00;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) {border-color:#fff;box-shadow:inset 0 0 0 2px #ffffffa6,0 1px 2px #0000000a;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>span {color:#171037;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) small {color:#5f5978;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(1)>.pdo-action-arrow {color:#7c13ef;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(2)>.pdo-action-arrow {color:#087cf1;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(3)>.pdo-action-arrow {color:#00be47;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(4)>.pdo-action-arrow {color:#f29a00;}
+
+/* Compact reference typography, scoped to the KPI and action rows. */
+.placement-intelligence.placement-dashboard-clean .pi-kpi,
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row {font-family:Arial,"Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi p {font-family:inherit;font-size:13px;font-weight:700;line-height:1.4;letter-spacing:-.3px;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-family:inherit;font-size:30px;font-weight:700;line-height:1.15;letter-spacing:-.8px;font-variant-numeric:tabular-nums;}
+.placement-intelligence.placement-dashboard-clean .pi-kpi small {font-family:inherit;font-size:12px;font-weight:400;line-height:1.45;letter-spacing:0;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) {font-family:inherit;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n)>span {font-family:inherit;font-size:16px;font-weight:700;line-height:1.35;letter-spacing:-.4px;}
+.placement-intelligence.placement-dashboard-clean .pdo-actions.pdo-quick-row>:is(a,button):nth-child(n) small {font-family:inherit;font-size:13px!important;font-weight:400;line-height:1.45;letter-spacing:-.1px;}
+@media(max-width:1450px) {.placement-intelligence.placement-dashboard-clean .pi-kpi strong {font-size:28px;}}

@@ -115,7 +115,7 @@ export default function SlotInputs({
   const fields = template.slot_fields || [];
   if (!fields.length)
     return (
-      <p className="rounded-xl bg-violet-50/70 p-3 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+      <p className="rounded-xl bg-[#EAF3FF] p-3 text-sm text-[#6B7A99] dark:bg-slate-950 dark:text-slate-300">
         This template does not require any variable mapping.
       </p>
     );
@@ -126,7 +126,7 @@ export default function SlotInputs({
         if (!group.length) return null;
         return (
           <div key={section} className="space-y-3">
-            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[#6B7A99]">
               {TITLES[section]}
             </h4>
             {group.map((field) =>

@@ -38,3 +38,4 @@
 .pi-filter-actions{display:flex;align-items:end;gap:8px;align-self:end}.pi-filter-actions button{height:40px}.pi-filter-actions button:last-child{flex:1}
 
 @media(max-width:700px){.pi-kpis,.pi-deliverables{gap:12px}.pi-kpi{padding:20px}.pi-deliverables{margin:16px 0}}
+.placement-intelligence .recharts-tooltip-wrapper { z-index: 10; }
