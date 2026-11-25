@@ -1884,7 +1884,7 @@ test('switching candidates ignores the previous delayed recording request',async
   await page.route('**/v3/college/students/s2/reports/session-s2/recording',route=>route.fulfill({json:{status:'ready',playback_url:'https://media.example/second.webm',duration_seconds:2,segment_count:1}}));
   await page.route('https://media.example/**',route=>route.fulfill({contentType:'video/webm',body:readFileSync('tests/fixtures/interview-test.webm')}));
   await page.reload();await expect.poll(()=>pending).toBe(true);
-  await page.getByRole('button',{name:'Next candidate',exact:true}).click();
+  await page.evaluate(() => { history.pushState({}, '', '/dashboard/placement-management?drive=drive-1&section=results&candidate=s2'); window.dispatchEvent(new PopStateEvent('popstate')); });
   await expect(page.getByRole('heading',{name:'Second Candidate',exact:true})).toBeVisible();
   const video=page.getByLabel('Interview recording',{exact:true});
   await expect(video).toHaveAttribute('src','https://media.example/second.webm');
@@ -2045,7 +2045,7 @@ test('switching candidates ignores a delayed main report refresh', async ({page}
   });
   await page.reload();await expect(page.getByRole('heading',{name:'First Candidate',exact:true})).toBeVisible();
   hold=true;await page.getByRole('button',{name:'Retry',exact:true}).click();await expect.poll(()=>pending).toBe(true);
-  await page.getByRole('button',{name:'Next candidate',exact:true}).click();
+  await page.evaluate(() => { history.pushState({}, '', '/dashboard/placement-management?drive=drive-1&section=results&candidate=s2'); window.dispatchEvent(new PopStateEvent('popstate')); });
   await expect(page.getByRole('heading',{name:'Second Candidate',exact:true})).toBeVisible();
   release();await page.waitForTimeout(300);
   await expect(page.getByRole('heading',{name:'Second Candidate',exact:true})).toBeVisible();
@@ -2078,4 +2078,96 @@ test('Interview results cards and table show email and Scorecard without duplica
   await expect(page.getByRole('button',{name:'Candidate details',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Scorecard',exact:true})).toBeEnabled();
   await page.screenshot({path:'/root/voicedots/artifacts/merged-candidates-results-mobile.png',fullPage:true});
+});
+
+const attemptReports = [
+  {source:'drive',drive_id:'drive-1',session_id:'saved-second',attempt_number:2,overall_score:78,completed_at:'2026-11-25T09:00:00Z',detail:{status:'released',strengths:['Second attempt feedback'],question_reviews:[]}},
+  {source:'drive',drive_id:'other-drive',session_id:'unrelated',attempt_number:5,overall_score:99,detail:{status:'released'}},
+  {source:'drive',drive_id:'drive-1',session_id:'saved-first',attempt_number:1,overall_score:0,completed_at:'2026-11-24T09:00:00Z',detail:{status:'released',strengths:['First attempt feedback'],question_reviews:[]}},
+];
+async function mockAttemptReports(page:Page, reports:unknown[]=attemptReports){
+  await page.route('**/v3/college/drives/drive-1',route=>route.fulfill({json:{id:'drive-1',company_name:'Example Company',role_title:'Engineer',status:'active',agent_selection:[]}}));
+  await page.route('**/v3/college/students/s1/reports',route=>route.fulfill({json:{student:{id:'s1',full_name:'Attempt Candidate'},reports}}));
+  await page.route('**/v3/college/students/s1/reports/*/recording',route=>route.fulfill({json:{status:'unavailable'}}));
+  await page.route('**/v3/college/students/s1/reports/*/transcript',route=>route.fulfill({json:{turns:[]}}));
+  await page.route('**/v3/college/students/s1/reports/*/integrity-events',route=>route.fulfill({json:{events:[]}}));
+}
+
+test('existing scorecard arrows switch only this candidate drive attempts without adding a selector',async({page})=>{
+  await setup(page);
+  await mockAttemptReports(page,[...attemptReports,attemptReports[0],{drive_id:'drive-1',attempt_number:3}]);
+  await page.goto('/dashboard/placement-management?drive=drive-1&section=results&candidate=s1');
+  const pager=page.locator('.candidate-pager');
+  await expect(pager).toContainText('Attempt 2 · 2 of 2');
+  await expect(page.locator('#glance')).toContainText('saved-second');
+  await expect(page.locator('#glance')).toContainText('78');
+  await expect(pager.getByRole('button',{name:'Next attempt',exact:true})).toBeDisabled();
+  await expect(page.getByRole('combobox',{name:'View saved attempt'})).toHaveCount(0);
+  await pager.getByRole('button',{name:'Previous attempt',exact:true}).click();
+  await expect(pager).toContainText('Attempt 1 · 1 of 2');
+  await expect(page.locator('#glance')).toContainText('saved-first');
+  await expect(page.locator('#glance')).not.toContainText('saved-second');
+  await expect(page.getByText('First attempt feedback').first()).toBeVisible();
+  await expect(page.getByText('Second attempt feedback')).toHaveCount(0);
+  await expect(pager.getByRole('button',{name:'Previous attempt',exact:true})).toBeDisabled();
+  await expect(page).toHaveURL(/candidate=s1/);
+  await pager.getByRole('button',{name:'Next attempt',exact:true}).click();
+  await expect(pager).toContainText('Attempt 2 · 2 of 2');
+  await expect(page.locator('#glance')).toContainText('saved-second');
+});
+
+test('attempt navigation discards delayed recording and transcript from the previous attempt',async({page})=>{
+  await setup(page);
+  await mockAttemptReports(page);
+  let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});let pending=0;
+  await page.route('**/v3/college/students/s1/reports/saved-second/recording',async route=>{pending++;await gate;await route.fulfill({json:{status:'ready',playback_url:'https://media.example/wrong-attempt.webm'}}).catch(()=>{});});
+  await page.route('**/v3/college/students/s1/reports/saved-second/transcript',async route=>{pending++;await gate;await route.fulfill({json:{turns:[{turn_id:'stale',transcript:'Stale attempt transcript'}]}}).catch(()=>{});});
+  await page.goto('/dashboard/placement-management?drive=drive-1&section=results&candidate=s1');
+  await expect.poll(()=>pending).toBe(2);
+  await page.getByRole('button',{name:'Previous attempt',exact:true}).click();
+  await expect(page.locator('#glance')).toContainText('saved-first');
+  release();
+  await expect(page.locator('.candidate-pager')).toContainText('Attempt 1 · 1 of 2');
+  await expect(page.getByText('Stale attempt transcript')).toHaveCount(0);
+  await expect(page.getByLabel('Interview recording',{exact:true})).toHaveCount(0);
+});
+
+test('a single saved attempt disables both existing scorecard arrows',async({page})=>{
+  await setup(page);
+  await mockAttemptReports(page,[attemptReports[0]]);
+  await page.goto('/dashboard/placement-management?drive=drive-1&section=results&candidate=s1');
+  await expect(page.locator('.candidate-pager')).toContainText('Attempt 2 · 1 of 1');
+  await expect(page.getByRole('button',{name:'Previous attempt',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Next attempt',exact:true})).toBeDisabled();
+});
+
+test('attempt history denial provides retry without showing another candidate report',async({page})=>{
+  await setup(page);
+  await mockAttemptReports(page);
+  let denied=true;
+  await page.route('**/v3/college/students/s1/reports',route=>denied?route.fulfill({status:403,json:{detail:'Not authorized'}}):route.fallback());
+  await page.goto('/dashboard/placement-management?drive=drive-1&section=results&candidate=s1');
+  await expect(page.getByRole('alert')).toContainText('Not authorized');
+  await expect(page.locator('#glance')).toHaveCount(0);
+  denied=false;
+  await page.getByRole('button',{name:'Retry attempt history'}).click();
+  await expect(page.locator('.candidate-pager')).toContainText('Attempt 2 · 2 of 2');
+});
+
+test('Assessment Intelligence scorecard entry uses the existing attempt pager',async({page})=>{
+  await setup(page);
+  await mockAttemptReports(page);
+  const student={id:'s1',full_name:'Attempt Candidate',roll_number:'R1',email:'candidate@example.test',program:'B.Tech',department_code:'CSE',graduation_year:2027,status:'active'};
+  await page.route('**/v3/college/students?**',route=>route.fulfill({json:{items:[student],total:1}}));
+  await page.route('**/v3/college/students/s1/reports?include_assessments=true',route=>route.fulfill({json:{student,drives:[{drive_id:'drive-1',company_name:'Example Company',role_title:'Engineer',assignment_status:'completed'}],reports:attemptReports.filter(report=>report.drive_id==='drive-1'),assessment_contract:'student-ats-v1',assessments:{'drive-1':{student_id:'s1',drive_id:'drive-1',ats_status:'evaluated',ats_fit_score:65}}}}));
+  await page.goto('/dashboard/placement-management?view=assessment-intelligence&student=s1');
+  await page.getByRole('button',{name:'View scorecards',exact:true}).click();
+  await expect(page.locator('.candidate-pager')).toContainText('Attempt 2 · 2 of 2');
+  await page.getByRole('button',{name:'Previous attempt',exact:true}).click();
+  await expect(page.locator('#glance')).toContainText('saved-first');
+  await expect(page.getByRole('combobox',{name:'View saved attempt'})).toHaveCount(0);
+  await page.screenshot({path:'/tmp/attempt-results-desktop.png',fullPage:false});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
+  await page.screenshot({path:'/tmp/attempt-results-mobile.png',fullPage:false});
 });

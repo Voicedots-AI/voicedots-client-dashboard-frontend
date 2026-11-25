@@ -239,26 +239,28 @@ function ReportKeyboardShortcuts({
   return null;
 }
 
-export default function CandidateReport({
+function CandidateReportDetails({
   driveId,
   studentId,
   sessionId,
   onBack,
-  candidatePosition,
-  candidateTotal,
-  canPrevious,
-  canNext,
-  onNavigate,
+  attemptPosition,
+  attemptNumber,
+  attemptTotal,
+  canPreviousAttempt,
+  canNextAttempt,
+  onNavigateAttempt,
 }: {
   driveId: string;
   studentId: string;
   sessionId?:string;
   onBack: () => void;
-  candidatePosition?: number | null;
-  candidateTotal?: number;
-  canPrevious?: boolean;
-  canNext?: boolean;
-  onNavigate?: (direction: -1 | 1) => void;
+  attemptNumber?: number;
+  attemptPosition?: number | null;
+  attemptTotal?: number;
+  canPreviousAttempt?: boolean;
+  canNextAttempt?: boolean;
+  onNavigateAttempt?: (direction: -1 | 1) => void;
 }) {
   const [bundle, setBundle] = useState<Data | null>(null),
     [drive, setDrive] = useState<Drive | null>(null),
@@ -724,9 +726,9 @@ export default function CandidateReport({
           <span>/</span><span className="truncate">{show(drive?.company_name, "Placement drive")} · {show(drive?.role_title, "Role")}</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button type="button" className={`${btn} shrink-0 px-2.5 py-1.5`} disabled={!canPrevious} aria-label="Previous candidate" onClick={() => onNavigate?.(-1)}><ChevronLeft size={15}/></button>
-          <span className="min-w-16 shrink-0 text-center text-xs font-semibold text-slate-600">{candidatePosition ?? "—"} of {candidateTotal ?? "—"}</span>
-          <button type="button" className={`${btn} shrink-0 px-2.5 py-1.5`} disabled={!canNext} aria-label="Next candidate" onClick={() => onNavigate?.(1)}><ChevronRight size={15}/></button>
+          <button type="button" className={`${btn} shrink-0 px-2.5 py-1.5`} disabled={!canPreviousAttempt} aria-label="Previous attempt" onClick={() => onNavigateAttempt?.(-1)}><ChevronLeft size={15}/></button>
+          <span aria-live="polite" className="min-w-16 shrink-0 text-center text-xs font-semibold text-slate-600">Attempt {attemptNumber ?? "—"} · {attemptPosition ?? "—"} of {attemptTotal ?? "—"}</span>
+          <button type="button" className={`${btn} shrink-0 px-2.5 py-1.5`} disabled={!canNextAttempt} aria-label="Next attempt" onClick={() => onNavigateAttempt?.(1)}><ChevronRight size={15}/></button>
           <button type="button" aria-label="Export PDF" title="Export PDF" className={`${btn} report-actions inline-flex h-10 min-w-[102px] shrink-0 items-center justify-center gap-2 whitespace-nowrap px-3 py-1 text-xs`} onClick={() => window.print()}><Download className="shrink-0" size={14}/><span className="whitespace-nowrap">Export PDF</span></button>
         </div>
       </div>
@@ -837,4 +839,64 @@ export default function CandidateReport({
       {confirm && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4"><section role="alertdialog" aria-modal="true" aria-labelledby="report-confirm-title" className={`${reportPanel} max-w-md`}><h3 id="report-confirm-title" className="text-lg font-bold">Confirm {displayName(confirm)}</h3><p className="mt-2 text-sm">{confirm === "decision" ? `Record ${displayName(decision)} as the officer decision?` : confirm === "schedule" ? "Schedule student result publication for the selected date and time?" : confirm === "cancel_schedule" ? "Cancel the scheduled student result publication?" : "Release this result to the student now?"}</p>{confirm === "schedule" && !schedule && <p className="mt-2 text-xs text-rose-700">Choose a release date and time before continuing.</p>}<div className="mt-5 flex justify-end gap-2"><button className={`${btn} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap`} onClick={() => setConfirm(null)}>Cancel</button><button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={confirm === "schedule" && !schedule} onClick={() => void perform()}>Confirm</button></div></section></div>}
     </section>
   );
+}
+
+// Candidate navigation props remain accepted for existing callers. The scorecard
+// pager always stays within this candidate and drive, across saved attempts.
+type CandidateReportProps = {
+  driveId: string;
+  studentId: string;
+  sessionId?: string;
+  onBack: () => void;
+  candidatePosition?: number | null;
+  candidateTotal?: number;
+  canPrevious?: boolean;
+  canNext?: boolean;
+  onNavigate?: (direction: -1 | 1) => void;
+};
+
+export default function CandidateReport(props: CandidateReportProps) {
+  return <CandidateAttemptReports key={`${props.driveId}:${props.studentId}:${props.sessionId || ''}`} {...props}/>;
+}
+
+function CandidateAttemptReports({driveId, studentId, sessionId, onBack}: CandidateReportProps) {
+  const [reports, setReports] = useState<Report[]>();
+  const [selected, setSelected] = useState(sessionId);
+  const [historyError, setHistoryError] = useState('');
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    setHistoryError('');
+    void collegeApi.get<{reports: Report[]}>(`students/${encodeURIComponent(studentId)}/reports`, controller.signal)
+      .then(value => {
+        if (!Array.isArray(value.reports)) throw new Error('Invalid report history');
+        if (!controller.signal.aborted) setReports(value.reports);
+      })
+      .catch(reason => { if (!controller.signal.aborted) setHistoryError(collegeError(reason)); });
+    return () => controller.abort();
+  }, [studentId, retry]);
+  const attempts = useMemo(() => {
+    const sessions = new Set<string>();
+    return (reports || []).filter(report => {
+      if (report.drive_id !== driveId || !report.session_id || sessions.has(report.session_id)) return false;
+      sessions.add(report.session_id);
+      return true;
+    }).sort((a, b) => (a.attempt_number || 0) - (b.attempt_number || 0)
+      || (Date.parse(a.completed_at || '') || 0) - (Date.parse(b.completed_at || '') || 0));
+  }, [reports, driveId]);
+  const currentSession = selected || attempts.at(-1)?.session_id;
+  const index = attempts.findIndex(report => report.session_id === currentSession);
+  if (historyError) return <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+    <p>Attempt history could not be loaded: {historyError}</p>
+    <button type="button" className={btn} onClick={() => setRetry(value => value + 1)}>Retry attempt history</button>
+    <button type="button" className={btn} onClick={onBack}>Back to interview results</button>
+  </section>;
+  if (!reports) return <p role="status">Loading interview attempts…</p>;
+  return <CandidateReportDetails key={currentSession || 'unavailable'} driveId={driveId} studentId={studentId}
+    sessionId={currentSession} onBack={onBack} attemptPosition={index >= 0 ? index + 1 : null}
+    attemptNumber={attempts[index]?.attempt_number} attemptTotal={attempts.length} canPreviousAttempt={index > 0} canNextAttempt={index >= 0 && index < attempts.length - 1}
+    onNavigateAttempt={direction => {
+      const destination = attempts[index + direction];
+      if (index >= 0 && destination?.session_id) setSelected(destination.session_id);
+    }}/>
 }
