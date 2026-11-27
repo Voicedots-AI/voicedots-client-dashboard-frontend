@@ -1,3 +1,4 @@
+import AttemptPager from './AttemptPager';
 import AssessmentStudentOverview from './AssessmentStudentOverview';
 import CandidateReport from './CandidateReport';
 import PlacementAssessmentTable from './PlacementAssessmentTable';
@@ -6,7 +7,7 @@ import {useSearchParams} from 'react-router-dom';
 import {ATSFitDetails} from './DriveManagement';
 import {collegeError} from '@/api/collegeApi';
 import {loadStudentAssessment,loadAllStudentAssessments,invalidateStudentAssessment,type FullBundle,type FullAssessment} from './assessmentClient';
-import {atsKey,driveHistory,type ATSState} from './assessmentIntelligenceData';
+import {atsKey,driveHistory,driveAttempts,type ATSState} from './assessmentIntelligenceData';
 import StudentScorecard from './StudentScorecard';
 import AssessmentCoach from './AssessmentCoach';
 import AssessmentCandidateDetails from './AssessmentCandidateDetails';
@@ -54,12 +55,12 @@ export default function StudentPlacementEvidence({studentId,readOnly=false,backL
  const {bundle,ats}=data,rows=driveHistory(bundle);
  const states:Record<string,ATSState>=Object.fromEntries(rows.map(({drive})=>[atsKey(studentId,drive.drive_id),ats[drive.drive_id]?{row:ats[drive.drive_id]}:{error:'ATS assessment unavailable'}]));
  const selected=bundle.reports.find(row=>row.session_id===session),atsSelection=rows.find(row=>row.drive.drive_id===atsDrive);
- if(selected?.session_id&&selected.drive_id)return <section ref={surface} tabIndex={-1} className="assessment-intelligence" aria-label="Candidate interview scorecard"><button type="button" className="ai-button" onClick={()=>setSession('')}>← {backLabel}</button>{readOnly?<StudentScorecard key={selected.session_id} studentId={studentId} sessionId={selected.session_id} role={selected.role_title} assessedAt={selected.completed_at} readOnly/>:<CandidateReport key={selected.session_id} driveId={selected.drive_id} studentId={studentId} sessionId={selected.session_id} onBack={()=>setSession('')}/>}</section>;
+ if(selected?.session_id&&selected.drive_id)return <section ref={surface} tabIndex={-1} className="assessment-intelligence" aria-label="Candidate interview scorecard"><button type="button" className="ai-button" onClick={()=>setSession('')}>← {backLabel}</button>{readOnly&&<AttemptPager attempts={driveAttempts(bundle,selected.drive_id)} sessionId={selected.session_id} onSelect={setSession}/>} {readOnly?<StudentScorecard key={selected.session_id} studentId={studentId} sessionId={selected.session_id} role={selected.role_title} assessedAt={selected.completed_at} readOnly/>:<CandidateReport key={selected.session_id} driveId={selected.drive_id} studentId={studentId} sessionId={selected.session_id} onBack={()=>setSession('')}/>}</section>;
  return <section ref={surface} className="assessment-intelligence placement-evidence pw-cumulative-assessment" aria-label="Placement assessment intelligence">
   <article className="ai-student-card expanded">
    <AssessmentStudentOverview readOnly={readOnly} student={bundle.student} bundle={bundle} ats={states} onProfile={drive=>setProfile(drive||'')} onScorecard={({report})=>{if(report?.session_id)openScorecard(report.session_id)}}/>
    <div id={`ai-history-${studentId}`} className="ai-student-history">
-    <div className="ai-history-caption"><span>Current resume ATS fit · latest recorded interview per drive</span><button type="button" className="ai-text-button" onClick={refresh}>Refresh assessments</button></div>
+    <div className="ai-history-caption"><span>Current resume ATS fit · all saved interview attempts per drive</span><button type="button" className="ai-text-button" onClick={refresh}>Refresh assessments</button></div>
     {pollNotice&&<p className="ai-empty" role="status">{pollNotice}</p>}
     {rows.length?<PlacementAssessmentTable bundle={bundle} rows={rows} ats={states} onATS={setATSDrive} onScorecard={({report})=>{if(report?.session_id)openScorecard(report.session_id)}} onProfile={setProfile} onProgress={setProgress} onRetry={refresh}/>:<p className="ai-empty">No placement assignments or drive reports have been recorded for this student.</p>}
    </div>

@@ -21,23 +21,29 @@ export function atsAboveDriveCutoff(row?:AssessmentATS,driveCutoff?:number|null)
 }
 export const atsKey=(studentId:string,driveId:string)=>JSON.stringify([studentId,driveId]);
 
-// Both portals use the current resume/JD ATS result; interview results remain historical.
+// Keep every saved session scoped to its drive; evaluation dates can change
+// when an old attempt is reprocessed, so attempt order takes precedence.
+export function driveAttempts(bundle:AssessmentBundle,driveId:string){
+ const sessions=new Set<string>();
+ return (bundle.reports||[]).filter(row=>{
+  if(row.drive_id!==driveId)return false;
+  if(row.session_id){if(sessions.has(row.session_id))return false;sessions.add(row.session_id)}
+  return true;
+ }).sort((a,b)=>(a.attempt_number||0)-(b.attempt_number||0)
+  ||(Date.parse(a.interview_completed_at||a.completed_at||'')||0)-(Date.parse(b.interview_completed_at||b.completed_at||'')||0));
+}
 export function driveHistory(bundle:AssessmentBundle){
  const drives=new Map<string,Assignment>();
  for(const row of bundle.drives||[])if(row.drive_id&&!drives.has(row.drive_id))drives.set(row.drive_id,row);
- const reports=new Map<string,AssessmentReport>();
  for(const row of bundle.reports||[]){
-  if(!row.drive_id)continue; // Self-practice is not a placement drive.
-  if(!drives.has(row.drive_id))drives.set(row.drive_id,{drive_id:row.drive_id,company_name:row.company_name,role_title:row.role_title,assignment_status:row.assignment_status,completed_at:row.interview_completed_at||row.completed_at});
-  const prior=reports.get(row.drive_id);
-  if(!prior||(Date.parse(row.interview_completed_at||row.completed_at||'')||0)>(Date.parse(prior.interview_completed_at||prior.completed_at||'')||0))reports.set(row.drive_id,row);
+  if(row.drive_id&&!drives.has(row.drive_id))drives.set(row.drive_id,{drive_id:row.drive_id,company_name:row.company_name,role_title:row.role_title,assignment_status:row.assignment_status,completed_at:row.interview_completed_at||row.completed_at});
  }
- return [...drives.values()].map(drive=>({drive,report:reports.get(drive.drive_id)})).sort((a,b)=>(Date.parse(b.drive.assigned_at||b.report?.completed_at||'')||0)-(Date.parse(a.drive.assigned_at||a.report?.completed_at||'')||0));
+ return [...drives.values()].map(drive=>{const attempts=driveAttempts(bundle,drive.drive_id);return {drive,report:attempts.at(-1),attempts}}).sort((a,b)=>(Date.parse(b.drive.assigned_at||b.report?.completed_at||'')||0)-(Date.parse(a.drive.assigned_at||a.report?.completed_at||'')||0));
 }
 export function assessmentSummary(bundle:AssessmentBundle,ats:Record<string,ATSState>){
  const rows=driveHistory(bundle);
  const scores=rows.map(({drive})=>currentATSScore(ats[atsKey(bundle.student.id,drive.drive_id)]?.row)).filter((score):score is number=>score!==null);
- const interview=rows.map(row=>row.report?.overall_score).filter(validScore);
+ const interview=rows.flatMap(row=>row.attempts.map(report=>report.overall_score)).filter(validScore);
  return {drives:rows.length,participated:rows.filter(row=>row.drive.started_at||row.drive.completed_at||['in_progress','completed'].includes(row.drive.assignment_status||'')).length,
   eligible:rows.filter(({drive})=>atsAboveDriveCutoff(ats[atsKey(bundle.student.id,drive.drive_id)]?.row,drive.criteria_ats_fit)===true).length,
   assessed:scores.length,averageATS:scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:null,bestScore:interview.length?Math.max(...interview):null,

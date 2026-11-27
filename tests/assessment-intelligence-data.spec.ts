@@ -34,3 +34,11 @@ test('eligible drive counts use the same evaluated ATS threshold as the student 
  const below={...ats,[atsKey('student-1','drive-1')]:{row:{student_id:'student-1',ats_status:'evaluated',ats_fit_score:49.9}}};
  expect(assessmentSummary(bundle,below).eligible).toBe(0);
 });
+
+test('attempt history preserves zeros, unknown scores and older best scores while using saved attempt order',()=>{
+ const reports=[{drive_id:'drive-1',session_id:'first',attempt_number:1,overall_score:90,completed_at:'2026-11-27'}, {drive_id:'drive-1',session_id:'second',attempt_number:2,overall_score:0,completed_at:'2026-11-25'}, {drive_id:'drive-1',session_id:'third',attempt_number:3,overall_score:null}, {drive_id:'drive-2',session_id:'other',attempt_number:1,overall_score:60}];
+ const value={...bundle,reports:[...reports,reports[0]]};const history=driveHistory(value).find(row=>row.drive.drive_id==='drive-1')!;
+ expect(history.attempts.map(row=>row.session_id)).toEqual(['first','second','third']);expect(history.report?.session_id).toBe('third');
+ expect(assessmentSummary(value,ats).bestScore).toBe(90);
+ expect(matchesAssessmentFilters(value,ats,{...initialFilters,minScore:85})).toBe(true);
+});
