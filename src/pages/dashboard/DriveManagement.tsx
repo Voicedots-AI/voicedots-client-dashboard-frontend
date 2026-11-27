@@ -1,3 +1,5 @@
+import {interviewAgentScores} from './interviewAgentScores';
+import {evidenceRows,interviewEvidence,selectEvidenceReport} from './interviewEvidence';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import DriveName from "../../drive-description/DriveName";
 import {atsIndicator} from '@/shared-assessment/atsCutoff';
@@ -96,56 +98,39 @@ type Candidate = Data & {
   publication?: { state?: string; scheduled_for?: string | null; released_at?: string | null };
 };
 
-function shortEvidence(value:string) { const text=value.replace(/\s+/g,' ').trim(); const sentence=text.match(/^.{1,180}?[.!?](?:\s|$)/)?.[0]; return sentence?.trim() || (text.length>180 ? text.slice(0,177).trimEnd()+'…' : text); }
-
-export function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: string; candidate: Candidate; onOpenReport: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [detail, setDetail] = useState<Data | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const load = async () => {
-    setOpen(true);
-    if (loaded || loading) return;
-    setLoading(true);
-    setError("");
-    try {
-      const bundle = await collegeApi.get<Data>(`students/${encodeURIComponent(candidate.student_id)}/reports`);
-      const report = ((bundle.reports || []) as Data[]).find(item => String(item.drive_id) === driveId);
-      if (!report) throw new Error("No interview report is available for this drive.");
-      setDetail((report.detail || {}) as Data);
-      setLoaded(true);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : collegeError(reason));
-    } finally {
-      setLoading(false);
-    }
-  };
-  const entries = (value: unknown) => Array.isArray(value) ? value : [];
-  const strengthItems = entries(detail?.strengths);
-  const gapItems = entries(detail?.priority_improvement_areas);
-  const rounds = entries(detail?.agent_breakdown);
-  const textOf = (item: unknown): string => {
-    if (typeof item === "string") return item;
-    if (!item || typeof item !== "object") return "";
-    const row = item as Data;
-    return [row.title, row.label, row.focus, row.strength, row.text, row.why, row.evidence, row.summary, row.description, row.problem, row.rationale]
-      .find(value => typeof value === "string" && value.trim()) as string || "";
-  };
-  return <Popover open={open} onOpenChange={nextOpen => { if (nextOpen) void load(); else setOpen(false); }}>
-    <PopoverTrigger asChild><button type="button" className="text-sm font-semibold text-indigo-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
-      View strengths &amp; gaps <span aria-hidden="true">›</span>
-    </button></PopoverTrigger>
-    <PopoverContent align="start" collisionPadding={16} showArrow={false} aria-label={`Interview strengths and gaps for ${candidate.full_name}`} className="w-[min(30rem,calc(100vw-2rem))] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain break-words p-4 text-left sm:p-5">
-      <span className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3"><span><strong className="text-sm text-slate-900">{candidate.full_name}</strong><span className="mt-0.5 block text-xs text-slate-500">Interview evidence · {candidate.recommendation || "AI recommendation unavailable"}</span></span><button type="button" aria-label="Close strengths and gaps" className="rounded-md px-2 text-lg leading-6 text-slate-500 hover:bg-slate-100" onClick={() => setOpen(false)}>×</button></span>
-      {loading ? <span role="status" className="mt-4 block text-sm text-slate-500">Loading interview evidence…</span> : error ? <span role="alert" className="mt-4 block text-sm text-rose-700">{error}<button className="ml-2 font-semibold underline" onClick={() => { setLoaded(false); void load(); }}>Retry</button></span> : <span className="mt-4 grid gap-4 sm:grid-cols-2">
-        <span><strong className="text-xs font-bold uppercase tracking-wide text-emerald-700">Strengths</strong>{strengthItems.length ? <span className="mt-2 block space-y-2">{strengthItems.slice(0,3).map((item,index)=><span key={`strength-${index}`} className="block text-sm leading-5 text-slate-700">{shortEvidence(textOf(item)) || "No text supplied for this report item."}</span>)}</span> : <span className="mt-2 block text-sm text-slate-500">No strengths were included in the available report.</span>}</span>
-        <span><strong className="text-xs font-bold uppercase tracking-wide text-amber-700">Growth areas</strong>{gapItems.length ? <span className="mt-2 block space-y-2">{gapItems.slice(0,3).map((item,index)=><span key={`gap-${index}`} className="block text-sm leading-5 text-slate-700">{shortEvidence(textOf(item)) || "No text supplied for this report item."}</span>)}</span> : <span className="mt-2 block text-sm text-slate-500">No growth areas were included in the available report.</span>}</span>
-      </span>}
-      {loaded && rounds.length > 0 && <span className="mt-4 block border-t border-slate-100 pt-3"><strong className="text-xs font-bold uppercase tracking-wide text-slate-600">Interview rounds</strong><span className="mt-2 flex flex-wrap gap-2">{rounds.slice(0,4).map((item,index)=>{const row=(item||{}) as Data;return <span key={`round-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700">{String(row.agent_type || row.track || `Round ${index+1}`)}{row.score != null ? ` · ${String(row.score)}/100` : ""}</span>})}</span></span>}
-      <button type="button" onClick={() => { setOpen(false); onOpenReport(); }} className="mt-4 inline-flex text-sm font-semibold text-indigo-700 hover:underline">Open full interview report <span aria-hidden="true" className="ml-1">↗</span></button>
-    </PopoverContent>
-  </Popover>;
+export function CandidateStrengthGap({ driveId, candidate, onOpenReport }: { driveId: string; candidate: Candidate; onOpenReport: (sessionId?:string) => void }) {
+ const [open,setOpen]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState('');
+ const [saved,setSaved]=useState<Data|null>(null);
+ const identity=`${driveId}:${candidate.student_id}:${candidate.report_session_id||candidate.session_id||''}`;
+ const identityRef=useRef(identity);identityRef.current=identity;
+ useEffect(()=>{setSaved(null);setError('');setLoading(false);setOpen(false)},[identity]);
+ const load=async()=>{
+  setOpen(true);if(loading)return;setLoading(true);setError('');const request=identity;
+  try{
+   const bundle=await collegeApi.get<Data>(`students/${encodeURIComponent(candidate.student_id)}/reports`);
+   const report=selectEvidenceReport(bundle.reports,driveId,typeof candidate.report_session_id==='string'?candidate.report_session_id:typeof candidate.session_id==='string'?candidate.session_id:undefined);
+   if(!report)throw new Error('No interview report is available for this saved attempt.');
+   if(identityRef.current===request)setSaved(report);
+  }catch(reason){if(identityRef.current===request){setSaved(null);setError(collegeError(reason))}}
+  finally{if(identityRef.current===request)setLoading(false)}
+ };
+ const detail=(saved?.detail||{}) as Data,{strengths,growth,dimensions}=interviewEvidence(detail);
+ const renderItems=(items:ReturnType<typeof interviewEvidence>['strengths'],empty:string)=>items.length?<span className="mt-2 block space-y-3">{items.map((item,index)=><span key={index} className="block text-sm leading-5 text-slate-700">{item.title&&<EvidenceText text={item.title}/>} {item.details.map((text,index)=><span key={index} className="mt-1 block text-xs text-slate-600"><EvidenceText text={text}/></span>)}</span>)}</span>:<span className="mt-2 block text-sm text-slate-500">{empty}</span>;
+ const date=typeof saved?.interview_completed_at==='string'?saved.interview_completed_at:typeof saved?.completed_at==='string'?saved.completed_at:null;
+ const dateLabel=date&&Number.isFinite(Date.parse(date))?formatPlacementDateTime(date):'Not recorded';
+ const recommendation=(detail.hiring_recommendation as Data|undefined)?.label;
+ return <Popover open={open} onOpenChange={value=>{if(value)void load();else setOpen(false)}}>
+  <PopoverTrigger asChild><button type="button" className="text-sm font-semibold text-indigo-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">View strengths &amp; gaps <span aria-hidden="true">›</span></button></PopoverTrigger>
+  <PopoverContent align="start" collisionPadding={16} showArrow={false} aria-label={`Interview strengths and gaps for ${candidate.full_name}`} className="w-[min(30rem,calc(100vw-2rem))] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain break-words p-4 text-left sm:p-5">
+   <span className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3"><span><strong className="text-sm text-slate-900">{candidate.full_name}</strong><span className="mt-0.5 block text-xs text-slate-500">Saved interview evidence{typeof recommendation==='string'?` · ${recommendation}`:''}</span>{saved&&!loading&&!error&&<span className="mt-1 block text-xs text-slate-500">Attempt {typeof saved.attempt_number==='number'?saved.attempt_number:'—'} · {saved.interview_completed_at?'Interview completed':'Report recorded'}: {dateLabel}</span>}</span><button type="button" aria-label="Close strengths and gaps" className="rounded-md px-2 text-lg leading-6 text-slate-500 hover:bg-slate-100" onClick={()=>setOpen(false)}>×</button></span>
+   {loading?<span role="status" className="mt-4 block text-sm text-slate-500">Loading interview evidence…</span>:error?<span role="alert" className="mt-4 block text-sm text-rose-700">{error}<button className="ml-2 font-semibold underline" onClick={()=>void load()}>Retry</button></span>:<>
+    <span className="mt-4 grid gap-4 sm:grid-cols-2"><span><strong className="text-xs font-bold uppercase tracking-wide text-emerald-700">Strengths</strong>{renderItems(strengths,'No positive feedback was recorded for this attempt.')}</span><span><strong className="text-xs font-bold uppercase tracking-wide text-amber-700">Growth areas</strong>{renderItems(growth,'No growth areas were recorded for this attempt.')}</span></span>
+    {dimensions.length>0&&<span className="mt-4 block border-t border-slate-100 pt-3"><strong className="text-xs font-bold uppercase tracking-wide text-slate-600">Recorded competency scores</strong><span className="mt-2 block space-y-2">{dimensions.map((row,index)=><span key={index} className="block text-xs text-slate-700"><span className="flex justify-between gap-3"><b>{String(row.label||row.dimension||'Competency')}</b><span>{typeof row.percentage==='number'&&Number.isFinite(row.percentage)&&row.percentage>=0&&row.percentage<=100?`${row.percentage}/100`:'Not assessed'}</span></span>{typeof (row.reason||row.rationale||row.interpretation)==='string'&&<EvidenceText text={String(row.reason||row.rationale||row.interpretation)}/>}</span>)}</span></span>}
+    {evidenceRows(detail.agent_breakdown).length>0&&<span className="mt-4 block border-t border-slate-100 pt-3"><strong className="text-xs font-bold uppercase tracking-wide text-slate-600">Interview rounds</strong><span className="mt-2 flex flex-wrap gap-2">{interviewAgentScores(detail.agent_breakdown).map(row=><span key={row.track} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700">{row.label} · {row.score===null?'Not assessed':`${row.score}/100`}</span>)}</span></span>}
+    {saved&&<button type="button" onClick={()=>{setOpen(false);onOpenReport(typeof saved.session_id==='string'?saved.session_id:undefined)}} className="mt-4 inline-flex text-sm font-semibold text-indigo-700 hover:underline">Open full interview report <span aria-hidden="true" className="ml-1">↗</span></button>}
+   </>}
+  </PopoverContent>
+ </Popover>;
 }
 
 function CandidateOfficerActions({ driveId, candidate, onSaved }: { driveId: string; candidate: Candidate; onSaved: () => void }) {
@@ -382,7 +367,7 @@ export function ATSFitDetails({driveId,candidate,drive,onClose,onReviewRequireme
   return createPortal(<div style={{margin:0}} className="ats-assessment-page placement-drives-scheme placement-scheme pd-portal" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={`ATS fit details for ${candidate.full_name}`} className="ats-assessment-dialog"><header className="ats-assessment-dialog-header"><div><h2 className="text-2xl font-bold">ATS Fit Assessment</h2><p className="text-sm text-slate-500">Job requirements matched against resume evidence</p></div><button autoFocus className={btn} onClick={onClose}>Close ATS fit ×</button></header>{error?<div role="alert">{error}<button className={btn} onClick={()=>{invalidateStudentAssessment(candidate.student_id);setVersion(value=>value+1)}}>Retry ATS fit</button></div>:!result?<p role="status">Loading ATS fit…</p>:<ATSFitAssessment key={requestKey} driveId={driveId} candidate={merged} data={assessmentData} onReviewRequirements={onReviewRequirements} onOpenCoach={onOpenCoach}/>}</section></div>,document.body);
 }
 
-export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezone,checked,onSelect,onReport,onATS,onSaved,busy,expandAll}:{candidate:Candidate;drive:Drive|null;driveId:string;collegeTimezone:string;checked:boolean;onSelect:(selected:boolean)=>void;onReport:()=>void;onATS:()=>void;onSaved:()=>void;busy:boolean;expandAll?:boolean}){
+export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezone,checked,onSelect,onReport,onATS,onSaved,busy,expandAll}:{candidate:Candidate;drive:Drive|null;driveId:string;collegeTimezone:string;checked:boolean;onSelect:(selected:boolean)=>void;onReport:(sessionId?:string)=>void;onATS:()=>void;onSaved:()=>void;busy:boolean;expandAll?:boolean}){
   const [expanded,setExpanded]=useState(false);
   useEffect(()=>{if(expandAll!==undefined)setExpanded(expandAll)},[expandAll]);
   const score=typeof candidate.overall_score==='number'&&Number.isFinite(candidate.overall_score)&&candidate.overall_score>=0&&candidate.overall_score<=100?candidate.overall_score:null;
@@ -393,10 +378,10 @@ export function ResultCandidateRosterCard({candidate,drive,driveId,collegeTimezo
       <div className="placement-result-person"><input type="checkbox" aria-label={`Select ${candidate.full_name}`} checked={checked} onChange={event=>onSelect(event.target.checked)}/><StudentAvatar student={candidate} size="h-11 w-11"/><div><h4>{candidate.full_name}</h4><p>{candidate.email||candidate.roll_number||'Email unavailable'}</p>{candidate.rank!=null&&<span className="placement-result-rank">#{candidate.rank} in this drive</span>}</div></div>
       <dl className="placement-result-academics">{[['Degree',candidate.program],['Branch',candidate.department_code],['Year',candidate.graduation_year],['CGPA',candidate.cgpa]].map(([label,value])=><div key={String(label)}><dt>{label}</dt><dd>{value==null||value===''?'—':String(value)}</dd></div>)}</dl>
       <div className="placement-result-ats"><span>ATS Fit</span><ATSMatchInfo driveId={driveId} candidate={candidate} cutoff={drive?.criteria_ats_fit} compact onOpen={onATS}/></div>
-      <div className="placement-result-assessment"><div><span>Overall assessment</span><strong>{score==null?'Not assessed':`${score}%`}</strong></div><progress max={100} value={score??0} aria-label={score==null?'Interview not assessed':`Overall interview assessment ${score}%`}/><p>{candidate.readiness||candidate.recommendation||'Complete the interview to view assessment feedback.'}</p><div className="placement-result-primary-actions"><button type="button" className="placement-result-report-link" disabled={busy||!candidate.report_ready} onClick={onReport}>View full assessment <ExternalLink size={12}/></button></div></div>
+      <div className="placement-result-assessment"><div><span>Overall assessment</span><strong>{score==null?'Not assessed':`${score}%`}</strong></div><progress max={100} value={score??0} aria-label={score==null?'Interview not assessed':`Overall interview assessment ${score}%`}/><p>{candidate.readiness||candidate.recommendation||'Complete the interview to view assessment feedback.'}</p><div className="placement-result-primary-actions"><button type="button" className="placement-result-report-link" disabled={busy||!candidate.report_ready} onClick={()=>onReport()}>View full assessment <ExternalLink size={12}/></button></div></div>
     </div>
 
-    <div className="placement-result-timeline"><table><thead><tr><th>Drive / company</th><th>Interview window</th><th>Scorecard</th><th>Interview status</th><th>Attempt</th><th>Review</th></tr></thead><tbody><tr><th scope="row"><DriveName id={driveId} studentId={candidate.student_id} company={drive?.company_name} role={drive?.role_title}>{drive?.company_name||'Placement drive'}<small>{drive?.role_title||'Role not supplied'}</small></DriveName></th><td>{drive?.window_start_at?formatPlacementDateTime(drive.window_start_at,collegeTimezone):'Not scheduled'}{drive?.window_end_at&&<> – {formatPlacementDateTime(drive.window_end_at,collegeTimezone)}</>}</td><td><button className="placement-result-score" disabled={busy||!candidate.report_ready} onClick={onReport}>{score==null?'Not assessed':`${score}/100`}</button></td><td><InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></td><td><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/></td><td><button type="button" className="placement-result-expand" aria-expanded={expanded} aria-controls={detailId} onClick={()=>setExpanded(value=>!value)}>{expanded?'Collapse':'Review details'}<ChevronDown size={14} className={expanded?'is-open':''}/></button></td></tr></tbody></table></div>
+    <div className="placement-result-timeline"><table><thead><tr><th>Drive / company</th><th>Interview window</th><th>Scorecard</th><th>Interview status</th><th>Attempt</th><th>Review</th></tr></thead><tbody><tr><th scope="row"><DriveName id={driveId} studentId={candidate.student_id} company={drive?.company_name} role={drive?.role_title}>{drive?.company_name||'Placement drive'}<small>{drive?.role_title||'Role not supplied'}</small></DriveName></th><td>{drive?.window_start_at?formatPlacementDateTime(drive.window_start_at,collegeTimezone):'Not scheduled'}{drive?.window_end_at&&<> – {formatPlacementDateTime(drive.window_end_at,collegeTimezone)}</>}</td><td><button className="placement-result-score" disabled={busy||!candidate.report_ready} onClick={()=>onReport()}>{score==null?'Not assessed':`${score}/100`}</button></td><td><InterviewStatusBadge value={candidateInterviewStatus(candidate)}/></td><td><AttemptBadge candidate={candidate} driveMaxAttempts={drive?.max_attempts}/></td><td><button type="button" className="placement-result-expand" aria-expanded={expanded} aria-controls={detailId} onClick={()=>setExpanded(value=>!value)}>{expanded?'Collapse':'Review details'}<ChevronDown size={14} className={expanded?'is-open':''}/></button></td></tr></tbody></table></div>
     {expanded&&<section className="placement-result-review" id={detailId} aria-label={`Review details for ${candidate.full_name}`}>
       <div className="placement-result-review-metrics"><div><h5>Interview assessment</h5><div className="placement-result-score-chips">{[['Interview',candidate.overall_score],['Readiness / PRI',candidate.ranking_score],['Job fit',candidate.job_fit_score]].map(([label,value])=><span key={String(label)} className={`result-score-chip ${typeof value!=='number'?'score-unavailable':value>=75?'score-strong':value>=50?'score-developing':'score-review'}`}><span>{label}</span><strong>{typeof value==='number'?`${value}/100`:'Not assessed'}</strong></span>)}</div></div><div><h5>Interview rounds</h5><div className="placement-result-score-chips">{candidate.agent_summary?.length?candidate.agent_summary.map((round,index)=><span className="result-round-chip" key={index}><span>{String(round.label||displayName(String(round.agent_type||`Round ${index+1}`)))}</span><strong>{round.score==null?'Not assessed':`${round.score}/100`}</strong></span>):<p>Round scores not available.</p>}</div></div></div>
       <div className="placement-result-review-line"><b>AI recommendation</b><StatusBadge value={candidate.recommendation||'Not assessed'}/>{candidate.report_ready&&<CandidateStrengthGap driveId={driveId} candidate={candidate} onOpenReport={onReport}/>}<button className="placement-result-outline" onClick={onATS}>ATS Fit &amp; resume evidence</button></div>
@@ -2043,11 +2028,13 @@ export default function DriveManagement({
   async function inspect(
     candidate: Candidate,
     kind: "reports" | "attempts" | "decision",
+    sessionId?: string,
   ) {
     if (kind === "reports") {
       setSelected(null); setDetail(null);
       setParams((current) => {
         current.set("candidate", candidate.student_id);
+        if(sessionId)current.set("candidateAttempt",sessionId);else current.delete("candidateAttempt");
         current.set("section", "results");
         return current;
       });
@@ -2106,13 +2093,13 @@ export default function DriveManagement({
   useEffect(() => {
     if (!reportStudentId || candidateNavDirection == null || loading) return;
     const destination = candidateNavDirection > 0 ? candidates[0] : candidates[candidates.length - 1];
-    if (destination) setParams(current => { current.set("candidate", destination.student_id); current.set("section", "results"); return current; });
+    if (destination) setParams(current => { current.delete("candidateAttempt"); current.set("candidate", destination.student_id); current.set("section", "results"); return current; });
     setCandidateNavDirection(null);
   }, [reportStudentId, candidateNavDirection, loading, candidates, setParams]);
   function navigateCandidate(direction: -1 | 1) {
     if (currentCandidateIndex >= 0 && currentCandidateIndex + direction >= 0 && currentCandidateIndex + direction < candidates.length) {
       const destination = candidates[currentCandidateIndex + direction];
-      setParams(current => { current.set("candidate", destination.student_id); return current; });
+      setParams(current => { current.delete("candidateAttempt"); current.set("candidate", destination.student_id); return current; });
       return;
     }
     if (direction > 0 && offset + candidates.length < total) { setCandidateNavDirection(1); setOffset(offset + 25); return; }
@@ -2125,6 +2112,7 @@ export default function DriveManagement({
       <CandidateReport
         driveId={driveId}
         studentId={reportStudentId}
+        sessionId={params.get("candidateAttempt")||undefined}
         candidatePosition={currentCandidateIndex >= 0 ? offset + currentCandidateIndex + 1 : null}
         candidateTotal={total}
         canPrevious={canPreviousCandidate}
@@ -2133,6 +2121,7 @@ export default function DriveManagement({
         onBack={() =>
           setParams((p) => {
             p.delete("candidate");
+            p.delete("candidateAttempt");
             p.set("section", "results");
             return p;
           })
@@ -2520,7 +2509,7 @@ export default function DriveManagement({
           </div>}
           {!loading && !error && !candidates.length && <p className={`${panel} border-dashed p-8 text-center text-sm text-slate-500`}>No candidates found for this view. Adjust the filters or choose another result view.</p>}
           {!!candidates.length && tab === "results" && resultsLayout === "cards" && <div id="result-candidate-cards" className="placement-result-roster">
-            {candidates.map(candidate=><ResultCandidateRosterCard expandAll={expandAllResults} key={`${driveId}:${candidate.student_id}`} candidate={candidate} drive={drive} driveId={driveId} collegeTimezone={collegeTimezone} checked={checked.includes(candidate.student_id)} onSelect={selected=>setChecked(current=>selected?[...new Set([...current,candidate.student_id])]:current.filter(id=>id!==candidate.student_id))} onReport={()=>void inspect(candidate,'reports')} onATS={()=>setAtsCandidate(candidate)} onSaved={()=>setVersion(value=>value+1)} busy={busy}/>)}
+            {candidates.map(candidate=><ResultCandidateRosterCard expandAll={expandAllResults} key={`${driveId}:${candidate.student_id}`} candidate={candidate} drive={drive} driveId={driveId} collegeTimezone={collegeTimezone} checked={checked.includes(candidate.student_id)} onSelect={selected=>setChecked(current=>selected?[...new Set([...current,candidate.student_id])]:current.filter(id=>id!==candidate.student_id))} onReport={session=>void inspect(candidate,'reports',session)} onATS={()=>setAtsCandidate(candidate)} onSaved={()=>setVersion(value=>value+1)} busy={busy}/>)}
           </div>}
           {!!candidates.length && (tab !== "results" || resultsLayout === "table") && (
             <div id="result-candidate-table" className={`${panel} result-workspace overflow-x-auto p-0`}>
@@ -2592,7 +2581,7 @@ export default function DriveManagement({
                           <td className="p-3"><span className="text-base font-medium">{c.overall_score==null?'—':`${c.overall_score}/100`}</span><p className="mt-1 text-xs text-slate-500">PRI {c.ranking_score==null?'—':`${c.ranking_score}/100`}</p></td>
                           <td className="p-3"><p>{c.job_fit_score==null?'—':`${c.job_fit_score}/100`}</p><p className="mt-1 text-xs text-slate-500">{c.readiness || 'Not assessed'}</p></td>
                           <td className="p-3"><p>{c.proctoring_score==null?'—':`${c.proctoring_score}/100`}</p><div className="mt-1"><StatusBadge value={c.integrity_review_label || c.integrity_review_status || 'not assessed'}/></div></td>
-                          <td className="p-3"><StatusBadge value={c.recommendation || 'Review Required'}/>{c.report_ready && <div className="mt-2"><CandidateStrengthGap driveId={driveId} candidate={c} onOpenReport={()=>void inspect(c,'reports')}/></div>}</td>
+                          <td className="p-3"><StatusBadge value={c.recommendation || 'Review Required'}/>{c.report_ready && <div className="mt-2"><CandidateStrengthGap driveId={driveId} candidate={c} onOpenReport={session=>void inspect(c,'reports',session)}/></div>}</td>
                           <td className="p-3"><StatusBadge value={c.officer_decision || 'pending'}/><div className="mt-2 text-xs text-slate-500">Result <StatusBadge value={c.publication?.state || 'hidden'}/></div></td>
                         </>
                       ) : tab === "ats" ? (
