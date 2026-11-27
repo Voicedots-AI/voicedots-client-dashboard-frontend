@@ -27,10 +27,10 @@ for (const viewport of [{width:1280,height:720},{width:390,height:650}]) {
  });
 }
 
-test('green competency pills stay correct while earlier competency and round details are restored',async({page})=>{
+test('green competency pills stay correct without added competency and round sections',async({page})=>{
  await page.goto('/tests/fixtures/strength-gap-preview.html');await page.getByRole('button',{name:'View strengths & gaps'}).click();const popup=page.getByRole('dialog');
  await expect(popup).toContainText('Communication Skills (50/100)');await expect(popup).toContainText('Resume Ownership (0/100)');
- await expect(popup).not.toContainText('The saved answer did not demonstrate');await expect(popup).toContainText('Recorded competency scores');await expect(popup).toContainText('Interview rounds');await expect(popup).toContainText('Talent Acquisition Specialist · 0/100');await expect(popup).toContainText('Practical Interviewer · Not assessed');
+ await expect(popup).not.toContainText('The saved answer did not demonstrate');await expect(popup).not.toContainText('Recorded competency scores');await expect(popup).not.toContainText('Interview rounds');
  await expect(popup).toContainText('Interview completed: 24/11/2026, 17:00 IST');
  await popup.getByRole('button',{name:'Open full interview report'}).click();await expect(page.locator('body')).toHaveAttribute('data-opened-session','saved-evidence-session');
 });
